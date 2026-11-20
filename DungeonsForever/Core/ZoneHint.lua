@@ -45,7 +45,11 @@ local function CFG()
     if c.torch == nil then c.torch = true end
     if c.banner == nil then c.banner = true end
     if c.quest == nil then c.quest = true end
-    if c.questTaken == nil then c.questTaken = false end
+    if c.qtDefault ~= 2 then
+        c.qtDefault = 2
+        c.questTaken = true
+    end
+    if c.questTaken == nil then c.questTaken = true end
     if c.spell == nil then c.spell = true end
     if c.talent == nil then c.talent = true end
     if c.food == nil then c.food = true end
@@ -1666,6 +1670,7 @@ end
 local SLEEP_BAG_ITEM = 211527
 local WELL_RESTED_SPELL = 429959
 local wellRestedName = nil
+local worldAt = nil
 
 local function ResolveWellRestedName()
     if wellRestedName then return wellRestedName end
@@ -1682,22 +1687,23 @@ end
 local function WellRestedState()
     local name = ResolveWellRestedName()
     local now = (GetTime and GetTime()) or 0
+    if worldAt == nil then return nil, nil end
+    if now > 0 and now - worldAt < 6 then return nil, nil end
     local seen = false
-    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        for i = 1, 40 do
-            local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-            if not ok then return false, nil end
-            if not a then break end
-            seen = true
-            if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
-                or (name and not Sealed(a.name) and a.name == name) then
-                local rem = math.huge
-                local exp = a.expirationTime
-                if not Sealed(exp) and type(exp) == "number" and exp > 0 then
-                    rem = math.max(0, exp - now)
-                end
-                return true, rem
+    if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return nil, nil end
+    for i = 1, 40 do
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not ok then return nil, nil end
+        if not a then break end
+        seen = true
+        if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
+            or (name and not Sealed(a.name) and a.name == name) then
+            local rem = math.huge
+            local exp = a.expirationTime
+            if not Sealed(exp) and type(exp) == "number" and exp > 0 then
+                rem = math.max(0, exp - now)
             end
+            return true, rem
         end
     end
     if not seen then return false, nil end
@@ -1728,6 +1734,7 @@ local function RestedRow(c)
     if Z.IsIgnored(ItemKey("rested", SLEEP_BAG_ITEM)) then return nil end
     if not OwnItem(SLEEP_BAG_ITEM) then return nil end
     local buffed, rem = WellRestedState()
+    if buffed == nil then return nil end
     local sub = L["缺少精神饱满"]
     if buffed then
         if rem == nil or rem >= 1800 then return nil end
@@ -2151,6 +2158,7 @@ ns.Init(function()
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
+            worldAt = (GetTime and GetTime()) or 0
             questCache.t = -1e9
             Z.Check("login", 0)
         elseif event == "UNIT_AURA" then

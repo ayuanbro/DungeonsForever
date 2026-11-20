@@ -90,6 +90,13 @@ local function VoiceDrain()
         return
     end
     local it = table.remove(vq, 1)
+    if it.check then
+        local okc, yes = pcall(it.check)
+        if not okc or yes ~= true then
+            VoiceDrain()
+            return
+        end
+    end
     if not it.force and Cfg().voice ~= true then
         vq = {}
         return
@@ -106,7 +113,7 @@ local function VoiceDrain()
     if #vq > 0 then VoiceDrain() end
 end
 
-function O.SayVoice(path, urgent)
+function O.SayVoice(path, urgent, check)
     if type(path) ~= "string" then return end
     if urgent == true then
         if vHandle and type(StopSound) == "function" then pcall(StopSound, vHandle) end
@@ -121,7 +128,7 @@ function O.SayVoice(path, urgent)
         end
         if #vq >= 4 then return end
     end
-    vq[#vq + 1] = { path = path, force = (urgent == true) }
+    vq[#vq + 1] = { path = path, force = (urgent == true), check = check }
     VoiceDrain()
 end
 
@@ -1396,6 +1403,20 @@ local function Pulse()
     if pulseFrame then pulseFrame:Show() end
 end
 
+local function RowPresent(ikind)
+    local res = current
+    if type(res) ~= "table" or type(res.items) ~= "table" then return false end
+    for i = 1, #res.items do
+        local it = res.items[i]
+        if it.kind == "buff" and type(it.list) == "table" then
+            for k = 1, #it.list do
+                if it.list[k].ikind == ikind then return true end
+            end
+        end
+    end
+    return false
+end
+
 function O.Update(res)
     do
         local MWm = ns.MapWindowModule
@@ -1453,10 +1474,10 @@ function O.Update(res)
     end
     if onc.on ~= false then
         if sawFood and not lastFood and onc.voice == true and onc.foodVoice ~= false then
-            O.SayVoice(FOOD_CUE)
+            O.SayVoice(FOOD_CUE, nil, function() return RowPresent("food") end)
         end
         if sawRested and not lastRested and onc.voice == true and onc.restedVoice ~= false then
-            O.SayVoice(RESTED_CUE)
+            O.SayVoice(RESTED_CUE, nil, function() return RowPresent("rested") end)
         end
     end
     lastFood, lastRested = sawFood, sawRested
@@ -1912,7 +1933,7 @@ function O.Init()
     OptRow(2, L["必备物品提醒"], "keyitem", L["在副本里且背包没有该副本要用的物品时提示"])
     ColHead(2, L["副本任务"])
     OptRow(2, L["未接任务提醒"], "quest", L["本图有可接的副本任务时提示"])
-    OptRow(2, L["已接任务提醒"], "questTaken", L["已接取、进行中的副本任务需要操作时提示"])
+    OptRow(2, L["已接任务提醒"], "questTaken", L["在副本里列出已接任务，并显示每条任务的完成进度"])
 
     ColHead(3, L["增益"])
     OptRow(3, L["食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")

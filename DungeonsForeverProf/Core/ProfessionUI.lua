@@ -2193,6 +2193,18 @@ function PD.Row(i)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" and not self.__routePolicy then return end
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+            local it = self.__it and (type(self.__it) == "table" and self.__it[1] or self.__it)
+            if self.__ahSearch and it then
+                local nm, got = PD.ItemName(it)
+                if got and PD.AHSearch(nm) then
+                    ns.PlaySound(1)
+                    return
+                end
+                if DG.InsertItemLink and DG.InsertItemLink(it) then
+                    ns.PlaySound(1)
+                    return
+                end
+            end
             if self.__spell and PD.InsertSpellLink(self.__spell) then return end
             if self.__it then
                 DG.ItemShiftClick(self, button)
@@ -3355,6 +3367,7 @@ function PD.BindRow(r, spec, h)
     PD.SetRowHover(r, (not r.__noHover) and r.IsMouseOver and r:IsMouseOver())
     r.__it = spec.it
     r.__spell = spec.spell
+    r.__ahSearch = spec.ahSearch and true or nil
     r.__noTip = spec.noTip
     r.__lines = spec.lines
     r.__mkLines = spec.mkLines
@@ -8575,6 +8588,7 @@ end
 function PD.RecipeRowLayout(s)
     if not s then return s end
     s.recipe = true
+    s.ahSearch = true
     s.fs = PD.REC_FS
     s.subFs = PD.REC_SUB_FS
     if not s._matSegs then s._matSegs = PD.RecipeMatSegs(s._mats) end
@@ -9171,9 +9185,19 @@ function PD.WireTipZone(z, r)
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             local sp = self.__spell
             if sp and PD.InsertSpellLink(sp) then return end
+            local zid = self.__it and (type(self.__it) == "table" and self.__it[1] or self.__it)
+            if zid and (self.__ahSearch or (r and r.__ahSearch)) then
+                local nm, got = PD.ItemName(zid)
+                if got and PD.AHSearch(nm) then return end
+            end
             if self.__it then
                 DG.ItemShiftClick(self, button)
                 return
+            end
+            if r and r.__it and r.__ahSearch then
+                local rid = type(r.__it) == "table" and r.__it[1] or r.__it
+                local rnm, rgot = PD.ItemName(rid)
+                if rgot and PD.AHSearch(rnm) then return end
             end
             if r and r.__spell and PD.InsertSpellLink(r.__spell) then return end
             if r and r.__it and DG.InsertItemLink then
@@ -10759,6 +10783,61 @@ function PD.InsertSpellLink(id)
             local eb = box()
             if eb and eb.Insert then pcall(eb.Insert, eb, link) end
         end)
+    end
+    return false
+end
+
+function PD.AHWindowShown()
+    local f = _G.AuctionHouseFrame
+    if f and type(f.IsShown) == "function" and f:IsShown() then return true end
+    local b = _G.AuctionFrame
+    if b and type(b.IsShown) == "function" and b:IsShown() then return true end
+    return false
+end
+
+local function AHNativeBox()
+    local f = _G.AuctionHouseFrame
+    local bar = f and f.SearchBar
+    if bar and bar.EditBox then return bar.EditBox, bar end
+    local b = _G.AuctionFrameBrowse
+    if b then
+        if b.SearchBar and b.SearchBar.EditBox then return b.SearchBar.EditBox, b.SearchBar end
+        if b.SearchBox then
+            if b.SearchBox.EditBox then return b.SearchBox.EditBox, b.SearchBox end
+            if b.SearchBox.editBox then return b.SearchBox.editBox, b.SearchBox end
+        end
+    end
+    return nil
+end
+
+local function AHApplyNative(name, eb, bar)
+    eb:SetText(name)
+    if type(eb.ClearFocus) == "function" then pcall(eb.ClearFocus, eb) end
+    if type(bar.OnSearchTextChanged) == "function" then pcall(bar.OnSearchTextChanged, bar) end
+    if type(bar.OnEnterPressed) == "function" then pcall(bar.OnEnterPressed, bar) end
+    if type(_G.SearchBoxTemplate_OnTextChanged) == "function" then pcall(_G.SearchBoxTemplate_OnTextChanged, bar) end
+    return true
+end
+
+function PD.AHSearch(name)
+    if type(name) ~= "string" or name == "" then return false end
+    if not PD.AHWindowShown() then return false end
+    local ok, done = pcall(function()
+        local A = _G.Auctionator
+        local v1 = A and A.API and A.API.v1
+        if v1 and type(v1.MultiSearchExact) == "function" then
+            v1.MultiSearchExact("DungeonsForever", { name })
+            return true
+        end
+        local eb, bar = AHNativeBox()
+        if not eb then return false end
+        return AHApplyNative(name, eb, bar)
+    end)
+    if ok and done == true then return true end
+    local eb, bar = AHNativeBox()
+    if eb and bar then
+        local ok2 = pcall(AHApplyNative, name, eb, bar)
+        if ok2 then return true end
     end
     return false
 end

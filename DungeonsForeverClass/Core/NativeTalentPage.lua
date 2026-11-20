@@ -384,6 +384,7 @@ local function NodeOf(t, i)
 end
 
 local Refresh
+local LiveBase
 local ShowPlanMenu, SaveBuild
 
 local function NewText(parent, size, r, g, b, anchor)
@@ -1008,7 +1009,7 @@ local function SeqOf(plan)
     return nil
 end
 
-local function PendingSeq(base)
+local function PendingSeq(base, liveOnly)
     local seq = SeqOf(NP.plan or NP.RecPlan())
     local out = {}
     if not seq then return out end
@@ -1017,7 +1018,7 @@ local function PendingSeq(base)
     local have = (base and base.have) or NP.pts
     local baseSpent = (base and base.spent) or TotalSpent()
     local capLv = (base and base.lv) or 60
-    local overview = NP.viewMode == 'plan' or (base and base.all) or false
+    local overview = (not liveOnly) and (NP.viewMode == 'plan' or (base and base.all) or false)
     local early, late = {}, {}
     local baseLvOff = StartLv() - 1
     for i = 1, #seq do
@@ -1147,7 +1148,6 @@ end
 
 local function SeqMap(pending)
     local map = { {}, {}, {} }
-    local off = StartLv() - 1
     for i = 1, #pending do
         local p = pending[i]
         local m = map[p.t]
@@ -1156,7 +1156,7 @@ local function SeqMap(pending)
             list = {}
             m[p.i] = list
         end
-        list[#list + 1] = (p.lv or (off + i)) - off
+        list[#list + 1] = i
     end
     return map
 end
@@ -1194,12 +1194,15 @@ local function BuildSeqMap(pending)
     if NP.seqOn == nil then NP.seqOn = DB().seqOn ~= false end
     if not NP.seqOn or not NP.cls or not (NP.plan or NP.RecPlan()) then
         NP.seqMap = nil
+        NP.seqMapLive = nil
         NP.nextPending = nil
         return nil
     end
     pending = pending or PendingSeq()
     NP.seqMap = SeqMap(pending)
-    local first = pending[1]
+    local live = PendingSeq(LiveBase(true), true)
+    NP.seqMapLive = SeqMap(live)
+    local first = live[1]
     NP.nextPending = first and { t = first.t, i = first.i } or nil
     return NP.seqMap
 end
@@ -1294,7 +1297,7 @@ local function RefreshNativeSeq()
         NP.SeqGlowStop()
         return
     end
-    local nos = NP.seqMap
+    local nos = NP.seqMapLive
     local L = SeqLayer()
     if L then
         local T = NP.frame
@@ -1378,8 +1381,8 @@ local function LiveCached()
     return read
 end
 
-local function LiveBase()
-    if NP.viewMode == 'plan' then return nil end
+LiveBase = function(force)
+    if not force and NP.viewMode == 'plan' then return nil end
     local read = LiveCached()
     if not read then return nil end
     local c = NP.liveBaseCache
@@ -2680,8 +2683,8 @@ local function Follow()
         local spentNow = liveSpent and liveSpent.spent or nil
         if spentNow and spentNow ~= NP.liveSpentSeen then
             NP.liveSpentSeen = spentNow
-            if not Mine() and NP.viewMode ~= 'plan' then
-                NP.SyncFromLive()
+            if not Mine() then
+                if NP.viewMode ~= 'plan' then NP.SyncFromLive() end
                 NP.SyncPlan()
             end
         end
