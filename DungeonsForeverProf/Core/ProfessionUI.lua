@@ -219,7 +219,17 @@ function PD.ScanSnapshotText(extraOnly)
         end
         local scan=bridge.FullScanStatus and bridge.FullScanStatus()
         if scan and (scan.status=="scanning" or scan.status=="processing") then
-            return L["正在更新扫描，当前使用上次完整扫描"]
+            local pct
+            if scan.status=="scanning" then
+                pct=math.floor(math.max(0,math.min(1,tonumber(scan.pct) or 0))*100)
+            else
+                local done,total=tonumber(scan.done),tonumber(scan.total)
+                pct=(done and total and total>0) and math.floor(done/total*100) or 0
+            end
+            if scan.status=="processing" then
+                return format(L["正在整理数据 %d%%，当前使用上次完整扫描"],pct)
+            end
+            return format(L["正在更新扫描 %d%%，当前使用上次完整扫描"],pct)
         elseif scan and (scan.status=="failed" or scan.status=="incomplete" or scan.status=="unverified") then
             return format(L["本次扫描失败，沿用 %d 分钟前的完整扫描"],minutes)
         end

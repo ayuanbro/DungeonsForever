@@ -392,7 +392,6 @@ function BuildAbout()
         end
     end
 
-
     local rows = {
         { key = L["作者"], parts = { { t = L["圆圆"] } } },
         { key = L["制作团队"], parts = { { t = L["专业增强"] .. " wzk" } } },
@@ -1555,7 +1554,6 @@ function ns.LayoutSettingsStack()
     end
     AnchorEnhCard()
 end
-
 
 local SCALE_MIN, SCALE_MAX, SCALE_STEP = 60, 140, 5
 

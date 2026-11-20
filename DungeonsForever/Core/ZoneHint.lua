@@ -499,7 +499,7 @@ local function TurnInRows(ctx)
         subTxt = string.format("%s · %.1f, %.1f", L["可上交"], spot.x, spot.y)
         local nm, pl = tostring(spot.npc or ""), tostring(spot.place or "")
         if nm ~= "" and pl ~= "" then
-            descTxt = string.format("%s（%s）", nm, pl)
+            descTxt = string.format(L["%s（%s）"], nm, pl)
         elseif nm ~= "" then
             descTxt = nm
         end
@@ -1710,14 +1710,17 @@ local function WellRestedState()
     return false, nil
 end
 
-local function SleepBagCdReady()
+local function SleepBagCdLeft()
     local f = (C_Item and C_Item.GetItemCooldown) or GetItemCooldown
-    if not f then return true end
+    if not f then return 0 end
     local ok, start, dur = pcall(f, SLEEP_BAG_ITEM)
-    if not ok or type(start) ~= "number" or type(dur) ~= "number" then return true end
-    if dur <= 0 then return true end
+    if not ok or type(start) ~= "number" or type(dur) ~= "number" or dur <= 0 then return 0 end
     local now = (GetTime and GetTime()) or 0
-    return (start + dur - now) <= 0
+    return math.max(0, start + dur - now)
+end
+
+local function SleepBagCdReady()
+    return SleepBagCdLeft() <= 0
 end
 
 local function SleepBagIcon()
@@ -1729,16 +1732,39 @@ local function SleepBagIcon()
     return 133662
 end
 
+local RESTED_WARN = 1800
+local restedGen = 0
+local function ArmRestedTimer(rem)
+    restedGen = restedGen + 1
+    if not (rem and rem ~= math.huge and rem > RESTED_WARN) then return end
+    if not (type(C_Timer) == "table" and type(C_Timer.After) == "function") then return end
+    local my = restedGen
+    C_Timer.After(rem - RESTED_WARN + 1, function()
+        if my == restedGen then Z.ScheduleSoft(0.1, true) end
+    end)
+end
+
 local function RestedRow(c)
     if not c.rested then return nil end
     if Z.IsIgnored(ItemKey("rested", SLEEP_BAG_ITEM)) then return nil end
     if not OwnItem(SLEEP_BAG_ITEM) then return nil end
     local buffed, rem = WellRestedState()
     if buffed == nil then return nil end
+    ArmRestedTimer(buffed and rem or nil)
     local sub = L["缺少精神饱满"]
     if buffed then
-        if rem == nil or rem >= 1800 then return nil end
-        if not SleepBagCdReady() then return nil end
+        if rem == nil or rem >= RESTED_WARN then return nil end
+        if not SleepBagCdReady() then
+            local left = SleepBagCdLeft()
+            restedGen = restedGen + 1
+            if left < rem and type(C_Timer) == "table" and C_Timer.After then
+                local my = restedGen
+                C_Timer.After(left + 1, function()
+                    if my == restedGen then Z.ScheduleSoft(0.1, true) end
+                end)
+            end
+            return nil
+        end
         sub = L["精神饱满即将到期"]
     end
     return {
@@ -2156,6 +2182,7 @@ ns.Init(function()
     pcall(frame.RegisterEvent, frame, "PLAYER_EQUIPMENT_CHANGED")
     pcall(frame.RegisterEvent, frame, "UPDATE_FACTION")
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
             worldAt = (GetTime and GetTime()) or 0
@@ -2163,6 +2190,8 @@ ns.Init(function()
             Z.Check("login", 0)
         elseif event == "UNIT_AURA" then
             Z.ScheduleSoft(5)
+        elseif event == "PLAYER_UPDATE_RESTING" then
+            Z.ScheduleSoft(0.5, true)
         elseif event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
             Z.ScheduleSoft(1.2)
         elseif event == "PLAYER_TARGET_CHANGED" then
@@ -2218,7 +2247,7 @@ function Z.SimCommand(msg)
         else
             print(head .. L["当前为真实数据"])
         end
-        print(head .. L["用法"] .. "： " .. SIM_USAGE)
+        print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
         return
     end
     if s == "off" or s == "0" or s == "clear" or s == "关" then
@@ -2236,7 +2265,7 @@ function Z.SimCommand(msg)
     local mode = s:match("^mode%s+(%a+)$")
     if mode then
         if mode ~= "auto" and mode ~= "badge" and mode ~= "silent" then
-            print(head .. L["用法"] .. "： /dfhint mode auto|badge|silent")
+            print(head .. L["用法"] .. L["： /dfhint mode auto|badge|silent"])
             return
         end
         CFG().mode = mode
@@ -2254,14 +2283,14 @@ function Z.SimCommand(msg)
         elseif kind == "spell" or kind == "spells" or kind == "train" then
             cur.spell = v
         else
-            print(head .. L["用法"] .. "： " .. SIM_USAGE)
+            print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
             return
         end
         Z.SimSet(cur.book, cur.quest, cur.spell)
     else
         local a, b, c = s:match("^(%d+)%s*(%d*)%s*(%d*)$")
         if not a then
-            print(head .. L["用法"] .. "： " .. SIM_USAGE)
+            print(head .. L["用法"] .. L["： "] .. SIM_USAGE)
             return
         end
         Z.SimSet(tonumber(a), tonumber(b), tonumber(c))
@@ -2278,7 +2307,7 @@ function Z.SimCommand(msg)
         if ns.ZoneOrb.ForceOpen then ns.ZoneOrb.ForceOpen(res) end
     end
     print(head .. string.format(L["模拟中：书 %d / 任务 %d / 技能 %d"], sim.book, sim.quest, sim.spell))
-    print(head .. L["关闭"] .. "： /dfhint off")
+    print(head .. L["关闭"] .. L["： /dfhint off"])
 end
 
 if type(SlashCmdList) == "table" then

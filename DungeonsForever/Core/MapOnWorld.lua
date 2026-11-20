@@ -55,7 +55,6 @@ local function setMap(id)
     applyMap(id)
 end
 
-
 local regen = CreateFrame("Frame")
 regen:RegisterEvent("PLAYER_REGEN_ENABLED")
 regen:SetScript("OnEvent", function()
@@ -414,7 +413,6 @@ local function areaOffset()
     if type(ox) ~= "number" or type(oy) ~= "number" then return 0, 0 end
     return ox, oy
 end
-
 
 local function mapAreaSize()
     local a = area()
@@ -785,7 +783,7 @@ local function paintArt(view, id, idx, cw, ch)
         for i = 1, #lay do
             local p = lay[i]
             local t = view.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", p.x, -p.y)
@@ -3382,7 +3380,6 @@ function W.Build()
     taskBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     taskBtn:Hide()
     view.taskBtn = taskBtn
-
 
     local btns = {}
     for i = 1, M.MAX_LAYERS do

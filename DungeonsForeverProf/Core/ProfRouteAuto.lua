@@ -287,12 +287,50 @@ local function MatListCost(mats)
     return total, unpriced
 end
 
+local function TrimLowPrice(levels, qty)
+    if type(levels) ~= "table" or type(qty) ~= "number" or qty <= 0 then return nil end
+    local frac = 0.10
+    if qty >= 10000 then
+        frac = 0.01
+    elseif qty > 1000 then
+        frac = 0.10 - 0.09 * (math.log(qty) / math.log(10) - 3)
+    end
+    local cut = math.floor(qty * frac)
+    local acc = 0
+    local anchor
+    for _, l in ipairs(levels) do
+        acc = acc + (tonumber(l[2]) or 0)
+        if acc >= cut then
+            local p = tonumber(l[1])
+            if p and p > 0 and p ~= math.huge then anchor = p end
+            break
+        end
+    end
+    if not anchor then return nil end
+    local hookCut = anchor * 0.75
+    local remain, cost = 100, 0
+    for _, l in ipairs(levels) do
+        local p = tonumber(l[1])
+        if p and p >= hookCut then
+            local take = math.min(tonumber(l[2]) or 0, remain)
+            cost = cost + p * take
+            remain = remain - take
+            if remain <= 0 then break end
+        end
+    end
+    if remain <= 0 then return cost / 100 end
+    return anchor
+end
+
 function RA.AHPriceOf(itemID)
     if not itemID then return nil end
     local bridge=ns.AuctionBridge
     local supply=bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(itemID)
-    if supply and (supply.quantity or 0)>0 and type(supply.market)=="number" and supply.market>0 then
-        return supply.market
+    if supply and (supply.quantity or 0)>0 then
+        local depth=bridge.GetAuctionDepth and bridge.GetAuctionDepth(itemID)
+        local tlp=TrimLowPrice(depth and depth.levels, supply.quantity)
+        if tlp then return tlp end
+        if type(supply.market)=="number" and supply.market>0 then return supply.market end
     end
     return AHPrice(itemID)
 end

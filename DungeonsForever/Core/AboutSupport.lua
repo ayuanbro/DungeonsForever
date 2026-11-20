@@ -58,7 +58,12 @@ function ns.BuildAboutSupport(about, G)
         local col = (i - 1) % G.cols
         local row = math.floor((i - 1) / G.cols)
         local nm = child:CreateFontString(nil, "OVERLAY")
-        nm:SetFont(ns.FONT, 16, "")
+        local fam = ns.WIDE_UI and (_G.GameFontHighlightLarge or _G.GameFontHighlight)
+        if fam then
+            nm:SetFontObject(fam)
+        else
+            nm:SetFont(ns.FONT, 16, "")
+        end
         nm:SetJustifyH("LEFT")
         nm:SetWordWrap(false)
         nm:SetTextColor(1, 1, 1)

@@ -1152,9 +1152,9 @@ ns.DungeonGuide = {
             H = "",
             A = {
                 "Take the boat from Stormwind Harbor to Auberdine;",
-                "在奥伯丁码头另一侧换船到米奈希尔港（暴风城到米奈希尔港的航线新近开通）；",
-                "",
-                "",
+                "At the Auberdine docks, switch to the boat to Menethil Harbor on the other pier (the Stormwind–Menethil route was recently opened);",
+                "Leave the harbor and follow the road east to Thelgen Rock;",
+                "From Thelgen Rock climb the hills to the southeast; on the high ground southeast of the Dig Site ruins, look for the blue-mist portal under a large tree (about 47.8, 56.3). A meeting stone is next to the entrance (about 53.4, 65.3).",
             },
         },
         trash = {
@@ -1245,11 +1245,11 @@ ns.DungeonGuide = {
             "辛阿卡的打法情报尚缺：它是演示情报里的坦克杀手，开怪前坦克留意承压。",
         },
         entrance = {
-            H = "副本位于吉利吉姆岛（Gillijim's Isle），荆棘谷西南的海上。目前没有船或飞行点直达，从荆棘谷南部的野蛮海岸游泳上岛；入口在岛上的「沉没洞穴」（Sunken Hollow）里，洞穴尽头是一道蓝色传送门。",
+            H = "The dungeon is on Gillijim's Isle, out at sea southwest of Stranglethorn Vale. There is currently no boat or flight path straight there; swim to the island from the Savage Coast in southern Stranglethorn. The entrance is inside the Sunken Hollow on the island, with a blue portal at the end of the cave.",
             A = {
-                "",
-                "",
-                "",
+                "From Booty Bay, swim south along the Savage Coast to Gillijim's Isle;",
+                "On the island, find the Sunken Hollow among the troll ruins;",
+                "The blue portal at the end of the cave is the dungeon entrance.",
             },
         },
         trash = {
@@ -1337,9 +1337,9 @@ ns.DungeonGuide = {
         entrance = {
             H = "",
             A = {
-                "",
-                "",
-                "",
+                "Take the boat from Menethil Harbor in the Wetlands to Theramore (Dustwallow Marsh);",
+                "From Theramore head north along the east coast and swim across a stretch of sea to Alcaz Island;",
+                "The prison complex on the island is the dungeon entrance.",
             },
         },
     },
@@ -1354,8 +1354,8 @@ ns.DungeonGuide = {
         entrance = {
             H = "",
             A = {
-                "",
-                "",
+                "Alliance usually take the boat from Menethil Harbor in the Wetlands to Ratchet, then head northeast from Ratchet into Azshara;",
+                "In Azshara, look for the gate leading to the dungeon - exact location to be confirmed in beta.",
             },
         },
     },
@@ -1370,8 +1370,8 @@ ns.DungeonGuide = {
         entrance = {
             H = "",
             A = {
-                "",
-                "",
+                "Go to Tanaris and take the ramp down the west side of the crater into Un'Goro Crater (or use the northeast ramp via Silithus);",
+                "The dungeon is in the crater's hill area; exact entrance location to be confirmed in beta.",
             },
         },
     },

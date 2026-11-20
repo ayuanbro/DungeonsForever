@@ -1012,6 +1012,71 @@ local function LayPath(id, lay)
     return WM .. ART[id][1] .. "\\" .. lay
 end
 
+local ART_BY_NAME, ART_FB = nil, {}
+local function ArtNameIndex()
+    if ART_BY_NAME then return ART_BY_NAME end
+    ART_BY_NAME = {}
+    if not (C_Map and C_Map.GetMapInfo) then return ART_BY_NAME end
+    local function add(name, mid)
+        if type(name) ~= "string" or name == "" then return end
+        local l = ART_BY_NAME[name]
+        if not l then l = {} ART_BY_NAME[name] = l end
+        l[#l + 1] = mid
+    end
+    for mid = 1, 2600 do
+        local ok, info = pcall(C_Map.GetMapInfo, mid)
+        if ok and info and (info.mapType == 4 or info.mapType == 5) then
+            add(info.name, mid)
+            if C_Map.GetMapGroupID and C_Map.GetMapGroupMembersInfo then
+                local okg, gid = pcall(C_Map.GetMapGroupID, mid)
+                if okg and gid then
+                    local okm, mem = pcall(C_Map.GetMapGroupMembersInfo, gid)
+                    if okm and type(mem) == "table" then
+                        for _, m in ipairs(mem) do
+                            if m.mapID == mid then add(m.name, mid) end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return ART_BY_NAME
+end
+
+function M.ArtFallback(id, idx)
+    local key = tostring(id) .. ":" .. tostring(idx)
+    local hit = ART_FB[key]
+    if hit ~= nil then return hit or nil end
+    ART_FB[key] = false
+    if not (C_Map and C_Map.GetMapArtLayerTextures) then return nil end
+    local fn = (M.FloorNumAt and M.FloorNumAt(id, idx)) or idx
+    local row = FLOOR_NAMES[FLOOR_KEY[id] or id]
+    local en = row and row[fn] and row[fn][1]
+    local cands = en and ArtNameIndex()[en]
+    if not cands then return nil end
+    for _, mid in ipairs(cands) do
+        local ok, tex = pcall(C_Map.GetMapArtLayerTextures, mid, 1)
+        if ok and type(tex) == "table" and #tex > 0 then
+            ART_FB[key] = tex
+            return tex
+        end
+    end
+    return nil
+end
+
+function M.SetTile(t, id, idx, path, n, fixed)
+    if fixed then t:SetTexture(fixed) return end
+    t:SetTexture(path .. n)
+    if t:GetTexture() then return end
+    local alt = path:gsub("Old\\", "\\")
+    if alt ~= path then
+        t:SetTexture(alt .. n)
+        if t:GetTexture() then return end
+    end
+    local fb = M.ArtFallback(id, idx)
+    if fb and fb[n] then t:SetTexture(fb[n]) end
+end
+
 function M.PathFor(id)
     local layers = M.LayersFor(id)
     if not (layers and layers[1]) then return nil end
@@ -1054,7 +1119,7 @@ function M.BossesFor(id)
             out = out or {}
             local meta = s[3]
             out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {},
-                rare = type(meta) == "string" and meta:find(IN_ZH_RARE, 1, true) ~= nil or false }
+                rare = type(meta) == "string" and (meta:find(IN_ZH_RARE, 1, true) ~= nil or meta:find("Rare", 1, true) ~= nil) or false }
         end
     end
     return out
@@ -1097,7 +1162,7 @@ function M.RareBoss(id, en)
             for i = 1, #loot do
                 local s = loot[i]
                 if type(s) == "table" and s[1] and type(s[3]) == "string"
-                   and s[3]:find(IN_ZH_RARE, 1, true) then
+                   and (s[3]:find(IN_ZH_RARE, 1, true) or s[3]:find("Rare", 1, true)) then
                     set[s[1]] = true
                 end
             end
@@ -3454,7 +3519,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = (M.routeOff or M.routeHidden[k]) and true or false
         items[#items + 1] = {
-            text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
+            text = FloorWord(segs[i].from) .. (" " .. ns.SYM.arrow .. " ") .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()
@@ -4066,7 +4131,7 @@ function M.PinOnEnter(self)
             end
         end
     elseif self.__kind == "rare" then
-        GameTooltip:AddLine(L["稀有"] .. "：" .. (p.name or ""), 0.72, 0.76, 0.85, true)
+        GameTooltip:AddLine(L["稀有"] .. L["："] .. (p.name or ""), 0.72, 0.76, 0.85, true)
     elseif self.__kind == "note" then
         GameTooltip:AddLine(L["注释"], 1, 0.82, 0, true)
         if p.text and p.text ~= "" then
@@ -4405,7 +4470,7 @@ function M.SyncSide(forceFrame)
                     n = n + 1
                     local r = frame.questRows[n]
                     local nm = DG.QuestName(qid)
-                    r.name:SetText(format("《%s》", nm or tostring(qid)))
+                    r.name:SetText(format(L["《%s》"], nm or tostring(qid)))
                     local mk = QMARK_STATE[st]
                     if mk then
                         r.ic:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
@@ -4956,7 +5021,7 @@ function M.Paint(d)
     else
         for _, p in ipairs(lay) do
             local t = frame.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", p.x, -p.y)

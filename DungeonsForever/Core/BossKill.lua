@@ -91,7 +91,7 @@ local function build()
                         if not seen[s[1]] then
                             seen[s[1]] = true
                             local meta = type(s[3]) == "string" and s[3] or ""
-                            bosses[#bosses + 1] = { en = s[1], rare = meta:find("稀有", 1, true) ~= nil }
+                            bosses[#bosses + 1] = { en = s[1], rare = (meta:find("稀有", 1, true) or meta:find("Rare", 1, true)) ~= nil }
                         end
                     end
                 end

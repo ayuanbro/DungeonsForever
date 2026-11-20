@@ -1,7 +1,6 @@
 local ns = _G.DF_NS or {}
 
 if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
-local _, ns = ...
 
 ns.ExploreBooks = {
     [1] = { 203755, 12, 65.4, 70.1, "阿祖拉之塔半途楼梯口的桌上（不在顶层）" },
