@@ -67,6 +67,7 @@ local PF = {}
 ns.ProfFollow = PF
 
 local f
+local bagPaintPending
 local cueState = {}
 
 local W, W_BASE = 375, 375
@@ -829,18 +830,18 @@ function PF.Sync()
     local skillChanged = cur ~= nil and cur ~= s.skill
     local capChanged = maxSkill ~= nil and maxSkill ~= s.maxSkill
 
-    if skillChanged or capChanged then
-        if cur ~= nil then s.skill = cur end
-        if maxSkill ~= nil then s.maxSkill = maxSkill end
+        if skillChanged or capChanged then
+            if cur ~= nil then s.skill = cur end
+            if maxSkill ~= nil then s.maxSkill = maxSkill end
 
-        changed = true
+            changed = true
 
-        local PD = ns.ProfModule
-        if PD and PD.built and PD.cur == s.slug
-            and PD.page and PD.page:IsVisible() then
-            pcall(PD.Render, PD)
+            local PD = ns.ProfModule
+            if PD and PD.built and PD.cur == s.slug
+                and PD.page and PD.page:IsVisible() then
+                if PD.TrackRenderRequest then PD.TrackRenderRequest() else pcall(PD.Render, PD) end
+            end
         end
-    end
     local mode, steps = routeFor(s.slug, s.skill or 0)
     local key = routeKey(mode, steps)
     if key ~= s.rkey then
@@ -2006,9 +2007,12 @@ local function BuildBody()
             end
             return
         end
-        if f:IsShown() and not trackingPaused() then
-            C_Timer.After(0, function()
+        if f:IsShown() and not trackingPaused() and not bagPaintPending then
+            bagPaintPending = true
+            C_Timer.After(0.25, function()
+                bagPaintPending = nil
                 if trackingPaused() then return end
+                if not (f and f.IsShown and f:IsShown()) then return end
                 PF.Sync()
                 PF.Paint()
             end)

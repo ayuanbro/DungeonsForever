@@ -812,6 +812,7 @@ end
 
 local miniLastX, miniLastY
 local miniAcc, miniTick = 0, MINI_MOVE_TICK
+local miniOn = false
 local moveAcc = 0
 
 local function miniKick()
@@ -839,7 +840,8 @@ end
 local function miniRefresh()
     if not EG._auto then refreshAuto() end
     local c = cfg()
-    if not (c.showPins == true and c.showMiniPins ~= false) then
+    miniOn = (c.showPins == true and c.showMiniPins ~= false)
+    if not miniOn then
         releaseMiniPins()
         miniCache, miniLastSig = nil, nil
         miniLastX, miniLastY = nil, nil
@@ -1990,7 +1992,7 @@ local function Init()
         if gateAcc < 0.05 then return end
         local dt = gateAcc
         gateAcc = 0
-        if miniTick > 0.5 then
+        if miniOn and miniTick > 0.5 then
             moveAcc = moveAcc + dt
             if moveAcc >= MOVE_POLL then
                 moveAcc = 0

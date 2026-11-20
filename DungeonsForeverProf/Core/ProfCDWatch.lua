@@ -439,7 +439,9 @@ function W.ScanAll()
             end
         else
             local pd = ns.ProfModule
-            if pd and pd.RequestRender then pd.RequestRender() end
+            if pd and pd.TrackRenderRequest then
+                pd.TrackRenderRequest()
+            elseif pd and pd.RequestRender then pd.RequestRender() end
             if ns.ZoneHint and ns.ZoneHint.ScheduleSoft then
                 pcall(ns.ZoneHint.ScheduleSoft, 1)
             end

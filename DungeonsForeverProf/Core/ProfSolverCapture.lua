@@ -905,14 +905,36 @@ function E.ConsiderAuctionSupply(context)
     return view and view.SettingRaw and view.SettingRaw("autoConsiderAuctionSupply",
         context and (context.profession or context.slug))==true or false
 end
+local bsMemo={}
+local bsRev,bsAt=nil,0
+local BS_TTL=5
+local function BridgeSupply(id)
+    local bridge=ns.AuctionBridge
+    if not (bridge and bridge.GetAuctionSupply) then return nil end
+    local rev=bridge.SupplyRevision and bridge.SupplyRevision() or 0
+    local now=time and time() or 0
+    if bsRev~=rev or (now-bsAt)>BS_TTL then
+        bsRev=rev;bsAt=now
+        for k in pairs(bsMemo) do bsMemo[k]=nil end
+    end
+    local hit=bsMemo[id]
+    if hit==nil then
+        local ok,v=pcall(bridge.GetAuctionSupply,id,true)
+        hit=(ok and v~=nil) and v or false
+        bsMemo[id]=hit
+    end
+    if hit==false then return nil end
+    local out={}
+    for k,v in pairs(hit) do out[k]=v end
+    return out
+end
 function E.AuctionSupplyOf(context,id)
     if context and not E.ConsiderAuctionSupply(context) then return end
     context=context and (context.snapshot or context)
     local entry
     if context and context.auctionSupply then entry=context.auctionSupply[id]
     elseif not context or not context.prices then
-        local bridge=ns.AuctionBridge
-        if bridge and bridge.GetAuctionSupply then entry=bridge.GetAuctionSupply(id,true) end
+        entry=BridgeSupply(id)
     end
     local stamp=context and context.stamp or (not context and time and time())
     if validSupply(entry,stamp,not context) then return entry end
@@ -923,8 +945,7 @@ function E.FormulaAuctionSupplyOf(context,id)
         or context.byKey~=nil or context.learningSourcesRequired~=nil)
     local entry=context and context.auctionSupply and context.auctionSupply[id]
     if not entry and not frozen then
-        local bridge=ns.AuctionBridge
-        if bridge and bridge.GetAuctionSupply then entry=bridge.GetAuctionSupply(id,true) end
+        entry=BridgeSupply(id)
     end
     local stamp=context and context.stamp or (time and time())
     if type(stamp)=="number" and validSupply(entry,stamp,true) then return entry end

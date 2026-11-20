@@ -901,6 +901,69 @@ local function SetKeyOf(set, idx)
     return "SET:" .. (set.batch or "t1") .. ":" .. idx
 end
 
+local function VendorCurName(v)
+    if type(v) ~= "table" or type(v.cur) ~= "table" then return nil end
+    if type(C_CurrencyInfo) == "table" and type(C_CurrencyInfo.GetCurrencyInfo) == "function" then
+        local ok, ci = pcall(C_CurrencyInfo.GetCurrencyInfo, v.cur[1])
+        if ok and type(ci) == "table" and type(ci.name) == "string" and ci.name ~= "" then
+            return ci.name
+        end
+    end
+    return v.cur[2]
+end
+
+local function VendorItemName(id)
+    local gif = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+    if type(gif) == "function" then
+        local ok, nm = pcall(gif, id)
+        if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    local rec = recs[id]
+    if rec and type(rec.name) == "string" and rec.name ~= "" then return rec.name end
+    return "#" .. id
+end
+
+local function VendorViewEntries()
+    local out = {}
+    local fn = ns.EnsureGearVendorGoods
+    local goods = type(fn) == "function" and fn() or nil
+    if type(goods) ~= "table" then return out end
+    local ids = {}
+    for nid in pairs(goods) do ids[#ids + 1] = nid end
+    table.sort(ids)
+    for _, nid in ipairs(ids) do
+        local v = goods[nid]
+        if type(v) == "table" then
+            local zname = ""
+            if v.zone and C_Map and C_Map.GetAreaInfo then
+                local ok, zn = pcall(C_Map.GetAreaInfo, v.zone)
+                if ok and type(zn) == "string" then zname = zn end
+            end
+            local sp = ns.GearVendorSpawns and ns.GearVendorSpawns[nid]
+            local posTxt = ""
+            if type(sp) == "table" and sp[1] and sp[1][3] then
+                posTxt = format(" (%.1f, %.1f)", sp[1][3], sp[1][4] or 0)
+            end
+            local head = v.name or ("#" .. nid)
+            if type(v.tag) == "string" and v.tag ~= "" then
+                head = head .. " · " .. v.tag
+            end
+            if zname ~= "" then
+                head = head .. " · " .. zname .. posTxt
+            end
+            out[#out + 1] = { hdr = head }
+            local curName = VendorCurName(v)
+            for _, g in ipairs(v.groups or {}) do
+                out[#out + 1] = { hdr = g[2] }
+                for _, e in ipairs(g[3] or {}) do
+                    out[#out + 1] = { id = e[1], cost = e[2], vgood = true, vcur = curName, vnid = nid }
+                end
+            end
+        end
+    end
+    return out
+end
+
 local function SetsViewEntries()
     local out = {}
     local function emitSet(set, idx, withItems)
@@ -1066,6 +1129,8 @@ local function RebuildView()
     local entries
     if G.cat == "WISH" then
         entries = WishViewEntries()
+    elseif G.cat == "VENDOR" then
+        entries = VendorViewEntries()
     elseif IsSetCat(G.cat) then
         entries = SetsViewEntries()
     else
@@ -1499,14 +1564,27 @@ local function PaintRow(r)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
     end
-    local s1, s2, slock = SrcLines(e)
-    SetTextC(r.src, s1)
-    r.src:SetTextColor(Unpack(C_TEXT))
-    SetTextC(r.src2, s2)
-    if slock then
-        r.src2:SetTextColor(1, 0.35, 0.3)
+    if e.vgood then
+        local costTxt
+        if type(e.cost) == "table" then
+            costTxt = tostring(e.cost[2] or 1) .. "×" .. VendorItemName(e.cost[1])
+        else
+            costTxt = tostring(e.cost or "")
+            if e.vcur then costTxt = costTxt .. " " .. e.vcur end
+        end
+        SetTextC(r.src, costTxt)
+        r.src:SetTextColor(Unpack(C_GOLD))
+        SetTextC(r.src2, "")
     else
-        r.src2:SetTextColor(Unpack(C_DIM))
+        local s1, s2, slock = SrcLines(e)
+        SetTextC(r.src, s1)
+        r.src:SetTextColor(Unpack(C_TEXT))
+        SetTextC(r.src2, s2)
+        if slock then
+            r.src2:SetTextColor(1, 0.35, 0.3)
+        else
+            r.src2:SetTextColor(Unpack(C_DIM))
+        end
     end
     local qid = GD_SRC_Q and GD_SRC_Q[e.id]
     local qn = nil
@@ -2712,6 +2790,16 @@ function G.PaintCats()
                 if s.armor == akey and not s.tier then n = n + 1 end
             end
             paintNode(key, n .. " 套")
+        elseif key == "VENDOR" then
+            local vfn = ns.EnsureGearVendorGoods
+            local vgoods = type(vfn) == "function" and vfn() or nil
+            local vn = 0
+            if type(vgoods) == "table" then
+                for _, v in pairs(vgoods) do
+                    for _, g in ipairs(v.groups or {}) do vn = vn + #(g[3] or {}) end
+                end
+            end
+            paintNode(key, vn .. " 件")
         elseif key ~= "ALL" and key ~= "WISH" and key ~= "SETS" then
             paintNode(key)
         end
@@ -2729,6 +2817,9 @@ end
 function G.EmptyHint()
     if G.cat == "WISH" then
         return L["还没有收藏的装备：在装备列表悬停行星标，点 ☆ 即可加入心愿清单"]
+    end
+    if G.cat == "VENDOR" then
+        return L["暂无商人售卖数据"]
     end
     if IsSetCat(G.cat) then
         return L["该筛选下暂无套装"]
@@ -2958,6 +3049,11 @@ local function BuildCats(parent)
     local sn = Node("SETS", L["套装"], nil, true, 8)
     sn.kids = setKids
     root[#root + 1] = sn
+    local vfn = ns.EnsureGearVendorGoods
+    local vgoods = type(vfn) == "function" and vfn() or nil
+    if type(vgoods) == "table" and next(vgoods) then
+        root[#root + 1] = Node("VENDOR", L["商人"], nil, nil, 8)
+    end
     local scroll = 0
     local contentH = 0
     local hostH = 0
@@ -3496,7 +3592,7 @@ function G.PaintPager()
 end
 
 function G.PaintChrome()
-    local setView = IsSetCat(G.cat)
+    local setView = IsSetCat(G.cat) or G.cat == "VENDOR"
     local special = G.cat == "WISH" or setView
     if G.filterBtn then G.filterBtn:SetShown(not special) end
     if G.sortRow then G.sortRow:SetShown(not special) end
@@ -3632,6 +3728,10 @@ local function StartViewPipeline(gen, full)
         out = WishViewEntries()
         i = 0
         stage = "counts"
+    elseif G.cat == "VENDOR" then
+        out = VendorViewEntries()
+        i = 0
+        stage = "apply"
     elseif IsSetCat(G.cat) then
         out = SetsViewEntries()
         i = 0
