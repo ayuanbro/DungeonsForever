@@ -29,6 +29,7 @@ TT.CARD_TOP = 8
 TT.NAV_X, TT.NAV_PAD = TT.EDGE, 8
 TT.NAV_TOP = TT.CARD_TOP + 8
 TT.NAV_W = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 184 or 148
+TT.EN_UI = (type(DF_Locale) == "function") and DF_Locale() ~= "zhCN" and DF_Locale() ~= "zhTW"
 TT.NAV_ITEM_H, TT.NAV_ICON, TT.NAV_FS = 24, 20, 16
 TT.NAV_ITEM_GAP = 8
 TT.NAV_ITEM_STEP = TT.NAV_ITEM_H + TT.NAV_ITEM_GAP
@@ -2168,7 +2169,7 @@ TT.PaintHeader = function()
     local spRec = SpecRec(cls, spec)
 
     local cr, cg, cb = ClassColor(cls)
-    TT.specTitle:SetText(ClassName(cls) .. " · " .. (spRec and spRec.name or spec))
+    TT.specTitle:SetText(ClassName(cls) .. " · " .. (spRec and ((TT.EN_UI and spRec.nameEn) or spRec.name) or spec))
     TT.specTitle:SetTextColor(cr, cg, cb)
     TT.specMeta:SetText("")
     TT.specMeta:Hide()
@@ -2555,7 +2556,7 @@ function TT.PaintNav()
                     local bt = TT.specTabs[i]
                     if bt then
                         bt.__specKey = sp.key
-                        bt:SetText(sp.name)
+                        bt:SetText((TT.EN_UI and sp.nameEn) or sp.name)
                         local w = tonumber(bt:GetFontString():GetStringWidth()) or 0
                         w = math.max(TT.SPEC_BTN_W, w + 2 * TT.SPEC_BTN_PAD)
                         bt:SetWidth(w)
