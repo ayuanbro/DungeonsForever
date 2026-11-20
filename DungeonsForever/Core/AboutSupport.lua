@@ -58,7 +58,14 @@ function ns.BuildAboutSupport(about, G)
         local col = (i - 1) % G.cols
         local row = math.floor((i - 1) / G.cols)
         local nm = child:CreateFontString(nil, "OVERLAY")
-        nm:SetFont(ns.FONT, 16, "")
+        local fam = ns.WIDE_UI and (_G.GameFontHighlightLarge or _G.GameFontHighlight)
+        if fam then
+            -- 名字多为中文：用游戏自带的字体族（按字符自动换中文字体），英文客户端也能显示
+            -- Names are mostly Chinese: use a built-in font family, which switches to a CJK font per character, so they render on English clients
+            nm:SetFontObject(fam)
+        else
+            nm:SetFont(ns.FONT, 16, "")
+        end
         nm:SetJustifyH("LEFT")
         nm:SetWordWrap(false)
         nm:SetTextColor(1, 1, 1)
