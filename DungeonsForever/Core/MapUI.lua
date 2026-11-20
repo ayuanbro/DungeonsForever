@@ -1012,6 +1012,75 @@ local function LayPath(id, lay)
     return WM .. ART[id][1] .. "\\" .. lay
 end
 
+-- 英文客户端可能没有某些原生地图贴图路径（如 ScarletMonasteryOld）：贴图为空时，
+-- 先试去掉 "Old" 的路径，再按英文楼层名找到游戏地图，用 C_Map 的地图贴图（文件 ID，与语言无关）。
+-- English clients may lack some native map art paths (e.g. ScarletMonasteryOld). When a tile comes back empty,
+-- try the path without "Old", then find the game map by its English floor name and use C_Map art (file IDs, locale-independent).
+local ART_BY_NAME, ART_FB = nil, {}
+local function ArtNameIndex()
+    if ART_BY_NAME then return ART_BY_NAME end
+    ART_BY_NAME = {}
+    if not (C_Map and C_Map.GetMapInfo) then return ART_BY_NAME end
+    local function add(name, mid)
+        if type(name) ~= "string" or name == "" then return end
+        local l = ART_BY_NAME[name]
+        if not l then l = {} ART_BY_NAME[name] = l end
+        l[#l + 1] = mid
+    end
+    for mid = 1, 2600 do
+        local ok, info = pcall(C_Map.GetMapInfo, mid)
+        if ok and info and (info.mapType == 4 or info.mapType == 5) then
+            add(info.name, mid)
+            if C_Map.GetMapGroupID and C_Map.GetMapGroupMembersInfo then
+                local okg, gid = pcall(C_Map.GetMapGroupID, mid)
+                if okg and gid then
+                    local okm, mem = pcall(C_Map.GetMapGroupMembersInfo, gid)
+                    if okm and type(mem) == "table" then
+                        for _, m in ipairs(mem) do
+                            if m.mapID == mid then add(m.name, mid) end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return ART_BY_NAME
+end
+
+function M.ArtFallback(id, idx)
+    local key = tostring(id) .. ":" .. tostring(idx)
+    local hit = ART_FB[key]
+    if hit ~= nil then return hit or nil end
+    ART_FB[key] = false
+    if not (C_Map and C_Map.GetMapArtLayerTextures) then return nil end
+    local fn = (M.FloorNumAt and M.FloorNumAt(id, idx)) or idx
+    local row = FLOOR_NAMES[FLOOR_KEY[id] or id]
+    local en = row and row[fn] and row[fn][1]
+    local cands = en and ArtNameIndex()[en]
+    if not cands then return nil end
+    for _, mid in ipairs(cands) do
+        local ok, tex = pcall(C_Map.GetMapArtLayerTextures, mid, 1)
+        if ok and type(tex) == "table" and #tex > 0 then
+            ART_FB[key] = tex
+            return tex
+        end
+    end
+    return nil
+end
+
+function M.SetTile(t, id, idx, path, n, fixed)
+    if fixed then t:SetTexture(fixed) return end
+    t:SetTexture(path .. n)
+    if t:GetTexture() then return end
+    local alt = path:gsub("Old\\", "\\")
+    if alt ~= path then
+        t:SetTexture(alt .. n)
+        if t:GetTexture() then return end
+    end
+    local fb = M.ArtFallback(id, idx)
+    if fb and fb[n] then t:SetTexture(fb[n]) end
+end
+
 function M.PathFor(id)
     local layers = M.LayersFor(id)
     if not (layers and layers[1]) then return nil end
@@ -4956,7 +5025,7 @@ function M.Paint(d)
     else
         for _, p in ipairs(lay) do
             local t = frame.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", frame.canvas, "TOPLEFT", p.x, -p.y)

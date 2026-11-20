@@ -785,7 +785,7 @@ local function paintArt(view, id, idx, cw, ch)
         for i = 1, #lay do
             local p = lay[i]
             local t = view.tiles[p.n]
-            t:SetTexture((fixTile and fixTile[p.n]) or (path .. p.n))
+            M.SetTile(t, id, idx, path, p.n, fixTile and fixTile[p.n])
             t:SetTexCoord(p.u0, p.u1, p.v0, p.v1)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", view.canvas, "TOPLEFT", p.x, -p.y)
