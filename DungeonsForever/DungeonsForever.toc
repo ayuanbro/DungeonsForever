@@ -79,6 +79,8 @@ Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_QuestStartNpc.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_QuestStartLoc.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_QuestEndNpc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_Route.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_FloorName.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_ProfCraftIndex.lua
 Core\Data\Data_DungeonQuestFlow.lua
 Core\Data\enUS\Data_DungeonQuestFlow.lua [AllowLoadTextLocale enUS]

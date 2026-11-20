@@ -408,13 +408,16 @@ end
 
 do
     local candidates = {}
-    if DF_Locale() == "zhCN" then
+    local loc = DF_Locale()
+    if loc == "zhCN" then
         candidates[#candidates + 1] = "ARHei.ttf"
     end
-    for _, name in ipairs({
+    -- 非中文界面不选中文字体：其拉丁字母是等宽粗糙字形，改用游戏默认字体。
+    -- Non-Chinese UI: skip CJK fonts (their Latin glyphs look poor); use the game's default font.
+    for _, name in ipairs((loc == "zhCN" or loc == "zhTW") and {
         "ARKai_T.ttf", "ARHei.ttf", "ARKai_C.ttf",
         "bLEI00D.TTF", "bHEI00M.TTF", "bKAI00M.TTF", "arheiuhk_bd.TTF",
-    }) do
+    } or {}) do
         candidates[#candidates + 1] = name
     end
     local probe = UIParent:CreateFontString()
@@ -441,8 +444,10 @@ do
     -- 非中文客户端没有 ARKai/ARHei 等中文字体：SetFont 不报错只返回 false，字串会空白或成方块。
     -- Non-CJK clients ship no ARKai/ARHei: probe once per path and fall back to ns.FONT.
     local ok_cache = {}
+    local L0 = DF_Locale()
+    local CJK_UI = (L0 == "zhCN" or L0 == "zhTW")
     function ns.SafeFont(path)
-        if type(path) ~= "string" then return ns.FONT end
+        if type(path) ~= "string" or not CJK_UI then return ns.FONT end
         local hit = ok_cache[path]
         if hit == nil then
             local probe = UIParent:CreateFontString()

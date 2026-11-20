@@ -754,22 +754,22 @@ ns.DungeonLoot = {
         } },
     },
     ["city_of_dalaran"] = {
-        { "Atrexis the Grave Knight", "墓穴骑士阿特雷克斯", "Lv 29", "247126", {
+        { "Atrexis the Grave Knight", "Atrexis the Grave Knight", "Lv 29", "247126", {
             { 273036, 27, true },
             { 273032, 42, true },
             { 273033, 30, true },
         } },
-        { "Lyn the Ignored", "被无视的琳恩", "Lv 31", "247032", {
+        { "Lyn the Ignored", "Lyn the Ignored", "Lv 31", "247032", {
             { 273054, 32, true },
             { 273055, 54, true },
             { 273053, 14, true },
         } },
-        { "Arcane Anomaly", "奥术畸体", "Lv 30", "245999", {
+        { "Arcane Anomaly", "Arcane Anomaly", "Lv 30", "245999", {
             { 273034, 34, true },
             { 273031, 31, true },
             { 273035, 35, true },
         } },
-        { "Arcanic Enigma", "奥术之谜", "Lv 30", "246016", {
+        { "Arcanic Enigma", "Arcanic Enigma", "Lv 30", "246016", {
             { 273044, 39, true },
             { 273045, 32, true },
             { 273043, 29, true },
@@ -1257,47 +1257,47 @@ ns.DungeonLoot = {
         } },
     },
     ["the_drowned_city"] = {
-        { "Zul'Alai", "祖拉莱", "", "270882", {
+        { "Zul'Alai", "Zul'Alai", "", "270882", {
             { 274600, 67, true },
             { 274598, 17, true },
             { 274599, 17, true },
             { 271718, nil, true },
         } },
-        { "Var'Taka", "瓦尔塔卡", "", "270883", {
+        { "Var'Taka", "Var'Taka", "", "270883", {
             { 274601, 50, true },
             { 274602, 50, true },
             { 274613, nil, true },
         } },
-        { "Captain Dreadrise", "德雷德莱斯船长", "", "270884", {
+        { "Captain Dreadrise", "Captain Dreadrise", "", "270884", {
             { 274605, 60, true },
             { 274603, 20, true },
             { 274604, 20, true },
         } },
-        { "Deathless Marrow", "不死骨髓", "", "270885", {} },
-        { "Primeval Elemental", "原始元素", "", "270887", {
+        { "Deathless Marrow", "Deathless Marrow", "", "270885", {} },
+        { "Primeval Elemental", "Primeval Elemental", "", "270887", {
             { 274615, 50, true },
             { 274612, 50, true },
             { 274611, nil, true },
         } },
-        { "Gill", "吉尔", "Rare", "270888", {
+        { "Gill", "Gill", "Rare", "270888", {
             { 286649, nil, true },
             { 286646, nil, true },
         } },
-        { "Min'loth the Serpent", "毒蛇明洛斯", "", "270886", {
+        { "Min'loth the Serpent", "Min'loth the Serpent", "", "270886", {
             { 274608, 67, true },
             { 274609, 33, true },
             { 274610, nil, true },
         } },
-        { "Umbra", "乌姆布拉", "Rare", "264172", {
+        { "Umbra", "Umbra", "Rare", "264172", {
             { 286662, nil, true },
             { 286658, nil, true },
         } },
-        { "Zin'aka", "辛阿卡", "", "263742", {} },
-        { "Pyromancer Braxton", "\"炎术师\"布拉克斯顿", "Rare", "260468", {
+        { "Zin'aka", "Zin'aka", "", "263742", {} },
+        { "Pyromancer Braxton", "Pyromancer Braxton", "Rare", "260468", {
             { 286651, 100, true },
             { 286650, nil, true },
         } },
-        { "Deathless Guardians", "不死守护者", "", "", {
+        { "Deathless Guardians", "Undead Guardian", "", "", {
             { 274607, nil, true },
             { 274606, nil, true },
             { 274614, nil, true },
@@ -1516,43 +1516,43 @@ ns.DungeonLoot = {
         } },
     },
     ["kroldok_stronghold"] = {
-        { "Slavecrusher Grox", "碎奴者格罗克斯", "", "258966", {
+        { "Slavecrusher Grox", "Slavecrusher Grox", "", "258966", {
             { 274996, nil, false },
             { 274997, nil, false },
             { 274995, nil, false },
             { 273101, nil, true },
         } },
-        { "Twilight Commander Zarmok", "暮光指挥官扎尔莫克", "", "258972", {
+        { "Twilight Commander Zarmok", "Twilight Commander Zarmok", "", "258972", {
             { 274999, nil, false },
             { 274998, nil, false },
             { 275000, nil, false },
             { 267091, nil, true },
             { 267234, nil, true },
         } },
-        { "War Handler Ashka", "驯兽师阿什卡", "", "259281", {
+        { "War Handler Ashka", "War Handler Ashka", "", "259281", {
             { 275001, nil, false },
             { 275002, nil, false },
             { 275003, nil, false },
         } },
-        { "Nar'gurk", "纳古克", "", "258964", {
+        { "Nar'gurk", "Nar'gurk", "", "258964", {
             { 275004, nil, false },
             { 275005, nil, false },
             { 275006, nil, false },
             { 267104, nil, true },
         } },
-        { "Bossman Toof", "头目图夫", "", "264773", {
+        { "Bossman Toof", "Bossman Toof", "", "264773", {
             { 286429, nil, false },
             { 286428, nil, false },
             { 286430, nil, false },
         } },
-        { "Overlord Mugg", "霸主莫格", "", "258968", {
+        { "Overlord Mugg", "Overlord Mugg", "", "258968", {
             { 275008, nil, false },
             { 275009, nil, false },
             { 275010, nil, false },
             { 275007, nil, false },
             { 267086, nil, true },
         } },
-        { "Kroog", "库鲁格", "", "", {
+        { "Kroog", "Kurug", "", "", {
             { 279863, nil, true },
             { 279857, nil, true },
         } },
@@ -1881,29 +1881,29 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "监工雷克斯", "", "255391", {
+        { "Overseer Wrex", "Overseer Wrex", "", "255391", {
             { 276734, nil, true },
             { 276733, nil, true },
             { 276732, nil, true },
         } },
-        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {
+        { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "", "255997", {
             { 273883, nil, true },
             { 276736, nil, true },
             { 276735, nil, true },
             { 276737, nil, true },
         } },
-        { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {
+        { "Katerina the Cleaner", "Katerina the Cleaner", "", "257016", {
             { 276739, nil, true },
             { 276738, nil, true },
             { 276740, nil, true },
         } },
-        { "The Questioner", "质问者", "", "256236", {
+        { "The Questioner", "The Questioner", "", "256236", {
             { 274029, nil, true },
             { 276742, nil, true },
             { 276743, nil, true },
             { 276741, nil, true },
         } },
-        { "Blazeroar", "烈焰咆哮者", "", "255702", {
+        { "Blazeroar", "Blazeroar", "", "255702", {
             { 276890, nil, true },
             { 276744, nil, true },
             { 276745, nil, true },
@@ -1917,24 +1917,24 @@ ns.DungeonLoot = {
         } },
     },
     ["sunken_temple"] = {
-        { "Loro", "洛若尔", "", "5714", {
+        { "Loro", "Loro", "", "5714", {
             { 10784, 2.6, false },
         } },
-        { "Gasher", "加什尔", "", "5713", {
+        { "Gasher", "Gasher", "", "5713", {
             { 10786, 8.3, false },
         } },
-        { "Mijan", "米杉", "", "5717", {
+        { "Mijan", "Mijan", "", "5717", {
             { 10785, 5.7, false },
             { 10788, 10, false },
         } },
-        { "Zolo", "祖罗", "", "5712", {
+        { "Zolo", "Zolo", "", "5712", {
             { 10787, 7, false },
         } },
-        { "Zul'Lor", "祖罗尔", "", "5716", {
+        { "Zul'Lor", "Zul'Lor", "", "5716", {
             { 10786, 8.3, false },
             { 10787, 7, false },
         } },
-        { "Hukku", "胡库", "", "5715", {
+        { "Hukku", "Hukku", "", "5715", {
             { 10783, 5, false },
             { 10785, 5.7, false },
         } },
@@ -2284,24 +2284,24 @@ ns.DungeonLoot = {
             { 11932, 16, false },
             { 12033, 3.2, false },
         } },
-        { "Hurley Blackbreath", "霍尔雷·黑须", "", "", {
+        { "Hurley Blackbreath", "Hurley Blackbreath", "", "", {
             { 18044, nil, false },
             { 18043, nil, false },
             { 22275, nil, false },
             { 11735, nil, false },
         } },
-        { "Ribbly Screwspigot", "雷布里·斯库比格特", "", "", {
+        { "Ribbly Screwspigot", "Ribbly Screwspigot", "", "", {
             { 11612, nil, false },
             { 11742, nil, false },
             { 2662, nil, false },
             { 2663, nil, false },
         } },
-        { "Plugger Spazzring", "普拉格", "", "", {
+        { "Plugger Spazzring", "Plugger", "", "", {
             { 12793, nil, false },
             { 12791, nil, false },
             { 276877, nil, true },
         } },
-        { "Theldren", "塞尔德伦", "", "16059", {
+        { "Theldren", "Theldren", "", "16059", {
             { 22305, nil, false },
             { 22330, nil, false },
             { 22317, nil, false },
@@ -2418,56 +2418,56 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
-        { "Withermaw", "枯颌", "", "247195", {
+        { "Withermaw", "Withermaw", "", "247195", {
             { 249697, nil, true },
             { 280062, nil, true },
             { 280063, nil, true },
             { 280064, nil, true },
         } },
-        { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {
+        { "Impaan the Imprisoner", "Impaan the Imprisoner", "", "247206", {
             { 280056, nil, true },
             { 280057, nil, true },
             { 280058, nil, true },
         } },
-        { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {
+        { "Elder Shaman Bloodmane", "Elder Shaman Bloodmane", "", "247209", {
             { 276893, nil, true },
             { 286415, nil, true },
             { 280068, nil, true },
             { 280069, nil, true },
             { 280070, nil, true },
         } },
-        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {
+        { "Bonesnout the Unbroken", "Bonesnout the Unbroken", "", "247198", {
             { 249696, nil, true },
             { 280059, nil, true },
             { 280060, nil, true },
             { 280061, nil, true },
         } },
-        { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {
+        { "Varrox Bleakhoof", "Varrox Bleakhoof", "", "247234", {
             { 272027, nil, true },
             { 249692, nil, true },
             { 280074, nil, true },
             { 280075, nil, true },
             { 280076, nil, true },
         } },
-        { "Blackmaw Behemoth", "克劳伯特", "", "247207", {
+        { "Blackmaw Behemoth", "Blackmaw Behemoth", "", "247207", {
             { 280065, nil, true },
             { 280066, nil, true },
             { 280067, nil, true },
         } },
-        { "Unbound Spirit", "不羁之魂", "", "247231", {
+        { "Unbound Spirit", "Unbound Spirit", "", "247231", {
             { 280071, nil, true },
             { 280072, nil, true },
             { 280073, nil, true },
         } },
-        { "Moontouched Wanderer", "沐月流浪者", "", "269104", {
+        { "Moontouched Wanderer", "Moontouched Wanderer", "", "269104", {
             { 280080, nil, true },
             { 280079, nil, true },
         } },
-        { "Gortek the Apprentice", "学徒戈特克", "", "269111", {
+        { "Gortek the Apprentice", "Gortek the Apprentice", "", "269111", {
             { 280077, nil, true },
             { 280078, nil, true },
         } },
-        { "Tunnelweb Matriarch", "隧网女族长", "", "250034", {
+        { "Tunnelweb Matriarch", "Tunnelweb Matriarch", "", "250034", {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
@@ -3195,52 +3195,52 @@ ns.DungeonLoot = {
         } },
     },
     ["shapers_terrace"] = {
-        { "Titanosaur", "泰坦巨龙", "", "253201", {
+        { "Titanosaur", "Titanosaur", "", "253201", {
             { 280010, nil, true },
             { 280009, nil, true },
             { 280011, nil, true },
         } },
-        { "Tor'Rel", "托瑞尔", "", "261811", {
+        { "Tor'Rel", "Tor'Rel", "", "261811", {
             { 280014, nil, true },
             { 280013, nil, true },
             { 280012, nil, true },
         } },
-        { "Izha'Rel", "伊扎雷尔", "", "253218", {} },
-        { "Thunderhoof", "雷蹄", "", "261812", {
+        { "Izha'Rel", "Izha'Rel", "", "253218", {} },
+        { "Thunderhoof", "Thunderhoof", "", "261812", {
             { 280018, nil, true },
             { 280020, nil, true },
             { 280019, nil, true },
         } },
-        { "Venomridge", "毒脊", "", "261813", {
+        { "Venomridge", "Venomridge", "", "261813", {
             { 280016, nil, true },
             { 280017, nil, true },
             { 280015, nil, true },
         } },
-        { "Direhorn Matriarch", "恐角龙母", "", "262127", {
+        { "Direhorn Matriarch", "Direhorn Matriarch", "", "262127", {
             { 280022, nil, true },
             { 280021, nil, true },
             { 280045, nil, true },
             { 285951, nil, true },
         } },
-        { "Cinder", "烈火", "", "261974", {
+        { "Cinder", "Cinder", "", "261974", {
             { 280028, nil, true },
             { 280029, nil, true },
         } },
-        { "King Op", "奥普国王", "", "261993", {} },
-        { "Snowtalon", "雪爪", "", "262297", {
+        { "King Op", "King Op", "", "261993", {} },
+        { "Snowtalon", "Snowtalon", "", "262297", {
             { 280027, nil, true },
             { 280026, nil, true },
         } },
-        { "Bolt", "霹雳", "", "262081", {
+        { "Bolt", "Bolt", "", "262081", {
             { 280031, nil, true },
             { 280032, nil, true },
         } },
-        { "Vitrix", "翠鳞", "", "272561", {
+        { "Vitrix", "Vitrix", "", "272561", {
             { 280026, nil, true },
             { 280027, nil, true },
             { 280032, nil, true },
         } },
-        { "Nanaya", "娜娜亚", "", "261809", {
+        { "Nanaya", "Nanaya", "", "261809", {
             { 273128, nil, true },
             { 280023, nil, true },
             { 280024, nil, true },
@@ -3249,7 +3249,7 @@ ns.DungeonLoot = {
             { 285952, nil, true },
             { 273116, nil, true },
         } },
-        { "Ravasaur Hunters", "暴掠龙猎手", "", "", {
+        { "Ravasaur Hunters", "Ravasaur Hunter", "", "", {
             { 280014, nil, true },
             { 280013, nil, true },
             { 280012, nil, true },
@@ -3636,7 +3636,7 @@ ns.DungeonLoot = {
             { 16726, 7.4, false },
             { 16730, 14, false },
         } },
-        { "Lord Valthalak", "瓦塔拉克公爵", "", "", {
+        { "Lord Valthalak", "Lord Valthalak", "", "", {
             { 22335, nil, false },
             { 22336, nil, false },
             { 22337, nil, false },
