@@ -23,12 +23,14 @@ Core\Data\Data_ClassCombat.lua
 Core\Data\Data_ClassQuest.lua
 Core\Data\Data_PrepGuide.lua
 Core\Data\Data_PrepT05.lua
+Core\Data\enUS\Data_PrepT05.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_PrepGuide.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_TalentTrees.lua
 Core\Data\enUS\Data_TalentTrees.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_TalentPlans.lua
 Core\Data\enUS\Data_TalentPlans.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_LegacyPlan.lua
+Core\Data\enUS\Data_LegacyPlan.lua [AllowLoadTextLocale enUS]
 Core\Data\zhTW\Data_ClassGuide.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ClassTier.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ClassCombat.lua [AllowLoadTextLocale zhTW]

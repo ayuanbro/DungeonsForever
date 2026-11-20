@@ -513,12 +513,32 @@ local function UsetypePass(r)
     return true
 end
 
+-- 英文数据的来源前缀是英文（Vendor、Quest: …、Tailoring (300) 等）：统一换成中文前缀，沿用下面按中文判断的逻辑
+-- English gear data uses English source prefixes (Vendor, Quest: ..., Tailoring (300), ...): map them to the Chinese
+-- prefixes the logic below matches on
+local KIND_EN = {
+    ["Vendor"] = "商人", ["Quest reward"] = "任务奖励", ["World drop"] = "世界掉落", ["Boss drop"] = "首领掉落",
+    ["Any enemy"] = "任何敌人", ["Mob drop"] = "怪物掉落", ["Rare spawn"] = "稀有掉落", ["Rare drop"] = "稀有掉落",
+    ["Trash drop"] = "小怪掉落", ["Several bosses"] = "多个首领", ["Object"] = "物件", ["Crafted"] = "专业制作",
+}
+local function NormKind(kind)
+    if type(kind) ~= "string" then return kind end
+    local z = KIND_EN[kind]
+    if z then return z end
+    if kind:find("^Quest:") then return "任务奖励" end
+    local n = kind:match("^%a[%a ]* %((%d+)%)$")
+    if n then return "制作（" .. n .. "）" end
+    return kind
+end
+
 local function SrcKindOf(id)
     local src = GD_SRC and GD_SRC[id]
     local kind, place
     if type(src) == "string" and src ~= "" then
         kind, place = src:match("^(.-)|(.*)$")
         if not kind then kind = src end
+        kind = NormKind(kind)
+        if place == "Crafted" then place = "专业制作" end
     end
     if kind then
         if kind == "商人" then return "vendor" end
@@ -623,6 +643,8 @@ local function WishBucketOf(id, e)
     local kind, place
     local src = GD_SRC and GD_SRC[id]
     if type(src) == "string" then kind, place = src:match("^(.-)|(.*)$") end
+    kind = NormKind(kind)
+    if place == "Crafted" then place = "专业制作" end
     if WISH_WORLD_KINDS[kind] then
         return "world", L["开放世界"], 200001
     end

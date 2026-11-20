@@ -892,6 +892,9 @@ CB.SRC_CAT = {
     ["专业制作"] = "c", ["任务奖励"] = "q", ["商人"] = "v",
     ["世界掉落"] = "w", ["首领掉落"] = "b", ["任何敌人"] = "b",
     ["Tribute"] = "b", ["稀有"] = "b",
+    -- 英文数据的来源前缀 / English source prefixes
+    ["Crafted"] = "c", ["Quest reward"] = "q", ["Quest:"] = "q", ["Vendor"] = "v",
+    ["World drop"] = "w", ["Boss drop"] = "b", ["Any enemy"] = "b", ["Rare spawn"] = "b", ["Rare"] = "b",
 }
 
 function CB.GearSrcRaw(id)

@@ -28,6 +28,7 @@ Core\Data\Data_GearVendors.lua
 Core\Data\Data_GearVendorGoods.lua
 Core\Data\Data_BIS.lua
 Core\Data\Data_BisPreset.lua
+Core\Data\enUS\Data_BisPreset.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_BisRank.lua
 Core\Data\zhTW\Data_Gear.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_GearRareSpawns.lua [AllowLoadTextLocale zhTW]
