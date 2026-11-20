@@ -5867,6 +5867,7 @@ function DG.ApplyLootDropdownChrome()
             lab = lab .. " " .. tostring(DG.__filterCounts and DG.__filterCounts[filter] or 0)
         end
         bt1:SetWidth(DG.LOOT_BOSS_W)
+        bt1.__fullText = L["类型："] .. lab
         bt1:SetText(DG.FitText(L["类型："] .. lab, 14, DG.LOOT_DD_TEXT_W))
         if bt1.__em then bt1.__em:Hide() end
         local bfs = bt1.GetFontString and bt1:GetFontString()
@@ -6261,6 +6262,7 @@ function U:RenderDungeonLoot()
                     end
                     local nm, hasName = DG.ItemName(it[1])
                     local nbudget = it[3] and (cw - tx - DG.LOOT_TAG_W) or (cw - tx - DG.LOOT_TEXT_R)
+                    r.name.__fullText = nm
                     r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
                     if hasName then
                         r.name:SetTextColor(DG.QColor(DG.QualOf(it[1])))
@@ -6454,6 +6456,7 @@ function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bo
         card.hit:SetPoint("TOPRIGHT", card, "TOPRIGHT", 0, 0)
         card.arrD:SetShown(not closed)
         card.arrU:SetShown(closed)
+        card.name.__fullText = s[2] or ""
         card.name:SetText(DG.FitText(s[2] or "", DG.LOOT_FS_HDR, nameW))
         card.name:SetWidth(nameW)
         card.cnt:SetText(format(L["%d 件"], closed and #u.all or #items))
@@ -6481,6 +6484,7 @@ function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bo
                 end
                 local nm, hasName = DG.ItemName(it[1])
                 local nbudget = it[3] and (rowW - ix - DG.LOOT_TAG_W) or (rowW - ix - DG.LOOT_TEXT_R)
+                r.name.__fullText = nm
                 r.name:SetText(DG.FitText(nm, DG.LOOT_FS_NAME, nbudget))
                 if hasName then
                     r.name:SetTextColor(DG.QColor(DG.QualOf(it[1])))
@@ -11114,6 +11118,17 @@ local function BuildSubTabs()
         }) do
             defs[#defs + 1] = { key = t.key, text = t.text, width = DG.CAPSULE_W }
         end
+    end
+    if ns.WIDE_UI then
+        -- 英文标签更长：按文字宽度给每个页签定宽 / English labels are longer: size each tab to its text
+        local probe = U.panel:CreateFontString()
+        probe:SetFont(Fnt(14))
+        for _, t in ipairs(defs) do
+            probe:SetText(t.text)
+            local w = probe:GetStringWidth() or 0
+            if type(w) == "number" and w > 0 then t.width = math.max(56, math.ceil(w) + 18) end
+        end
+        probe:Hide()
     end
     local BTN_H = IsHui() and 20 or 26
     local GAP = IsHui() and 0 or 6

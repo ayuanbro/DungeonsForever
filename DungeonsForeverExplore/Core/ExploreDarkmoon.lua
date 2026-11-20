@@ -728,6 +728,7 @@ local function Build(EG, page)
         nfs:SetPoint("TOPLEFT", bt, "TOPLEFT", LC_TX, -6)
         nfs:SetWordWrap(false)
         if TextW(nm, 14) > nameW - 2 then
+            nfs.__fullText = nm
             nfs:SetText(DG.FitText(nm, 14, nameW))
             if hasName then
                 local r, g, b = DG.QColor(DG.QualOf(id))
@@ -747,6 +748,7 @@ local function Build(EG, page)
             sfs:SetPoint("TOPLEFT", bt, "TOPLEFT", LC_TX, -26)
             sfs:SetWordWrap(false)
             sfs:SetWidth(sw)
+            sfs.__fullText = sub
             sfs:SetText(DG.FitText(sub, 12, sw))
         end
 

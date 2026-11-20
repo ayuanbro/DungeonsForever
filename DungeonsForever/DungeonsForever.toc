@@ -27,6 +27,7 @@ Core\Data\Data_DungeonLoot.lua
 Core\Data\Data_DungeonQuests.lua
 Core\Data\Data_DungeonQuestSide.lua
 Core\Data\Data_DungeonQuestProf.lua
+Core\Data\enUS\Data_DungeonQuestProf.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_DungeonQuestObj.lua
 Core\Data\Data_DungeonGuide.lua
 Core\Data\Data_BossPos.lua

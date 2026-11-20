@@ -297,7 +297,13 @@ ns.LocalItemName = LocalItemName
 local ROW_MT = {
     __index = function(t, k)
         if k == "name" and ITEM_NAME_LOCAL then
-            return LocalItemName(t[1]) or t[2]
+            local nm = LocalItemName(t[1])
+            if nm then return nm end
+            -- 名字尚未缓存：中文名在英文字体下是方块，先显示物品 ID / not cached yet: avoid boxes, show the item ID
+            if ns.WIDE_UI and type(t[2]) == "string" and t[2]:find("[\228-\233]") then
+                return format(L["物品 #%d"], t[1])
+            end
+            return t[2]
         end
         local f = ROW_FIELDS[k]
         if f then return t[f] end

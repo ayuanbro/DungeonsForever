@@ -507,6 +507,66 @@ do
         end
     end
 
+    -- 记录被截断前的完整文字，供悬停提示使用 / remember the full text before it gets shortened, for the hover tooltip
+    function ns.FullText(fs, s)
+        if fs then fs.__fullText = s end
+        return true
+    end
+
+    -- 悬停在被截断的文字上时，用提示框显示完整内容（只在没有其他提示框时）
+    -- Hovering truncated text shows the full text in a tooltip (only when no other tooltip is up)
+    local function TruncatedUnderMouse(frame)
+        local regions = { frame:GetRegions() }
+        if frame.GetFontString and frame:GetFontString() then regions[#regions + 1] = frame:GetFontString() end
+        for _, r in ipairs(regions) do
+            if r.GetObjectType and r:GetObjectType() == "FontString" and r:IsVisible()
+                and (not r.IsMouseOver or r:IsMouseOver()) then
+                local shown = r:GetText()
+                local full = r.__fullText
+                if type(full) == "string" and full ~= "" and full ~= shown then return full end
+                if shown and shown ~= "" and r.IsTruncated and r:IsTruncated() then return shown end
+            end
+        end
+    end
+    local function InWindow(frame)
+        local root = ns.MainFrame
+        local p = frame
+        for _ = 1, 30 do
+            if not p then return false end
+            if p == root then return true end
+            p = p.GetParent and p:GetParent()
+        end
+        return false
+    end
+    local watch = CreateFrame("Frame")
+    local acc, owner = 0, nil
+    watch:SetScript("OnUpdate", function(_, el)
+        acc = acc + el
+        if acc < 0.15 then return end
+        acc = 0
+        local root = ns.MainFrame
+        if not (root and root:IsShown()) then return end
+        local focus
+        if GetMouseFoci then focus = (GetMouseFoci() or {})[1] elseif GetMouseFocus then focus = GetMouseFocus() end
+        if owner and focus ~= owner then
+            if GameTooltip:GetOwner() == owner and GameTooltip.__dfTrunc then
+                GameTooltip.__dfTrunc = nil
+                GameTooltip:Hide()
+            end
+            owner = nil
+        end
+        if not focus or focus == owner or focus == WorldFrame or not InWindow(focus) then return end
+        if GameTooltip:IsShown() then return end
+        local ok, full = pcall(TruncatedUnderMouse, focus)
+        if ok and full then
+            owner = focus
+            GameTooltip:SetOwner(focus, "ANCHOR_TOP")
+            GameTooltip:SetText(full, 1, 1, 1, 1, true)
+            GameTooltip.__dfTrunc = true
+            GameTooltip:Show()
+        end
+    end)
+
     -- 把字串里的符号换成当前界面能显示的形式（中文界面原样返回）
     -- Replace symbols in a string with displayable forms (no-op on Chinese UI)
     function ns.Sym(s)

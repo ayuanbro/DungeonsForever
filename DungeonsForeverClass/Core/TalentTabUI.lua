@@ -1063,6 +1063,7 @@ local function FitPlanName(fs, s, vv, w)
     fs:SetWidth(maxw)
     local DG = Host.DG
     if DG and DG.FitText then
+        fs.__fullText = s
         fs:SetText(DG.FitText(s, 14, maxw))
     else
         fs:SetText(s)

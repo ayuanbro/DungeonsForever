@@ -4419,6 +4419,7 @@ function PD.BindRow(r, spec, h)
             local avail = (r:GetWidth() or 0) - x - rightW - 6
             local subTxt = r.b:GetText() or ""
             if avail > 40 then
+                r.b.__fullText = subTxt
                 r.b:SetText(PD.Fit(subTxt, 11, avail))
             else
                 r.b:SetText("")
@@ -5825,6 +5826,7 @@ function PD.Build(page)
         f.fs:SetTextColor(r or 0.95, g or 0.75, b or 0.4, 1)
         local w = FSW(f.fs)
         if w > maxW then
+            f.fs.__fullText = text
             f.fs:SetText(PD.Fit(text, 12, maxW))
             w = FSW(f.fs, w)
         end
@@ -5838,7 +5840,7 @@ function PD.Build(page)
         if not text or text == "" then f:Hide() return end
         f:SetText(text)
         local w = math.max(60, (card:GetWidth() or 240) - 28)
-        if FSW(f) > w then f:SetText(PD.Fit(text, 12, w)) end
+        if FSW(f) > w then f:SetText(ns.FullText(f, text) and PD.Fit(text, 12, w)) end
         f:Show()
     end
     function PD.PlaceCards(n)
@@ -17737,6 +17739,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
     r.a:SetWidth(nameW)
     r.a:SetWordWrap(false)
     local _, afs = r.a:GetFont()
+    r.a.__fullText = r.a:GetText() or ""
     r.a:SetText(PD.Fit(r.a:GetText() or "", afs or 13, nameW))
     r.b:SetWidth(nameW)
     if not head then
@@ -17777,6 +17780,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
             local chipX = math.max(0, nameW - chipW)
             local subTxt = r.b:GetText() or ""
             if PD.TextW(subTxt, 11) > chipX then
+                r.b.__fullText = subTxt
                 r.b:SetText(PD.Fit(subTxt, 11, chipX))
             end
             r.tagChip:ClearAllPoints()

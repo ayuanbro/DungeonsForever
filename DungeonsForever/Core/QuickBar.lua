@@ -7,7 +7,7 @@ local L = ns.L
 local QB = {}
 ns.QuickBar = QB
 
-QB.W = 160
+QB.W = ns.WIDE_UI and 196 or 160
 QB.SLOT1 = 4
 QB.SLOT2 = 228
 QB.PAD = 8
@@ -345,7 +345,11 @@ local function PopShown(pop)
 end
 
 function QB:SlotX()
-    if PopShown(ns.SettingsPopup) then return self.SLOT2 end
+    if PopShown(ns.SettingsPopup) then
+        -- 设置弹窗在英文下更宽，快捷栏按实际宽度让位 / settings popup is wider on English: step aside by its real width
+        local w = ns.SettingsPopup.GetWidth and ns.SettingsPopup:GetWidth() or 0
+        return math.max(self.SLOT2, math.ceil(w) + 8)
+    end
     local LF = ns.LootFilterUI
     if LF and LF.ConfigPopup and PopShown(LF:ConfigPopup()) then return self.SLOT2 end
     if ns.ExploreMapConfigPopup and PopShown(ns.ExploreMapConfigPopup()) then return self.SLOT2 end
@@ -457,6 +461,7 @@ function QB:Render()
                     wantIcon and self.NAME_ICON_X or self.TEXT_PAD, 0)
             end
             if wantIcon then SetIcon(r.icon, sp.icon) end
+            r.name.__fullText = sp.text
             r.name:SetText(FitName(sp.text, NameW(wantIcon), self.FS_NAME, sp.act == "dungeon"))
             if sp.dead then
                 r.name:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
