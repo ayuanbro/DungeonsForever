@@ -842,7 +842,7 @@ end
 
 local function ThemeName(key)
     local pal = ns.hui and ns.hui.palette and ns.hui.palette[key]
-    return (pal and pal.name) or key
+    return (pal and pal.name and L[pal.name]) or key
 end
 
 local function CurTheme()
@@ -940,7 +940,8 @@ settingsPop = CreateFrame("Frame", nil, f, "BackdropTemplate")
 settingsPop:SetFrameLevel(512)
 settingsPop:SetPoint("TOPLEFT", f, "TOPRIGHT", 4, 0)
 settingsPop:SetPoint("BOTTOMLEFT", f, "BOTTOMRIGHT", 4, 0)
-settingsPop:SetWidth(220)
+ns.SET_POP_W = ns.WIDE_UI and 300 or 220
+settingsPop:SetWidth(ns.SET_POP_W)
 settingsPop:EnableMouse(true)
 settingsPop:SetScript("OnMouseWheel", function() end)
 settingsPop:Hide()
@@ -970,8 +971,8 @@ do
 end
 
 local TIP_CARD_H = 66
-local SET_COL2_X = 106
-local SET_COL3_X = 148
+local SET_COL2_X = ns.WIDE_UI and 150 or 106
+local SET_COL3_X = ns.WIDE_UI and 210 or 148
 local C_TIP_TXT = { 0.88, 0.88, 0.88 }
 local C_TIP_DIM = { 0.62, 0.62, 0.62 }
 local tipCard
@@ -1039,7 +1040,7 @@ function BuildAppearanceCard()
     local arrow = bt:CreateFontString(nil, "OVERLAY")
     arrow:SetFont(ns.FONT, 12, "")
     arrow:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
-    arrow:SetText("\226\150\188")
+    arrow:SetText(ns.Sym("\226\150\188"))
     bt:SetScript("OnClick", function(self)
         ns.PlaySound(1)
         if not (ns.hui and ns.hui.ShowMenu) then return end
@@ -1085,7 +1086,7 @@ function BuildAppearanceCard()
     local rarrow = rb:CreateFontString(nil, "OVERLAY")
     rarrow:SetFont(ns.FONT, 12, "")
     rarrow:SetPoint("RIGHT", rb, "RIGHT", -8, 0)
-    rarrow:SetText("\226\150\188")
+    rarrow:SetText(ns.Sym("\226\150\188"))
     rb:SetScript("OnClick", function(self)
         ns.PlaySound(1)
         if not (ns.hui and ns.hui.ShowMenu) then return end
@@ -1186,6 +1187,8 @@ local function AnchorEnhCard()
     end
 end
 
+local ENH_COL2 = ns.WIDE_UI and 150 or 113
+
 local function EnhCell(card, x, y, title, tip, noteFn)
     local tg = CreateFrame("CheckButton", nil, card)
     tg:SetSize(28, 16)
@@ -1216,6 +1219,10 @@ local function EnhCell(card, x, y, title, tip, noteFn)
     lb:SetJustifyH("LEFT")
     lb:SetText(title)
     lb:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+    if ns.FitFS then
+        local colEnd = (x < ENH_COL2) and ENH_COL2 or (ns.SET_POP_W or 220) - 12
+        ns.FitFS(lb, colEnd - (x + 31) - 6)
+    end
     return tg
 end
 
@@ -1249,11 +1256,11 @@ function BuildEnhCard()
             return { L["其它插件已占用技能书页签，本项暂不可用"],
                      L["两个插件不能同时往技能书里加页；关掉对方的技能页增强并重载后，这里会自动恢复。"] }
         end)
-    talentToggle = EnhCell(card, 113, -34, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
+    talentToggle = EnhCell(card, ENH_COL2, -34, L["天赋页增强"], L["在原生天赋界面增加天赋模拟页与加点序号"])
     mapToggle = EnhCell(card, 2, -58, L["地图增强"], L["在世界地图上标出各副本入口，并在副本内用手册地图替换原生副本地图"])
-    zoneToggle = EnhCell(card, 113, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
+    zoneToggle = EnhCell(card, ENH_COL2, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
     legacyToggle = EnhCell(card, 2, -82, L["传承点增强"], L["在原生传承界面增加推荐加点卡片与方案页"])
-    instanceMapToggle = EnhCell(card, 113, -82, L["副本内地图"], L["进入副本后用手册地图替换原生副本地图，关闭则保留原生副本地图"])
+    instanceMapToggle = EnhCell(card, ENH_COL2, -82, L["副本内地图"], L["进入副本后用手册地图替换原生副本地图，关闭则保留原生副本地图"])
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1339,6 +1346,7 @@ function BuildTipCard()
     hd:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -10)
     hd:SetText(L["提示框内容"])
     hd:SetTextColor(C_TIP_DIM[1], C_TIP_DIM[2], C_TIP_DIM[3])
+    if ns.FitFS then ns.FitFS(hd, SET_COL2_X - 8 - 6) end
 
     local dd
     local gsw = CreateFrame("CheckButton", nil, card)
@@ -1405,7 +1413,7 @@ function BuildTipCard()
     local ddar = dd:CreateFontString(nil, "OVERLAY")
     ddar:SetFont(ns.FONT, 12, "")
     ddar:SetPoint("RIGHT", dd, "RIGHT", -8, 0)
-    ddar:SetText("\226\150\188")
+    ddar:SetText(ns.Sym("\226\150\188"))
     SyncTipState()
 
     local TipMenuItems, TipProdItems
@@ -1757,7 +1765,7 @@ do
     end)
 
     local needW = 16 + ((settingsTitle and settingsTitle:GetStringWidth()) or 32) + 8 + bw + 8 + 96 + 12
-    if needW > 220 then settingsPop:SetWidth(math.ceil(needW)) end
+    if needW > ns.SET_POP_W then settingsPop:SetWidth(math.ceil(needW)) end
 end
 
 local function HoverShow(bt)

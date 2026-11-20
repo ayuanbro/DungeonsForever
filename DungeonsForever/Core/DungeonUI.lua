@@ -5952,7 +5952,7 @@ end
 local function PaintWishStar(bt, id)
     local gm = ns.GearModule
     local on = gm and gm.WishIs and id and gm.WishIs(id)
-    bt.star:SetText(on and "★" or "☆")
+    bt.star:SetText(on and ns.SYM.star or ns.SYM.star0)
     if on then
         bt.star:SetTextColor(1, 0.82, 0, 1)
     else
@@ -6149,6 +6149,8 @@ function U:RenderDungeonLoot()
         r.tag:SetPoint("TOPRIGHT", r, "TOPRIGHT", -30, -6)
         r.tp = MakeFS(r, DG.LOOT_FS_SUB, C_GREY, "LEFT")
         r.tp:SetPoint("TOPLEFT", r, "TOPLEFT", tx, -26)
+        -- 类型文字不能压到右侧掉率上 / keep the item type clear of the drop-chance column
+        r.tp:SetWordWrap(false)
         r.ch = MakeFS(r, DG.LOOT_FS_SUB, C_GREY, "RIGHT")
         r.ch:SetPoint("TOPRIGHT", r, "TOPRIGHT", -30, -26)
         r.note = MakeFS(r, DG.LOOT_FS_META, C_GREY, "LEFT")
@@ -6274,7 +6276,7 @@ function U:RenderDungeonLoot()
                         r.name:SetWidth(cw - tx - DG.LOOT_TEXT_R)
                         r.tag:Hide()
                     end
-                    r.tp:SetText(DG.ItemMeta(it[1]))
+                    r.tp:SetWidth(cw - tx - 78); r.tp:SetText(DG.ItemMeta(it[1]))
                     r.tp:Show()
                     r.ch:SetText(DG.Pct(it[2]) or "")
                     r.ch:Show()
@@ -6494,7 +6496,7 @@ function U:RenderDungeonLootCards(groups, filter, takeRow, makeRow, bossMode, bo
                     r.name:SetWidth(rowW - ix - DG.LOOT_TEXT_R)
                     r.tag:Hide()
                 end
-                r.tp:SetText(DG.ItemMeta(it[1]))
+                r.tp:SetWidth(rowW - ix - 78); r.tp:SetText(DG.ItemMeta(it[1]))
                 r.tp:Show()
                 r.ch:SetText(DG.Pct(it[2]) or "")
                 r.ch:Show()
@@ -7628,7 +7630,7 @@ DG.Q_MARK_INK = {
 }
 DG.Q_FLOW_SEC_GAP = 6
 DG.Q_FLOW_ST_GAP = 3
-DG.Q_FLOW_IDEO = "\227\128\128" .. " "
+DG.Q_FLOW_IDEO = ns.Sym("\227\128\128") .. " "
 DG.Q_LINK_ITEM = { 1, 0.92, 0.72 }
 DG.C_FAC_A = { 0.45, 0.65, 1 }
 DG.C_FAC_H = { 1, 0.40, 0.40 }

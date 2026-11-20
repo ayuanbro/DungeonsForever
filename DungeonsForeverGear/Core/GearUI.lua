@@ -1514,11 +1514,11 @@ local function PaintRow(r)
     end
     local wid = e.id
     if wid and WishIs(wid) then
-        SetTextC(r.star.tex, "★")
+        SetTextC(r.star.tex, ns.SYM.star)
         r.star.tex:SetTextColor(1, 0.82, 0)
         r.star:SetAlpha(1)
     else
-        SetTextC(r.star.tex, "☆")
+        SetTextC(r.star.tex, ns.SYM.star0)
         r.star.tex:SetTextColor(Unpack(C_GREY))
         r.star:SetAlpha(1)
     end

@@ -3454,7 +3454,7 @@ function M.ShowRouteMenu(owner)
         local k = M.RouteSegKey(id, floor, i)
         local hid = (M.routeOff or M.routeHidden[k]) and true or false
         items[#items + 1] = {
-            text = FloorWord(segs[i].from) .. " → " .. FloorWord(segs[i].to),
+            text = FloorWord(segs[i].from) .. (" " .. ns.SYM.arrow .. " ") .. FloorWord(segs[i].to),
             checked = not hid,
             color = hid and "|cff7a6a52" or nil,
             func = function()

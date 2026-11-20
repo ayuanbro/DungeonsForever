@@ -1929,7 +1929,7 @@ local function AddRaces(items, innerW)
         for _, item in ipairs(groups[side]) do
             local chip = TakeSpecChip()
             if not chip then break end
-            local text = ((item.mark == "star") and "★" or "") .. item.name
+            local text = ((item.mark == "star") and ns.SYM.star or "") .. item.name
             local cfs = chip.fs
             cfs:SetText(text)
             chip.frame:Show()

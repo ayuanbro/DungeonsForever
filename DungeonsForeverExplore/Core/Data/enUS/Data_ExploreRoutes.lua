@@ -7,7 +7,7 @@ ns.ExploreRoutes = {
     h = {
         { name = "Brill", mapID = 1420, fp = "Tirisfal Glades · Brill", time = "~2 min",
           dst = { 1420, 61.7, 53.3 },
-          ovl = { "布瑞尔复活点" },
+          ovl = { "Brill graveyard" },
           races = {
             { race = "Undead", steps = {
               { t = "First death", k = "die", x = 43.8, y = 54.3,
@@ -24,7 +24,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Tarren Mill", mapID = 1424, fp = "Hillsbrad Foothills · Tarren Mill", time = "~4 min",
           dst = { 1424, 62, 20 },
-          ovl = { "幽暗城到塔伦米尔" },
+          ovl = { "Undercity to Tarren Mill" },
           races = {
             { race = "Undead", steps = {
               { t = "Hug the wall", k = "travel", x = 61.3, y = 62.1, m = { 1420, 61.3, 62.1 }, d = "Keep to the right of the Undercity main gate and follow the outer wall; hop onto the wall steps where the ground is rough, switch to walk mode and creep along carefully." },
@@ -67,7 +67,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Crossroads", mapID = 1413, fp = "The Barrens · Crossroads", time = "~4 min",
           dst = { 1413, 51, 30 },
-          ovl = { "十字路口复活点" },
+          ovl = { "Crossroads graveyard" },
           races = {
             { race = "Other", steps = {
               { t = "Bind hearthstone", k = "item", d = "Leave the starting area for Razor Hill and bind your hearthstone there as the hub." },
@@ -85,7 +85,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Camp Taurajo", mapID = 1413, fp = "The Barrens · Camp Taurajo", time = "~4 min",
           dst = { 1413, 44, 59 },
-          ovl = { "陶拉祖营地复活点" },
+          ovl = { "Camp Taurajo graveyard" },
           races = {
             { race = "Other", steps = {
               { t = "First death", k = "die", x = 51, y = 50,
@@ -103,7 +103,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Bloodhoof Village", mapID = 1412, fp = "Mulgore · Bloodhoof Village", time = "~3 min",
           dst = { 1412, 47, 61 },
-          ovl = { "血蹄村复活点" },
+          ovl = { "Bloodhoof Village graveyard" },
           races = {
             { race = "Tauren", time = "~1 min", steps = {
               { t = "Bloodhoof Village (death)", k = "die", d = "Die inside the blue area and resurrect at Bloodhoof Village." },
@@ -138,7 +138,7 @@ ns.ExploreRoutes = {
         } },
         { name = "Orgrimmar", mapID = 1454, fp = "Orgrimmar · City flight path", time = "~3 min",
           dst = { 1454, 49.4, 50.4 },
-          ovl = { "奥格瑞玛复活点", "剃刀岭复活点", "试炼谷复活点", "森金村复活点" },
+          ovl = { "Orgrimmar graveyard", "Razor Hill graveyard", "Valley of Trials graveyard", "Sen'jin Village graveyard" },
           races = {
             { race = "Tauren", steps = {
               { t = "First death", k = "die", m = { 1411 }, d = "Charge east from the Crossroads into Durotar; after the river, die to the boars." },

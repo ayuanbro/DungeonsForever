@@ -88,7 +88,7 @@ local function ShowSpellTip(owner, d)
         GameTooltip:AddLine(d.name or L["未知法术"], 1, 1, 1)
     end
     if d.from or d.to then
-        GameTooltip:AddLine((d.from or "?") .. " → " .. (d.to or "?"), ACC[1], ACC[2], ACC[3])
+        GameTooltip:AddLine((d.from or "?") .. (" " .. ns.SYM.arrow .. " ") .. (d.to or "?"), ACC[1], ACC[2], ACC[3])
     end
     if d.slots and #d.slots > 0 then
         local t = {}
@@ -165,7 +165,7 @@ end
 local function RankMarkup(from, to)
     local a = from or "?"
     local b = to or "?"
-    return "|cff7f8998" .. a .. "|r  →  |cff46bf72" .. b .. "|r"
+    return "|cff7f8998" .. a .. ("|r  " .. ns.SYM.arrow .. "  |cff46bf72") .. b .. "|r"
 end
 
 local function PaintRow(r, data, mode)

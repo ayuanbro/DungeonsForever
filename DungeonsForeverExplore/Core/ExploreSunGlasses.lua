@@ -46,7 +46,7 @@ local CARD_GAP = 8
 
 local STEPS = {
     {
-        no = "①", q = 84135, req = 55, title = L["迷滩机器人"],
+        no = ns.SYM.n[1], q = 84135, req = 55, title = L["迷滩机器人"],
         area = AREA_TANARIS, x = 59.2, y = 91.5,
         zone = L["塔纳利斯"], where = L["塔纳利斯 · 天涯海滩"],
         from = { name = L["物件「半埋的机甲」"], area = AREA_TANARIS, x = 59.2, y = 91.5 },
@@ -58,7 +58,7 @@ local STEPS = {
         },
     },
     {
-        no = "②", q = 84137, req = 55, title = L["机械罗曼史"],
+        no = ns.SYM.n[2], q = 84137, req = 55, title = L["机械罗曼史"],
         area = AREA_TANARIS, x = 59.2, y = 99.6,
         zone = L["塔纳利斯"], where = L["海上钻井平台"],
         from = { name = L["物件「半埋的机甲」（原地接）"], area = AREA_TANARIS, x = 59.2, y = 91.5 },
@@ -69,7 +69,7 @@ local STEPS = {
         },
     },
     {
-        no = "③", q = 84138, req = 55, title = L["冷淡之谊"],
+        no = ns.SYM.n[3], q = 84138, req = 55, title = L["冷淡之谊"],
         area = AREA_WINTER, x = 61.2, y = 37.0,
         zone = L["冬泉谷"], where = L["冬泉谷 · 永望镇"],
         from = { name = L["塞巴斯蒂安·尤尔根斯"], area = AREA_TANARIS, x = 59.2, y = 99.6 },
@@ -81,7 +81,7 @@ local STEPS = {
         },
     },
     {
-        no = "④", q = 84146, req = 55, title = L["红口袋，蓝受心"],
+        no = ns.SYM.n[4], q = 84146, req = 55, title = L["红口袋，蓝受心"],
         area = AREA_BURNING, x = 53.0, y = 24.8,
         zone = L["燃烧平原"], where = L["燃烧平原 · 北面偏僻营地"],
         from = { name = L["努米"], area = AREA_WINTER, x = 61.2, y = 37.0 },
@@ -93,7 +93,7 @@ local STEPS = {
         },
     },
     {
-        no = "⑤", q = 84211, req = 58, title = L["偷猎者窝点"],
+        no = ns.SYM.n[5], q = 84211, req = 58, title = L["偷猎者窝点"],
         area = AREA_BURNING, x = 47.0, y = 27.2,
         zone = L["燃烧平原"], where = L["燃烧平原 · 营地周围"],
         from = { name = L["物件「大红口袋」（原地接）"], area = AREA_BURNING, x = 53.0, y = 24.8 },
@@ -104,7 +104,7 @@ local STEPS = {
         },
     },
     {
-        no = "⑥", q = 84212, req = 58, title = L["返程长票"],
+        no = ns.SYM.n[6], q = 84212, req = 58, title = L["返程长票"],
         zone = L["冬泉谷"], where = L["永望镇 → 钻井平台"],
         from = { name = L["努米"], area = AREA_WINTER, x = 61.2, y = 37.0 },
         to = { name = L["塞巴斯蒂安·尤尔根斯"], area = AREA_TANARIS, x = 59.2, y = 99.6 },
@@ -115,7 +115,7 @@ local STEPS = {
         },
     },
     {
-        no = "⑦", q = 84213, req = 58, title = L["朝来隙往"],
+        no = ns.SYM.n[7], q = 84213, req = 58, title = L["朝来隙往"],
         zone = L["西部荒野 / 提瑞斯法林地"], where = L["西部荒野 / 提瑞斯法林地"],
         from = { name = L["塞巴斯蒂安·尤尔根斯"], area = AREA_TANARIS, x = 59.2, y = 99.6 },
         to = { name = L["机械臂（落地后召唤）"] },
@@ -154,7 +154,7 @@ local TIPS = {
     L["前四步 55 级可接，后三步要 58 级，两阵营都能做"],
 }
 
-local NOS = { "①", "②", "③", "④", "⑤" }
+local NOS = { ns.SYM.n[1], ns.SYM.n[2], ns.SYM.n[3], ns.SYM.n[4], ns.SYM.n[5] }
 
 
 local TOTAL_GROUPS = {

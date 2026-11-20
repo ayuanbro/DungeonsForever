@@ -26,7 +26,7 @@ local LC_TX = LC_PAD + LC_ICON + LC_IGAP
 local HDR_ROW = 22
 local BTN_H, TROW, ROW_PITCH, ROW_H = 24, 24, 24, 22
 
-local RING = { "①", "②", "③", "④", "⑤" }
+local RING = { ns.SYM.n[1], ns.SYM.n[2], ns.SYM.n[3], ns.SYM.n[4], ns.SYM.n[5] }
 local BAND = { 0, 0, 0, 0, 3000, 9000, 21000, 42000 }
 
 local function Gold(str)
@@ -1113,9 +1113,9 @@ local function Build(EG, page)
     local oc2 = NewCard(ov, 0, py, CW, L["怎么玩"])
     local stepH = -HDR
     local steps = {
-        { n = "①", t = L["交材料"], d = L["营地四个 NPC 各收一类成品，采集、锻造、工程、制皮都能交"] },
-        { n = "②", t = L["换暗月券"], d = L["交完直接给券，档次越高给得越多；同一档能反复交，声望过线才消失"] },
-        { n = "③", t = L["兑奖"], d = L["吉瓦斯·格里加特 收券：50 张换 14 格包，1200 张换 60 级紫项链"] },
+        { n = ns.SYM.n[1], t = L["交材料"], d = L["营地四个 NPC 各收一类成品，采集、锻造、工程、制皮都能交"] },
+        { n = ns.SYM.n[2], t = L["换暗月券"], d = L["交完直接给券，档次越高给得越多；同一档能反复交，声望过线才消失"] },
+        { n = ns.SYM.n[3], t = L["兑奖"], d = L["吉瓦斯·格里加特 收券：50 张换 14 格包，1200 张换 60 级紫项链"] },
     }
     local stepMax = 0
     local descs = {}
@@ -1636,7 +1636,7 @@ local function Build(EG, page)
         local y = fn2.__cur
         IconRef(fn2, PAD + 8, y - 3, c.item, 18)
         LinkPut(fn2, PAD + 32, y, c.item, 14)
-        Put(fn2, PAD + 178, y, "→", 14, C_GREY)
+        Put(fn2, PAD + 178, y, ns.SYM.arrow, 14, C_GREY)
         QuestPut(fn2, PAD + 202, y, c.quest, 14)
         PutR(fn2, -PAD, y + 2, c.where or "", 12, C_GREY)
         fn2.__cur = y - 26
@@ -1895,7 +1895,7 @@ local function Build(EG, page)
                     .. L["；"] .. L["声望"] .. " " .. DM.MORE_AT
                     .. " " .. L["后可改交「更多…」任务（20 张/次，不涨声望）。"])
             else
-                EG.dmNote:SetText(head .. " · " .. L["声望"] .. " " .. rep .. " → " .. (rep + 100 * res.turns)
+                EG.dmNote:SetText(head .. " · " .. L["声望"] .. " " .. rep .. (" " .. ns.SYM.arrow .. " ") .. (rep + 100 * res.turns)
                     .. L["（"] .. res.turns .. " " .. L["次"] .. L["）"])
             end
         end

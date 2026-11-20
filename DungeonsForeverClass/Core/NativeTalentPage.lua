@@ -1448,7 +1448,7 @@ local function UpdateLists(pending)
         shownRows = shownRows + 1
         local row = planRows[shownRows]
         local it = oop[i]
-        if row.seq then row.seq:SetText('◇') end
+        if row.seq then row.seq:SetText(ns.SYM.dia0) end
         row.ic:SetTexture('Interface\\Icons\\' .. tostring(it.nd.icon))
         row.ic:SetDesaturated(true)
         row.lv:SetText('')

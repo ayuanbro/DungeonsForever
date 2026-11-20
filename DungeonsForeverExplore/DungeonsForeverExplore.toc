@@ -39,6 +39,8 @@ Core\Data\enUS\Data_ExploreToys.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreBanner.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ExploreRoutes.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_CollectionPets.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_CollectionMounts.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_NameOverrides.lua [AllowLoadTextLocale enUS]
 Core\ExploreUI.lua
 Core\ExploreDarkmoon.lua
 Core\ExploreSunGlasses.lua

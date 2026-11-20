@@ -547,7 +547,7 @@ function QB:OnMainShow()
 end
 
 local SET_PAD, SET_ROW_H, SET_HDR_H = 14, 24, 22
-local SET_COL2_X = 106
+local SET_COL2_X = ns.WIDE_UI and 150 or 106
 
 local function Toggle(parent)
     local tg = CreateFrame("CheckButton", nil, parent)
@@ -597,6 +597,7 @@ function QB:EnsureSettings()
             at:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 6 - SET_PAD, yv)
         end
         at.label:SetText(aLabel)
+        if bLabel and ns.FitFS then ns.FitFS(at.label, SET_COL2_X - (SET_PAD - 6 + 36 + 6) - 4) end
         at:SetChecked(aIsOn() and true or false)
         at:SetScript("OnClick", function(self)
             ns.PlaySound(1)
@@ -613,6 +614,7 @@ function QB:EnsureSettings()
             bt2.label:SetPoint("LEFT", bt2, "RIGHT", 6, 0)
             bt2.label:SetJustifyH("LEFT")
             bt2.label:SetText(bLabel)
+            if ns.FitFS then ns.FitFS(bt2.label, (ns.SET_POP_W or 220) - 12 - SET_COL2_X - 36 - 6 - 4) end
             bt2:SetChecked(bIsOn() and true or false)
             bt2:SetScript("OnClick", function(self)
                 ns.PlaySound(1)
@@ -907,7 +909,7 @@ function QB:EnsureSettings()
         bfs:SetJustifyH("LEFT")
         local arw = Fs(bt, 12, C_DIM)
         arw:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
-        arw:SetText("\226\150\188")
+        arw:SetText(ns.Sym("\226\150\188"))
 
         local function Summary()
             local on = {}

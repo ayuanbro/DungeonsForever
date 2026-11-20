@@ -1,7 +1,6 @@
 local ns = _G.DF_NS or {}
 
 if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
-local _, ns = ...
 
 ns.ExploreBanner = {
     [1] = {
@@ -21,13 +20,13 @@ ns.ExploreBanner = {
             { t = "Scarlet Monastery Library: kill Houndmaster Loksey in the Huntsman's Cloister, head for Arcanist Doan, then turn right past the alcove that often holds a chest to enter the \"Gallery of Treasures\"",
               m = { { "Scarlet Monastery Library", 85, false, false } } },
             { t = "Stand right in front of a bust (within 5 yards) and a buff names it (an Elegy); count the busts from the end you enter — the Houndmaster Loksey side — and use the echoes in the order below (a wrong order resets the instance)" },
-            { num = "①", t = "Warrior bust ← Swamp Echo (1st from the entrance; the buff is \"Elegy of the Warrior\")",
+            { num = "1.", t = "Warrior bust <- Swamp Echo (1st from the entrance; the buff is \"Elegy of the Warrior\")",
               m = { { "Swamp Echo", "item", 215425 } } },
-            { num = "②", t = "Mage bust ← Arathi Echo (3rd from the entrance; the buff is \"Elegy of the Mage\")",
+            { num = "2.", t = "Mage bust <- Arathi Echo (3rd from the entrance; the buff is \"Elegy of the Mage\")",
               m = { { "Arathi Echo", "item", 215427 } } },
-            { num = "③", t = "Paladin bust ← Theramore Echo (4th from the entrance; the buff is \"Elegy of the Paladin\")",
+            { num = "3.", t = "Paladin bust <- Theramore Echo (4th from the entrance; the buff is \"Elegy of the Paladin\")",
               m = { { "Theramore Echo", "item", 215428 } } },
-            { num = "④", t = "Priest bust ← Graveyard Echo (2nd from the entrance; the buff is \"Elegy of the Priest\")",
+            { num = "4.", t = "Priest bust <- Graveyard Echo (2nd from the entrance; the buff is \"Elegy of the Priest\")",
               m = { { "Graveyard Echo", "item", 215426 } } },
             { t = "Once all four busts light up the Scarlet Banner stands in the middle of the gallery — click it to loot; only one player per group gets it, so agree first on who takes it",
               m = { { "Scarlet Banner", "item", 278030 } } },

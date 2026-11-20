@@ -3636,7 +3636,7 @@ function FillBwRow(r)
     end
     if gm and gm.WishIs then
         local on = gm.WishIs(row.item)
-        r.wishBt.star:SetText(on and "★" or "☆")
+        r.wishBt.star:SetText(on and ns.SYM.star or ns.SYM.star0)
         if on then
             r.wishBt.star:SetTextColor(1, 0.82, 0, 1)
         else
@@ -4468,7 +4468,7 @@ function BG.OpenClassMenu(owner)
                 math.floor(rc.b * 255 + 0.5))
         end
         items[#items + 1] = {
-            text = (c.slug == BG.cls and "● " or "") .. ClassName(c.slug),
+            text = (c.slug == BG.cls and (ns.SYM.dot .. " ") or "") .. ClassName(c.slug),
             color = color,
             func = function() BG.SelectClass(c.slug) end,
         }
@@ -5751,7 +5751,7 @@ local function BuildEnchCard(parent)
         local items = {}
         for _, d in ipairs(defs) do
             items[#items + 1] = {
-                text = (BG.enchFilter == d.key and "● " or "") .. tostring(d.label),
+                text = (BG.enchFilter == d.key and (ns.SYM.dot .. " ") or "") .. tostring(d.label),
                 func = function()
                     BG.enchFilter = d.key
                     BG.RequestRender()
