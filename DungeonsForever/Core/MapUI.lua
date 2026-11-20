@@ -1012,10 +1012,6 @@ local function LayPath(id, lay)
     return WM .. ART[id][1] .. "\\" .. lay
 end
 
--- 英文客户端可能没有某些原生地图贴图路径（如 ScarletMonasteryOld）：贴图为空时，
--- 先试去掉 "Old" 的路径，再按英文楼层名找到游戏地图，用 C_Map 的地图贴图（文件 ID，与语言无关）。
--- English clients may lack some native map art paths (e.g. ScarletMonasteryOld). When a tile comes back empty,
--- try the path without "Old", then find the game map by its English floor name and use C_Map art (file IDs, locale-independent).
 local ART_BY_NAME, ART_FB = nil, {}
 local function ArtNameIndex()
     if ART_BY_NAME then return ART_BY_NAME end

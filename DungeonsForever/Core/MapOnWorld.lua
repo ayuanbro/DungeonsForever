@@ -55,7 +55,6 @@ local function setMap(id)
     applyMap(id)
 end
 
-
 local regen = CreateFrame("Frame")
 regen:RegisterEvent("PLAYER_REGEN_ENABLED")
 regen:SetScript("OnEvent", function()
@@ -414,7 +413,6 @@ local function areaOffset()
     if type(ox) ~= "number" or type(oy) ~= "number" then return 0, 0 end
     return ox, oy
 end
-
 
 local function mapAreaSize()
     local a = area()
@@ -3382,7 +3380,6 @@ function W.Build()
     taskBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     taskBtn:Hide()
     view.taskBtn = taskBtn
-
 
     local btns = {}
     for i = 1, M.MAX_LAYERS do

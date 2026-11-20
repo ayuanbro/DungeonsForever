@@ -56,7 +56,7 @@ TT.SPEC_BTN_GAP = 8
 TT.SPEC_BTN_PAD = 10
 TT.SPEC_BTN_Y   = TT.TOPCARD_TOP + TT.INSET + 20
 TT.SPEC_META_Y  = TT.TOPCARD_TOP + 10
-TT.MODE_KEYS    = { "rotation", "macro", "talents", "cq", "text" }
+TT.MODE_KEYS    = { "bis", "rotation", "macro", "talents", "cq", "text" }
 TT.MODE_H       = 24
 TT.MODE_GAP     = 8
 TT.MODE_Y       = TT.TOPCARD_TOP + TT.INSET + 52
@@ -80,6 +80,7 @@ TT.COL_W = (TT.FULL_W - TT.COL_GAP) / 2
 TT.CARD_PAD = 10
 TT.HDR_H = 26
 TT.SPEC_GAP = 8
+TT.SPEC_EMPTY_H = 88
 TT.SPEC_ICON = 32
 TT.HERO_H = TT.SPEC_ICON
 TT.SPEC_TITLE_X = TT.INSET + TT.SPEC_ICON + TT.INSET
@@ -141,7 +142,7 @@ local function DB()
     end
     if not s.tab then s.tab = T.pages[1].key end
     if s.nav ~= "spec" and s.nav ~= "prep" then s.nav = "rank" end
-    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "talents" and s.mode ~= "cq" then s.mode = "text" end
+    if s.mode ~= "rotation" and s.mode ~= "macro" and s.mode ~= "talents" and s.mode ~= "cq" and s.mode ~= "bis" then s.mode = "text" end
     return s
 end
 
@@ -266,7 +267,7 @@ TT.SPEC_ART = {
     SHAMAN = { ele = "ShamanElementalCombat", enh = "ShamanEnhancement", resto = "ShamanRestoration" },
     MAGE = { arcane = "MageArcane", fire = "MageFire", frost = "MageFrost" },
     WARLOCK = { affli = "WarlockCurses", demo = "WarlockSummoning", destro = "WarlockDestruction" },
-    DRUID = { balance = "DruidBalance", feral = "DruidFeralCombat", resto = "DruidRestoration" },
+    DRUID = { balance = "DruidBalance", feral = "DruidFeralCombat", bear = "DruidFeralCombat", resto = "DruidRestoration" },
 }
 TT.SPEC_ART_DIR = "Interface\\TalentFrame\\"
 TT.SPEC_ART_ALPHA = 0.75
@@ -286,6 +287,7 @@ TT.SEC_TITLE = {
 }
 
 TT.MODE_TITLE = {
+    bis = L["BIS配装"],
     rotation = L["输出循环"],
     macro = L["宏命令"],
     talents = L["天赋"],
@@ -509,7 +511,7 @@ local function BuildSubTabs(page)
     G = EnsureCG()
     if not G then return end
     TT.specTabs = {}
-    for i = 1, 3 do
+    for i = 1, 4 do
         local bt = NewButton(page, "", TT.SPEC_BTN_W, TT.SUB_H, TT.TAB_FS)
         RoundButtonFill(bt)
         SetButtonSelected(bt, false, "tab")
@@ -591,6 +593,71 @@ local PREP_MARK = {
     active = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkAsk",
     todo = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\QUEST\\QMarkExcl",
 }
+
+local PREP_STAGE_NAME = { "护腕", "腰带手套", "靴子腿甲肩甲", "头盔胸甲" }
+local PREP_T05_CLS_ORDER = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
+local PREP_T05_CLS_CN = {
+    WARRIOR = "战士", PALADIN = "圣骑士", HUNTER = "猎人", ROGUE = "潜行者",
+    PRIEST = "牧师", SHAMAN = "萨满", MAGE = "法师", WARLOCK = "术士", DRUID = "德鲁伊",
+}
+local function PrepClassToken()
+    local _, cls = UnitClass("player")
+    return cls or "WARRIOR"
+end
+local function PrepT05Avail(side)
+    local bycls = ns.ClassPrepT05 and ns.ClassPrepT05[side]
+    local out = {}
+    if not bycls then return out end
+    for _, tok in ipairs(PREP_T05_CLS_ORDER) do
+        if bycls[tok] then out[#out + 1] = tok end
+    end
+    return out
+end
+local function PrepT05Class(side)
+    local bycls = ns.ClassPrepT05 and ns.ClassPrepT05[side]
+    if not bycls then return nil end
+    local want = PREP.t05Class
+    if (not want) or (not bycls[want]) then want = PrepClassToken() end
+    if not bycls[want] then
+        local avail = PrepT05Avail(side)
+        want = avail[1]
+    end
+    return (want and bycls[want]) and want or nil
+end
+local function PrepT05Data(side)
+    local bycls = ns.ClassPrepT05 and ns.ClassPrepT05[side]
+    local cls = PrepT05Class(side)
+    return (bycls and cls) and bycls[cls] or nil
+end
+local function PrepT05Card(side)
+    local src = ns.ClassPrepT05Card
+    if not src then return nil end
+    local t = PrepT05Data(side)
+    if not t then return nil end
+    local cur = t[PREP.t05Stage or 1]
+    local d = {}
+    for k, v in pairs(src) do d[k] = v end
+    local mine = ns.ClassPrepT05Rewards and ns.ClassPrepT05Rewards[PrepClassToken()]
+    local all = {}
+    for i = 1, 4 do
+        local rw = mine and mine[i] or ((t[i] and t[i].rew) or {})
+        for j = 1, #rw do all[#all + 1] = rw[j] end
+    end
+    d.rew = {}
+    for i = 1, math.min(4, #all) do d.rew[i] = all[i] end
+    d.rewA = d.rew
+    d.flow = cur and cur.flow or {}
+    return d
+end
+local function PrepList(side)
+    local base = ns.ClassPrep or {}
+    local t05 = PrepT05Card(side)
+    if not t05 then return base end
+    local out = {}
+    for i = 1, #base do out[i] = base[i] end
+    out[#out + 1] = t05
+    return out
+end
 
 local function PrepCardBG(f, lvl, hover)
     if ns.hui and ns.hui.HuiCardFX and ns.hui.HuiCardFX(f, hover and 6 or nil, lvl) then return end
@@ -922,8 +989,9 @@ end
 
 function PREP.BuildCards()
     PREP.cards = PREP.cards or {}
-    local list = ns.ClassPrep or {}
-    for i = 1, #list do
+    local list = PrepList(PREP.side or DB().prepSide)
+    local pool = #(ns.ClassPrep or {}) + ((ns.ClassPrepT05 and next(ns.ClassPrepT05)) and 1 or 0)
+    for i = 1, pool do
         local c = PREP.cards[i]
         if not c then
             c = CreateFrame("Button", nil, PREP.lc)
@@ -1020,14 +1088,14 @@ local function PrepVisible(d, side)
 end
 
 function PREP.PaintCards()
-    local list = ns.ClassPrep or {}
-    local n = #list
-    if n == 0 then return end
     local side = PREP.side or DB().prepSide
     if side ~= "H" and side ~= "A" then
         side = (DG.PlayerSide and DG.PlayerSide()) or "H"
         if side ~= "H" and side ~= "A" then side = "H" end
     end
+    local list = PrepList(side)
+    local n = #list
+    if n == 0 then return end
     local order = {}
     for i = 1, n do order[i] = i end
     table.sort(order, function(a, b)
@@ -1213,6 +1281,20 @@ function PREP.BuildRight()
         ch.kv[k] = f
     end
 
+    ch.t05Btns = {}
+    for i = 1, 4 do
+        local bt = NewButton(ch, PREP_STAGE_NAME[i], 108, 24, 12)
+        bt.__stage = i
+        bt:SetPushedTextOffset(0, 0)
+        bt:SetScript("OnClick", function(self)
+            PREP.t05Stage = self.__stage
+            PREP.Refresh()
+            ns.PlaySound(1)
+        end)
+        bt:Hide()
+        ch.t05Btns[i] = bt
+    end
+
     ch.sec = MakeFS(ch, 14, C_GOLD, "LEFT")
     ch.sec:SetText(L["路线"])
 
@@ -1288,8 +1370,28 @@ function PREP.UpdateBar()
 end
 
 function PREP.PaintRight()
-    local list = ns.ClassPrep or {}
+    PREP.ResolveSide()
+    local side = PREP.side or "H"
+    local list = PrepList(side)
     local d = list[PREP.cur] or list[1]
+    local t05on = d and d.__t05
+    if d and d.__t05 then
+        local t = PrepT05Data(side)
+        local cur = t and t[PREP.t05Stage or 1]
+        if cur then
+            d = cur
+            local mine = ns.ClassPrepT05Rewards and ns.ClassPrepT05Rewards[PrepClassToken()]
+            if mine then
+                local mr = mine[PREP.t05Stage or 1]
+                if mr then
+                    d = {}
+                    for k, v in pairs(cur) do d[k] = v end
+                    d.rew = mr
+                    d.rewA = mr
+                end
+            end
+        end
+    end
     if not d then return end
     local ch = PREP.rc
     local w = ch:GetWidth() or 1
@@ -1300,8 +1402,7 @@ function PREP.PaintRight()
         if s == "H" then hH = true elseif s == "A" then hA = true end
     end
     local both = hH and hA
-    PREP.ResolveSide()
-    local side = PREP.side or "H"
+    if t05on then both = true end
     local hasSide = false
     for i = 1, #(d.flow or {}) do
         if d.flow[i].s == side then hasSide = true break end
@@ -1370,6 +1471,21 @@ function PREP.PaintRight()
     kv[3]:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y - 44)
     kv[3]:SetText(format("|cff8a93a6%s|r  |cffd8dce4%s · %s|r", L["等级"], format(L["%d 级起"], d.lv), fac))
     y = y - 72
+
+    for i = 1, 4 do
+        local bt = ch.t05Btns and ch.t05Btns[i]
+        if bt then
+            if t05on then
+                bt:ClearAllPoints()
+                bt:SetPoint("TOPLEFT", ch, "TOPLEFT", (i - 1) * 114, y)
+                SetButtonSelected(bt, i == (PREP.t05Stage or 1))
+                bt:SetShown(true)
+            else
+                bt:SetShown(false)
+            end
+        end
+    end
+    if t05on then y = y - 30 end
 
     ch.sec:ClearAllPoints()
     ch.sec:SetPoint("TOPLEFT", ch, "TOPLEFT", 0, y)
@@ -2212,6 +2328,7 @@ RenderSpec = function()
     TT.__renderGen = (TT.__renderGen or 0) + 1
     local cls, spec, data = TT.PaintHeader()
     if ns.TalentTabUI then ns.TalentTabUI.Hide() end
+    if TT.specEmpty then TT.specEmpty:Hide() end
     if not data then return end
     local db = DB()
 
@@ -2225,7 +2342,22 @@ RenderSpec = function()
     if #keys == 0 then
         TT.curSec = nil
         TT.HideSpecContent()
-        TT.child:SetHeight(TT.SPEC_GAP)
+        if not TT.specEmpty then
+            local ef = CreateFrame("Frame", nil, TT.child)
+            ef:SetPoint("TOPLEFT", TT.child, "TOPLEFT", TT.OUTER_PAD, 0)
+            ef:SetPoint("TOPRIGHT", TT.child, "TOPRIGHT", -TT.OUTER_PAD, 0)
+            ef:SetHeight(TT.SPEC_EMPTY_H - TT.SPEC_GAP)
+            ef:SetFrameLevel((TT.child:GetFrameLevel() or 1) + 1)
+            ef.main = MakeFS(ef, 16, C_TEXT, "CENTER")
+            ef.main:SetPoint("TOP", ef, "TOP", 0, -18)
+            ef.main:SetText(L["待补充"])
+            ef.sub = MakeFS(ef, 14, C_GREY, "CENTER")
+            ef.sub:SetPoint("TOP", ef.main, "BOTTOM", 0, -10)
+            ef.sub:SetText(L["该专精暂无攻略内容"])
+            TT.specEmpty = ef
+        end
+        TT.specEmpty:Show()
+        TT.child:SetHeight(TT.SPEC_EMPTY_H)
         TT.scroll:SetVerticalScroll(0)
         TT.overflowed = false
         return
@@ -2635,6 +2767,7 @@ function TT.HideSpecContent()
             if TT.chipPool[i] then TT.chipPool[i].frame:Hide() end
         end
     end
+    if TT.specEmpty then TT.specEmpty:Hide() end
 end
 
 function TT.HideSpec()
@@ -2655,9 +2788,12 @@ function TT.HideSpec()
         end
     end
     TT.HideSpecContent()
+    if ns.ClassBisUI then ns.ClassBisUI.Hide() end
     if ns.ClassCombatUI then ns.ClassCombatUI.HideRows() end
     if ns.ClassQuestUI then ns.ClassQuestUI.Hide() end
     if ns.TalentTabUI then ns.TalentTabUI.Hide() end
+    if TT.sbarTrack then TT.sbarTrack:Hide() end
+    if TT.sbarThumb then TT.sbarThumb:Hide() end
 end
 
 local function PY()
@@ -2688,7 +2824,13 @@ function TT.Render()
         if CQUI then CQUI.Hide() end
         local TUI = ns.TalentTabUI
         if TUI then TUI.Hide() end
-        if mode == "rotation" and CU then
+        if ns.ClassBisUI then ns.ClassBisUI.Hide() end
+        if mode == "bis" and ns.ClassBisUI then
+            TT.PlaceScroll(TT.MODE_TOP)
+            TT.HideSpecContent()
+            if CU then CU.HideRows() end
+            ns.ClassBisUI.Render()
+        elseif mode == "rotation" and CU then
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
             CU.RenderRotation()

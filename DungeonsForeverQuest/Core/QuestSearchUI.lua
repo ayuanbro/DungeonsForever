@@ -1932,6 +1932,62 @@ function QS.GoTo(id, kind)
     QS.PaintDetail()
 end
 
+function QS.ScrollToRow(id, kind)
+    if not id or not kind then return end
+    if kind ~= QS.kind then return end
+    if not (QS.listScroll and QS.listChild) then return end
+    local ids = RES[kind]
+    if type(ids) ~= "table" then return end
+    local at = nil
+    for i = 1, #ids do
+        if ids[i] == id then at = i break end
+    end
+    if not at then return end
+    local rowH = ROW_H + ROW_GAP
+    local r = ROWS[1]
+    if r and r.GetHeight then
+        local h = r:GetHeight()
+        if type(h) == "number" and h > 0 then rowH = h + ROW_GAP end
+    end
+    local top = (at - 1) * rowH
+    local viewH = QS.listScroll:GetHeight() or 0
+    if type(viewH) ~= "number" then viewH = 0 end
+    local contentH = QS.listChild:GetHeight() or 0
+    if type(contentH) ~= "number" then contentH = 0 end
+    local maxV = contentH - viewH
+    if maxV < 0 then maxV = 0 end
+    local y = top
+    local cur = QS.listScroll:GetVerticalScroll() or 0
+    if type(cur) ~= "number" then cur = 0 end
+    if viewH > 0 then
+        if y > cur and y + rowH <= cur + viewH then y = cur end
+    end
+    if y < 0 then y = 0 elseif y > maxV then y = maxV end
+    QS.listScroll:SetVerticalScroll(y)
+    QS.SyncScrollBar()
+end
+
+function QS.OpenAt(id, kind, text)
+    if not id or not QS.page then return end
+    kind = kind or "quest"
+    QS.text = tostr(text or "")
+    if QS.eb then
+        QS.eb:SetText(QS.text)
+        if QS.ph then
+            if #QS.text > 0 then QS.ph:Hide() else QS.ph:Show() end
+        end
+    end
+    QS.lastQuery = nil
+    QS.kind = kind
+    local ok = pcall(QS.Apply)
+    if not ok then return end
+    QS.kind = kind
+    if QS.tab then QS.tab.paint(kind) end
+    QS.PaintList()
+    QS.GoTo(id, kind)
+    QS.ScrollToRow(id, kind)
+end
+
 local function BuildDetailCard(page)
     local card = Card(page, X + LIST_W + GUT, -BODY_TOP, DETAIL_W, BODY_H)
     DET.card = card

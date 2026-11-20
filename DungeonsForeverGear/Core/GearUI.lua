@@ -684,6 +684,23 @@ local AUTO_ARMOR = {
 local AUTO_ARMOR_LABEL = {}
 for _, a in ipairs(AUTO_ARMOR) do AUTO_ARMOR_LABEL[a.key] = a.label end
 
+local SET_TIER_CLS = {
+    [189] = "WARRIOR", [188] = "PALADIN", [186] = "HUNTER", [184] = "ROGUE", [182] = "PRIEST",
+    [187] = "SHAMAN", [181] = "MAGE", [183] = "WARLOCK", [185] = "DRUID",
+    [511] = "WARRIOR", [516] = "PALADIN", [515] = "HUNTER", [512] = "ROGUE", [514] = "PRIEST",
+    [519] = "SHAMAN", [517] = "MAGE", [518] = "WARLOCK", [513] = "DRUID",
+}
+local SET_TIERS = {
+    { key = "t0", label = "T0", ids = { 189, 188, 186, 184, 182, 187, 181, 183, 185 } },
+    { key = "t05", label = "T0.5", ids = { 511, 516, 515, 512, 514, 519, 517, 518, 513 } },
+}
+local SET_TIER_OF = {}
+local SET_TIER_KEY = {}
+for _, t in ipairs(SET_TIERS) do
+    SET_TIER_KEY[t.key] = t
+    for i, sid in ipairs(t.ids) do SET_TIER_OF[sid] = { tier = t.key, ord = i } end
+end
+
 local function SetNameOf(sid, fallback)
     local c = G.__setNames
     if not c then
@@ -731,6 +748,8 @@ local function AutoSetList()
                 out[#out + 1] = {
                     auto = true, sid = sid, ids = ids, armor = key, u = u,
                     n = (totals and totals[sid]) or #ids,
+                    tier = SET_TIER_OF[sid] and SET_TIER_OF[sid].tier,
+                    tord = SET_TIER_OF[sid] and SET_TIER_OF[sid].ord,
                 }
             end
         end
@@ -745,6 +764,24 @@ local function AutoSetOf(sid)
         if s.sid == sid then return s end
     end
     return nil
+end
+
+local tierCache
+local function TierSets(tkey)
+    if not tierCache then
+        tierCache = {}
+        for _, s in ipairs(AutoSetList()) do
+            if s.tier then
+                local t = tierCache[s.tier]
+                if not t then t = {} tierCache[s.tier] = t end
+                t[#t + 1] = s
+            end
+        end
+        for _, t in pairs(tierCache) do
+            table.sort(t, function(a, b) return (a.tord or 99) < (b.tord or 99) end)
+        end
+    end
+    return tierCache[tkey] or {}
 end
 
 local function ParseSetBonus(lines)
@@ -766,13 +803,57 @@ local function ParseSetBonus(lines)
                     if p2 then cut = p2 + 1 end
                 end
                 local txt = cut and body:sub(cut):gsub("^%s+", "") or body
-                if n and n >= 2 and n <= 9 and txt ~= "" then out[n] = txt end
+                if txt == "" then return nil end
+                if n and n >= 2 and n <= 9 then out[n] = txt end
             elseif t:match("%S") and not t:match("^%s%s") then
                 break
             end
         end
     end
     if next(out) then return out end
+    return nil
+end
+
+local function BonusTip()
+    if G.__bonusTip then return G.__bonusTip end
+    if G.__bonusTipDead then return nil end
+    local ok, tip = pcall(CreateFrame, "GameTooltip", "DFGearSetTip", UIParent, "GameTooltipTemplate")
+    if ok and tip then
+        G.__bonusTip = tip
+        pcall(tip.SetAlpha, tip, 0)
+        pcall(tip.SetOwner, tip, UIParent, "ANCHOR_NONE")
+    else
+        G.__bonusTipDead = true
+    end
+    return G.__bonusTip
+end
+
+local function ScanSetBonus(iid)
+    local tip = BonusTip()
+    if not tip then return nil end
+    local ok, res = pcall(function()
+        if not pcall(tip.SetOwner, tip, UIParent, "ANCHOR_NONE") then return nil end
+        local set = false
+        if tip.SetItemByID then
+            set = pcall(tip.SetItemByID, tip, iid)
+        elseif tip.SetHyperlink then
+            set = pcall(tip.SetHyperlink, tip, "item:" .. tostring(iid))
+        end
+        if not set then return nil end
+        pcall(tip.Show, tip)
+        local n = (tip.NumLines and tip:NumLines()) or 0
+        if n <= 0 then return nil end
+        local lines = {}
+        for i = 1, n do
+            local fs = _G["DFGearSetTipTextLeft" .. i]
+            local t = fs and fs.GetText and fs:GetText()
+            if type(t) == "string" then lines[#lines + 1] = { leftText = t } end
+        end
+        pcall(tip.Hide, tip)
+        if #lines == 0 then return nil end
+        return ParseSetBonus(lines)
+    end)
+    if ok then return res end
     return nil
 end
 
@@ -791,24 +872,17 @@ local function SetBonusOf(s)
         G.__setBonusPend = pend
     end
     if pend[s.sid] then return nil end
-    local tt = C_TooltipInfo and C_TooltipInfo.GetItemByID
-    if type(tt) ~= "function" then
-        cache[s.sid] = false
-        return false
-    end
     local targets = {}
     for i = 1, #(s.ids or {}) do
         if recs[s.ids[i]] then targets[#targets + 1] = s.ids[i] end
     end
-    local target = targets[1]
-    if not target then
+    if #targets == 0 then
         cache[s.sid] = false
         return false
     end
     local function probe()
         for i = 1, #targets do
-            local got = tt(targets[i])
-            local bons = got and got.lines and ParseSetBonus(got.lines)
+            local bons = ScanSetBonus(targets[i])
             if bons then return bons end
         end
         return nil
@@ -861,6 +935,69 @@ local function SetKeyOf(set, idx)
     return "SET:" .. (set.batch or "t1") .. ":" .. idx
 end
 
+local function VendorCurName(v)
+    if type(v) ~= "table" or type(v.cur) ~= "table" then return nil end
+    if type(C_CurrencyInfo) == "table" and type(C_CurrencyInfo.GetCurrencyInfo) == "function" then
+        local ok, ci = pcall(C_CurrencyInfo.GetCurrencyInfo, v.cur[1])
+        if ok and type(ci) == "table" and type(ci.name) == "string" and ci.name ~= "" then
+            return ci.name
+        end
+    end
+    return v.cur[2]
+end
+
+local function VendorItemName(id)
+    local gif = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+    if type(gif) == "function" then
+        local ok, nm = pcall(gif, id)
+        if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    local rec = recs[id]
+    if rec and type(rec.name) == "string" and rec.name ~= "" then return rec.name end
+    return "#" .. id
+end
+
+local function VendorViewEntries()
+    local out = {}
+    local fn = ns.EnsureGearVendorGoods
+    local goods = type(fn) == "function" and fn() or nil
+    if type(goods) ~= "table" then return out end
+    local ids = {}
+    for nid in pairs(goods) do ids[#ids + 1] = nid end
+    table.sort(ids)
+    for _, nid in ipairs(ids) do
+        local v = goods[nid]
+        if type(v) == "table" then
+            local zname = ""
+            if v.zone and C_Map and C_Map.GetAreaInfo then
+                local ok, zn = pcall(C_Map.GetAreaInfo, v.zone)
+                if ok and type(zn) == "string" then zname = zn end
+            end
+            local sp = ns.GearVendorSpawns and ns.GearVendorSpawns[nid]
+            local posTxt = ""
+            if type(sp) == "table" and sp[1] and sp[1][3] then
+                posTxt = format(" (%.1f, %.1f)", sp[1][3], sp[1][4] or 0)
+            end
+            local head = v.name or ("#" .. nid)
+            if type(v.tag) == "string" and v.tag ~= "" then
+                head = head .. " · " .. v.tag
+            end
+            if zname ~= "" then
+                head = head .. " · " .. zname .. posTxt
+            end
+            out[#out + 1] = { hdr = head }
+            local curName = VendorCurName(v)
+            for _, g in ipairs(v.groups or {}) do
+                out[#out + 1] = { hdr = g[2] }
+                for _, e in ipairs(g[3] or {}) do
+                    out[#out + 1] = { id = e[1], cost = e[2], vgood = true, vcur = curName, vnid = nid }
+                end
+            end
+        end
+    end
+    return out
+end
+
 local function SetsViewEntries()
     local out = {}
     local function emitSet(set, idx, withItems)
@@ -897,6 +1034,13 @@ local function SetsViewEntries()
     end
     local hasRS = RS and type(RS.sets) == "table"
     if G.cat == "SETS" then
+        for _, t in ipairs(SET_TIERS) do
+            local tList = TierSets(t.key)
+            if #tList > 0 then
+                out[#out + 1] = { hdr = t.label }
+                for _, s in ipairs(tList) do emitAuto(s, false) end
+            end
+        end
         if hasRS then
             local batches = RS.batches
             if type(batches) ~= "table" or #batches == 0 then
@@ -920,19 +1064,21 @@ local function SetsViewEntries()
         for _, a in ipairs(AUTO_ARMOR) do
             local n = 0
             for _, s in ipairs(AutoSetList()) do
-                if s.armor == a.key then n = n + 1 end
+                if s.armor == a.key and not s.tier then n = n + 1 end
             end
             if n > 0 then
                 out[#out + 1] = { hdr = a.label }
                 for _, s in ipairs(AutoSetList()) do
-                    if s.armor == a.key then emitAuto(s, false) end
+                    if s.armor == a.key and not s.tier then emitAuto(s, false) end
                 end
             end
         end
+    elseif G.cat:sub(1, 4) == "SET:" and SET_TIER_KEY[G.cat:sub(5)] then
+        for _, s in ipairs(TierSets(G.cat:sub(5))) do emitAuto(s, false) end
     elseif G.cat:sub(1, 6) == "AUTOG:" then
         local key = G.cat:sub(7)
         for _, s in ipairs(AutoSetList()) do
-            if s.armor == key then emitAuto(s, false) end
+            if s.armor == key and not s.tier then emitAuto(s, false) end
         end
     elseif G.cat:sub(1, 8) == "AUTOSET:" then
         local s = AutoSetOf(tonumber(G.cat:sub(9)) or -1)
@@ -1017,6 +1163,8 @@ local function RebuildView()
     local entries
     if G.cat == "WISH" then
         entries = WishViewEntries()
+    elseif G.cat == "VENDOR" then
+        entries = VendorViewEntries()
     elseif IsSetCat(G.cat) then
         entries = SetsViewEntries()
     else
@@ -1450,14 +1598,27 @@ local function PaintRow(r)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
     end
-    local s1, s2, slock = SrcLines(e)
-    SetTextC(r.src, s1)
-    r.src:SetTextColor(Unpack(C_TEXT))
-    SetTextC(r.src2, s2)
-    if slock then
-        r.src2:SetTextColor(1, 0.35, 0.3)
+    if e.vgood then
+        local costTxt
+        if type(e.cost) == "table" then
+            costTxt = tostring(e.cost[2] or 1) .. "×" .. VendorItemName(e.cost[1])
+        else
+            costTxt = tostring(e.cost or "")
+            if e.vcur then costTxt = costTxt .. " " .. e.vcur end
+        end
+        SetTextC(r.src, costTxt)
+        r.src:SetTextColor(Unpack(C_GOLD))
+        SetTextC(r.src2, "")
     else
-        r.src2:SetTextColor(Unpack(C_DIM))
+        local s1, s2, slock = SrcLines(e)
+        SetTextC(r.src, s1)
+        r.src:SetTextColor(Unpack(C_TEXT))
+        SetTextC(r.src2, s2)
+        if slock then
+            r.src2:SetTextColor(1, 0.35, 0.3)
+        else
+            r.src2:SetTextColor(Unpack(C_DIM))
+        end
     end
     local qid = GD_SRC_Q and GD_SRC_Q[e.id]
     local qn = nil
@@ -2636,6 +2797,8 @@ function G.PaintCats()
             if si then
                 local set = RS and RS.sets and RS.sets[tonumber(si)]
                 paintNode(key, set and (#(set.ids or {}) .. " 件") or "")
+            elseif SET_TIER_KEY[rest] then
+                paintNode(key, #TierSets(rest) .. " 套")
             else
                 local n = 0
                 if RS and type(RS.sets) == "table" then
@@ -2658,9 +2821,19 @@ function G.PaintCats()
             local akey = key:sub(7)
             local n = 0
             for _, s in ipairs(AutoSetList()) do
-                if s.armor == akey then n = n + 1 end
+                if s.armor == akey and not s.tier then n = n + 1 end
             end
             paintNode(key, n .. " 套")
+        elseif key == "VENDOR" then
+            local vfn = ns.EnsureGearVendorGoods
+            local vgoods = type(vfn) == "function" and vfn() or nil
+            local vn = 0
+            if type(vgoods) == "table" then
+                for _, v in pairs(vgoods) do
+                    for _, g in ipairs(v.groups or {}) do vn = vn + #(g[3] or {}) end
+                end
+            end
+            paintNode(key, vn .. " 件")
         elseif key ~= "ALL" and key ~= "WISH" and key ~= "SETS" then
             paintNode(key)
         end
@@ -2678,6 +2851,9 @@ end
 function G.EmptyHint()
     if G.cat == "WISH" then
         return L["还没有收藏的装备：在装备列表悬停行星标，点 ☆ 即可加入心愿清单"]
+    end
+    if G.cat == "VENDOR" then
+        return L["暂无商人售卖数据"]
     end
     if IsSetCat(G.cat) then
         return L["该筛选下暂无套装"]
@@ -2822,6 +2998,24 @@ local function BuildCats(parent)
         end
     end
     local setKids = {}
+    for _, t in ipairs(SET_TIERS) do
+        local tKids = {}
+        for _, s in ipairs(TierSets(t.key)) do
+            local cls = SET_TIER_CLS[s.sid]
+            local kb = Node("AUTOSET:" .. s.sid, cls and L[SET_CLS_ZH[cls]] or SetNameOf(s.sid), 2)
+            local cc = cls and RAID_CLASS_COLORS and RAID_CLASS_COLORS[cls]
+            if cc and cc.r then
+                kb.f.txt:SetTextColor(cc.r, cc.g, cc.b)
+                kb.f.__clsColor = { cc.r, cc.g, cc.b }
+            end
+            tKids[#tKids + 1] = kb
+        end
+        if #tKids > 0 then
+            local tn = Node("SET:" .. t.key, t.label, 1, true, 2)
+            tn.kids = tKids
+            setKids[#setKids + 1] = tn
+        end
+    end
     if RS and type(RS.sets) == "table" then
         local batches = RS.batches
         if type(batches) ~= "table" or #batches == 0 then
@@ -2875,7 +3069,7 @@ local function BuildCats(parent)
         for _, a in ipairs(AUTO_ARMOR) do
             local gKids = {}
             for _, s in ipairs(autoList) do
-                if s.armor == a.key then
+                if s.armor == a.key and not s.tier then
                     gKids[#gKids + 1] = Node("AUTOSET:" .. s.sid, SetNameOf(s.sid), 2)
                 end
             end
@@ -2889,6 +3083,11 @@ local function BuildCats(parent)
     local sn = Node("SETS", L["套装"], nil, true, 8)
     sn.kids = setKids
     root[#root + 1] = sn
+    local vfn = ns.EnsureGearVendorGoods
+    local vgoods = type(vfn) == "function" and vfn() or nil
+    if type(vgoods) == "table" and next(vgoods) then
+        root[#root + 1] = Node("VENDOR", L["商人"], nil, nil, 8)
+    end
     local scroll = 0
     local contentH = 0
     local hostH = 0
@@ -3427,7 +3626,7 @@ function G.PaintPager()
 end
 
 function G.PaintChrome()
-    local setView = IsSetCat(G.cat)
+    local setView = IsSetCat(G.cat) or G.cat == "VENDOR"
     local special = G.cat == "WISH" or setView
     if G.filterBtn then G.filterBtn:SetShown(not special) end
     if G.sortRow then G.sortRow:SetShown(not special) end
@@ -3563,6 +3762,10 @@ local function StartViewPipeline(gen, full)
         out = WishViewEntries()
         i = 0
         stage = "counts"
+    elseif G.cat == "VENDOR" then
+        out = VendorViewEntries()
+        i = 0
+        stage = "apply"
     elseif IsSetCat(G.cat) then
         out = SetsViewEntries()
         i = 0

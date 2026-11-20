@@ -45,7 +45,11 @@ local function CFG()
     if c.torch == nil then c.torch = true end
     if c.banner == nil then c.banner = true end
     if c.quest == nil then c.quest = true end
-    if c.questTaken == nil then c.questTaken = false end
+    if c.qtDefault ~= 2 then
+        c.qtDefault = 2
+        c.questTaken = true
+    end
+    if c.questTaken == nil then c.questTaken = true end
     if c.spell == nil then c.spell = true end
     if c.talent == nil then c.talent = true end
     if c.food == nil then c.food = true end
@@ -1666,6 +1670,7 @@ end
 local SLEEP_BAG_ITEM = 211527
 local WELL_RESTED_SPELL = 429959
 local wellRestedName = nil
+local worldAt = nil
 
 local function ResolveWellRestedName()
     if wellRestedName then return wellRestedName end
@@ -1682,22 +1687,23 @@ end
 local function WellRestedState()
     local name = ResolveWellRestedName()
     local now = (GetTime and GetTime()) or 0
+    if worldAt == nil then return nil, nil end
+    if now > 0 and now - worldAt < 6 then return nil, nil end
     local seen = false
-    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        for i = 1, 40 do
-            local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-            if not ok then return false, nil end
-            if not a then break end
-            seen = true
-            if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
-                or (name and not Sealed(a.name) and a.name == name) then
-                local rem = math.huge
-                local exp = a.expirationTime
-                if not Sealed(exp) and type(exp) == "number" and exp > 0 then
-                    rem = math.max(0, exp - now)
-                end
-                return true, rem
+    if not (C_UnitAuras and C_UnitAuras.GetAuraDataByIndex) then return nil, nil end
+    for i = 1, 40 do
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+        if not ok then return nil, nil end
+        if not a then break end
+        seen = true
+        if (not Sealed(a.spellId) and a.spellId == WELL_RESTED_SPELL)
+            or (name and not Sealed(a.name) and a.name == name) then
+            local rem = math.huge
+            local exp = a.expirationTime
+            if not Sealed(exp) and type(exp) == "number" and exp > 0 then
+                rem = math.max(0, exp - now)
             end
+            return true, rem
         end
     end
     if not seen then return false, nil end
@@ -1726,8 +1732,6 @@ local function SleepBagIcon()
     return 133662
 end
 
--- 精神饱满剩余 30 分钟时没有游戏事件，单独定时在那一刻重新检查（只保留最新一个定时）
--- No game event fires when Well Rested drops below 30 min, so arm a timer for that moment (latest one wins)
 local RESTED_WARN = 1800
 local restedGen = 0
 local function ArmRestedTimer(rem)
@@ -1745,12 +1749,12 @@ local function RestedRow(c)
     if Z.IsIgnored(ItemKey("rested", SLEEP_BAG_ITEM)) then return nil end
     if not OwnItem(SLEEP_BAG_ITEM) then return nil end
     local buffed, rem = WellRestedState()
+    if buffed == nil then return nil end
     ArmRestedTimer(buffed and rem or nil)
     local sub = L["缺少精神饱满"]
     if buffed then
         if rem == nil or rem >= RESTED_WARN then return nil end
         if not SleepBagCdReady() then
-            -- 冷却结束时没有事件：到点重新检查 / no event when the cooldown ends: re-check then
             local left = SleepBagCdLeft()
             restedGen = restedGen + 1
             if left < rem and type(C_Timer) == "table" and C_Timer.After then
@@ -2181,12 +2185,12 @@ ns.Init(function()
     pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
+            worldAt = (GetTime and GetTime()) or 0
             questCache.t = -1e9
             Z.Check("login", 0)
         elseif event == "UNIT_AURA" then
             Z.ScheduleSoft(5)
         elseif event == "PLAYER_UPDATE_RESTING" then
-            -- 进出休息区：食物提醒在休息区内隐藏 / entering/leaving rested areas toggles the food reminder
             Z.ScheduleSoft(0.5, true)
         elseif event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
             Z.ScheduleSoft(1.2)

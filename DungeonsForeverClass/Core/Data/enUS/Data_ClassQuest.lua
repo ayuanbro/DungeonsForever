@@ -29,6 +29,7 @@ ns.ClassQuestChains = {
         { t = "Whirlwind Weapon", key = "war_whirlwind", steps = { 1791, 1712, 1713, 1792 }, after = 1719 },
         { t = "Essence of the Exile", key = "war_exile", steps = { 1714 }, extra = true },
         { t = "A Warrior's Bond", key = "war_kinship", steps = { 8417, 8423, 8424, 8425 } },
+        { t = "Legacy of Valor", key = "war_legacy_valor", steps = { 84124 }, cat = "endgame", note = "Kill orcs around Blackrock Stronghold until you get \"Rhythm of War\", then pay respects at the Altar of Reverence (Burning Steppes 39,28) and defeat the Reverent Champion." },
     },
     PALADIN = {
         { t = "Rediscovering the Light", key = "pal_intro_ud", steps = { 90902 }, races = { 5 }, after = 364 },
@@ -102,7 +103,7 @@ ns.ClassQuestChains = {
         { t = "Syndicate Emblems", key = "rog_emblems", steps = { 6701 }, extra = true, after = 6681 },
         { t = "The Azure Key", key = "rog_azurekey", steps = { 8233, 8234, 8235, 8236 } },
         { t = "Scrap Bin Needed", key = "rog_junkboxes", steps = { 8249 }, extra = true },
-        { t = "The Talisman of Kazdor", key = "rog_kazdor", steps = { 80526, 80411 } },
+        { t = "The Talisman of Kazdor", key = "rog_kazdor", steps = { 80526, 80411, 80453, 80454, 80455 } },
     },
     PRIEST = {
         { t = "Garments of the Moon", key = "pri_robe_nelf", steps = { 5622, 5621 }, group = "pri_robe" },
@@ -739,6 +740,9 @@ function ns.EnsureClassQuestInfo()
     [79970] = { n = "Aeonas the Vindicated", cn = "Aeonas the Vindicated", l = 40, r = 35, f = "A", s = { { 217996, "Aeonas", "Scarlet Monastery" } }, e = { 218160, "Aeonas the Vindicated", "Stormwind City", 48.5, 48.9, 1453 }, items = { 277236 }, note = "Return to Aionas at the Cathedral of Light in Stormwind; the reward is the plate shoulders \"Pauldrons of Vindication\", plenty good for the Lv 40 range." },
     [80411] = { n = "The Talisman of Kazdor", cn = "The Talisman of Kazdor", l = 50, r = 45, s = { { 6707, "Fahrad", "Alterac Mountains", 84.4, 80.2, 1416 } }, e = { 6707, "Fahrad", "Alterac Mountains", 84.4, 80.2, 1416 }, note = "The charm is in Zul'Farrak (Tanaris); the quest must be done solo and can't be turned in while grouped - leave your group before going in." },
     [80526] = { n = "Fool Me Twice", cn = "Fool Me Twice", l = 50, r = 45, s = { { 6707, "Fahrad", "Alterac Mountains", 84.4, 80.2, 1416 } }, e = { 6707, "Fahrad", "Alterac Mountains", 84.4, 80.2, 1416 }, note = "Fahrad is at Ravenholdt Manor; the path up the mountain is behind the high ground north of Durnholde Keep - just keep heading up." },
+    [80453] = { n = "Best Laid Plans", cn = "Best Laid Plans", l = 50, r = 45, s = { { 6777, "Zan Shivsproket", "Alterac Mountains", 86, 80, 1416 } }, e = { 410369, "Dead Drop", "Silverpine Forest", 47.1, 71.1, 1421 }, note = "One of the final three steps of the Talisman of Kazdor chain: continue from Zan Shivsproket and leave the goods in the Dead Drop in Silverpine Forest." },
+    [80454] = { n = "One Last Drop", cn = "One Last Drop", l = 50, r = 45, s = { { 6777, "Zan Shivsproket", "Alterac Mountains", 86, 80, 1416 } }, e = { 410369, "Dead Drop", "Silverpine Forest", 47.1, 71.1, 1421 }, note = "Wrapping up the Talisman of Kazdor chain: more running between Alterac and the Dead Drop in Silverpine Forest - just follow the quest tracker." },
+    [80455] = { n = "Biding Our Time", cn = "Biding Our Time", l = 50, r = 45, s = { { 410369, "Dead Drop", "Silverpine Forest", 47.1, 71.1, 1421 } }, e = { 6707, "Fahrad", "Alterac Mountains", 84.4, 80.2, 1416 }, items = { 219343, 217736 }, note = "Last step of the Talisman of Kazdor chain: collect the items from the Dead Drop and return them to Fahrad at Ravenholdt Manor. Rewards Filcher's Cowl and Rune of the Coterie." },
     [81762] = { n = "Some Good News", cn = "Some Good News", l = 50, r = 45, f = "A", s = { { 218160, "Aeonas the Vindicated", "Stormwind City", 48.5, 48.9, 1453 } }, e = { 5492, "Katherine the Pure", "Stormwind City", 48.5, 49.1, 1453 }, note = "Dialogue-only quest available at level 45; both NPCs are in the Cathedral of Light." },
     [81764] = { n = "The Mysterious Merchant", cn = "The Mysterious Merchant", l = 50, r = 45, f = "A", s = { { 5492, "Katherine the Pure", "Stormwind City", 48.5, 49.1, 1453 } }, e = { 221575, "Elrick", "Dustwallow Marsh", 66.4, 45.4, 1445 }, note = "Theramore is on the southeast coast of Dustwallow Marsh and the merchant is right by the inn door; take the boat or fly straight to Theramore." },
     [81765] = { n = "Elrick, Paladin of the Silver Hand", cn = "Elrick, Paladin of the Silver Hand", l = 50, r = 45, f = "A", s = { { 221575, "Elrick", "Dustwallow Marsh", 66.4, 45.4, 1445 } }, e = { 6272, "Innkeeper Janene", "Dustwallow Marsh", 66.6, 45.2, 1445 }, note = "Talk to Elric first, then go into the Theramore inn and speak with Innkeeper Janene." },
@@ -902,6 +906,7 @@ function ns.EnsureClassQuestInfo()
     [98731] = { n = "Blessings of the Great Cat Spirit", cn = "Blessings of the Great Cat Spirit", l = 20, r = 20, f = "A", races = { 4 }, s = { { 11957, "Great Cat Spirit", "Moonglade", 58.4, 73.5, 1450 } }, e = { 11802, "Dendrite Starblaze", "Moonglade", 56.2, 30.4, 1450 } },
     [98738] = { n = "Blessings of the Great Windborne Cat Spirit", cn = "Blessings of the Great Windborne Cat Spirit", l = 20, r = 20, races = { 95, 96 }, s = { { 272054, "Avatar of Saeyleenan", "Moonglade", 43.9, 73.4, 1450 } }, e = { 11802, "Dendrite Starblaze", "Moonglade", 56.2, 30.4, 1450 } },
     [98739] = { n = "Blessings of the Great Cat Spirit", cn = "Blessings of the Great Cat Spirit", l = 20, r = 20, f = "H", races = { 6 }, s = { { 11957, "Great Cat Spirit", "Moonglade", 58.4, 73.5, 1450 } }, e = { 11802, "Dendrite Starblaze", "Moonglade", 56.2, 30.4, 1450 } },
+    [84124] = { n = "Legacy of Valor", cn = "Legacy of Valor", l = 60, r = 55, s = { { 410158, "Altar of Reverence", "Burning Steppes", 39.6, 28, 1428 } }, e = { 410158, "Altar of Reverence", "Burning Steppes", 39.6, 28, 1428 }, items = { 208222 }, note = "Hidden quest: kill orcs around Blackrock Stronghold until you collect \"Rhythm of War\", then pay respects at the Altar of Reverence, defeat the Reverent Champion that appears and turn in on the spot. Rewards Old Guard Retaliator." },
     [99187] = { n = "The Reliquary of Tyr", cn = "The Reliquary of Tyr", l = 58, r = 50, f = "H", races = { 5 }, s = { { 276110, "Knight of Mourning", "Tirisfal Glades", 17.6, 67.6, 1420 } }, e = { 276110, "Knight of Mourning", "Tirisfal Glades", 17.6, 67.6, 1420 }, note = "The reliquary is in Blackthroat Keep in Kalimdor (southern Badlands); don't force it solo at Lv 50 - group up or come back at Lv 60." },
 }
     return ns.ClassQuestInfo
@@ -1040,4 +1045,7 @@ ns.ClassQuestItemName = {
     [277207] = "Well-Weathered Cloak",
     [277209] = "Ponderous Loop",
     [277236] = "Pauldrons of Vindication",
+    [208222] = "Old Guard Retaliator",
+    [217736] = "Rune of the Coterie",
+    [219343] = "Filcher's Cowl",
 }

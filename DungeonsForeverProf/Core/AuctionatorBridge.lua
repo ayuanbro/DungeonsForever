@@ -711,6 +711,18 @@ local function DisconnectFullScan()
     StopFullImport()
 end
 
+local function ArmWatchdog(token)
+    if not (C_Timer and C_Timer.NewTimer) then return end
+    if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
+    fullWatchdog=C_Timer.NewTimer(SCAN_SILENT_SEC,function()
+        fullWatchdog=nil
+        if fullRead~=token or token.gotRows then return end
+        if fullState.status~="scanning" then return end
+        fullState={status="noresponse",pct=fullState.pct,startedAt=token.startedAt}
+        ScanStatusChanged()
+    end)
+end
+
 function AB.ConnectAuctionatorStock()
     local enabled=AB.ReplicateScanEnabled()
     if enabled~=true then
@@ -741,23 +753,19 @@ function AB.ConnectAuctionatorStock()
                 modeGeneration=mode.generation,scanSerial=mode.scanSerial}
             local token=fullRead
             fullState={status="scanning",pct=0,startedAt=token.startedAt}
-            if C_Timer and C_Timer.NewTimer then
-                fullWatchdog=C_Timer.NewTimer(SCAN_SILENT_SEC,function()
-                    fullWatchdog=nil
-                    if fullRead~=token or token.gotRows then return end
-                    if fullState.status~="scanning" then return end
-                    StopFullImport()
-                    fullState={status="noresponse",startedAt=token.startedAt}
-                    ScanStatusChanged()
-                end)
-            end
+            ArmWatchdog(token)
             ScanStatusChanged()
         elseif event==ev.ScanProgress and fullRead and type(data)=="number" then
+            if fullState.status=="noresponse" then
+                fullState.status="scanning"
+                ScanStatusChanged()
+            end
             if fullState.status=="scanning" then
                 local before=math.floor((tonumber(fullState.pct) or 0)*10)
                 fullState.pct=data
                 if math.floor(data*10)~=before then ScanStatusChanged() end
             end
+            if not fullRead.gotRows then ArmWatchdog(fullRead) end
             if data>=0.2 then
                 fullRead.gotRows=true
                 if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
@@ -765,7 +773,9 @@ function AB.ConnectAuctionatorStock()
             end
         elseif event==ev.ScanFailed then
             ImportFailed("failed")
-        elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then
+        elseif event==ev.ScanComplete and fullRead
+            and (fullState.status=="scanning" or fullState.status=="noresponse") then
+            if fullRead.expected==nil then ExpectedFullRows(fullRead) end
             ImportFullRows(fullRead,data)
         end
     end

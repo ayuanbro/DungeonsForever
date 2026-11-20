@@ -219,7 +219,17 @@ function PD.ScanSnapshotText(extraOnly)
         end
         local scan=bridge.FullScanStatus and bridge.FullScanStatus()
         if scan and (scan.status=="scanning" or scan.status=="processing") then
-            return L["正在更新扫描，当前使用上次完整扫描"]
+            local pct
+            if scan.status=="scanning" then
+                pct=math.floor(math.max(0,math.min(1,tonumber(scan.pct) or 0))*100)
+            else
+                local done,total=tonumber(scan.done),tonumber(scan.total)
+                pct=(done and total and total>0) and math.floor(done/total*100) or 0
+            end
+            if scan.status=="processing" then
+                return format(L["正在整理数据 %d%%，当前使用上次完整扫描"],pct)
+            end
+            return format(L["正在更新扫描 %d%%，当前使用上次完整扫描"],pct)
         elseif scan and (scan.status=="failed" or scan.status=="incomplete" or scan.status=="unverified") then
             return format(L["本次扫描失败，沿用 %d 分钟前的完整扫描"],minutes)
         end
@@ -1798,6 +1808,7 @@ PD.autoPage = "route"
 PD.shopGroup = false
 PD.toolKey = nil
 PD.moneyKey = nil
+PD.qualityKey = nil
 PD.perkOpen = {}
 PD.rows, PD.toolBtns = {}, {}
 PD.specs = nil
@@ -2193,6 +2204,18 @@ function PD.Row(i)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" and not self.__routePolicy then return end
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+            local it = self.__it and (type(self.__it) == "table" and self.__it[1] or self.__it)
+            if self.__ahSearch and it then
+                local nm, got = PD.ItemName(it)
+                if got and PD.AHSearch(nm) then
+                    ns.PlaySound(1)
+                    return
+                end
+                if DG.InsertItemLink and DG.InsertItemLink(it) then
+                    ns.PlaySound(1)
+                    return
+                end
+            end
             if self.__spell and PD.InsertSpellLink(self.__spell) then return end
             if self.__it then
                 DG.ItemShiftClick(self, button)
@@ -3355,6 +3378,7 @@ function PD.BindRow(r, spec, h)
     PD.SetRowHover(r, (not r.__noHover) and r.IsMouseOver and r:IsMouseOver())
     r.__it = spec.it
     r.__spell = spec.spell
+    r.__ahSearch = spec.ahSearch and true or nil
     r.__noTip = spec.noTip
     r.__lines = spec.lines
     r.__mkLines = spec.mkLines
@@ -4727,6 +4751,7 @@ function PD.FillTrainerBoard()
     if not (d and d.list and #d.list > 0) then
         for _, c in ipairs(root.__chips) do c:Hide() end
         for _, f in pairs(root.__fs) do f:Hide() end
+        if root.__bookChip then root.__bookChip:Hide() end
         return 0
     end
     local fac = PD.trFac or "all"
@@ -4741,6 +4766,59 @@ function PD.FillTrainerBoard()
     local W = PD.GRID_W
     local GAP = 8
     local COL_W = math.floor((W - (COLS - 1) * GAP) / COLS)
+    local info = D.pro and D.pro[PD.cur]
+    local bookRows = info and info.ranks
+    local bookID, bookRank, bookLo, bookHi
+    if type(bookRows) == "table" then
+        for idx, row in ipairs(bookRows) do
+            local bid = tonumber(row[4])
+            if bid then
+                local prev = bookRows[idx - 1]
+                bookID, bookRank, bookLo, bookHi = bid, row[1], prev and prev[2] or "150", row[2] or "225"
+                break
+            end
+        end
+    end
+    if bookID and not root.__bookChip then
+        local bc = CreateFrame("Button", nil, root)
+        bc:EnableMouse(true)
+        if ns.hui.HuiCardFX then ns.hui.HuiCardFX(bc, 6, 3) end
+        bc.n = MakeFS(bc, 14, C_GOLD, "LEFT")
+        bc.l = MakeFS(bc, 12, C_WHITE, "LEFT")
+        bc:SetScript("OnClick", function(self)
+            if self.__bookID and DG.InsertItemLink then DG.InsertItemLink(self.__bookID) end
+        end)
+        bc:SetScript("OnEnter", function(self)
+            if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
+            local lines = { { self.__bookName, 1, 0.82, 0 },
+                { L["拍卖行出售的教材与商人出售的完全相同，阅读后上限同样提升。"], 0.7, 0.7, 0.7 } }
+            if RA and RA.AHPriceOf then
+                local p = RA.AHPriceOf(self.__bookID)
+                if type(p) == "number" and p > 0 then
+                    lines[#lines + 1] = { format(L["当前拍卖参考：%s"], RA.MoneyStr(p, "copper")), 0.95, 0.75, 0.4 }
+                end
+            end
+            lines[#lines + 1] = { format(L["%s（%s–%s）教材可在拍卖行搜索购买，无需专程前往商人。"], self.__bookRank or "", self.__bookLo, self.__bookHi), 0.95, 0.75, 0.4 }
+            lines[#lines + 1] = { L["点击：把教材链接插入聊天框"], 1, 0.82, 0 }
+            PD.TipShow(self, lines)
+        end)
+        bc:SetScript("OnLeave", function(self)
+            if self.__huiCard then ns.hui.HuiCardState(self, "norm") end
+            GameTooltip:Hide()
+        end)
+        root.__bookChip = bc
+    end
+    if bookID then
+        local bc = root.__bookChip
+        local nm = PD.VendorItemName(bookID) or L["教材"]
+        bc.__bookID, bc.__bookName = bookID, nm
+        bc.__bookRank, bc.__bookLo, bc.__bookHi = bookRank, bookLo, bookHi
+        bc.n:SetText(L["拍卖行可直接购买"])
+        bc.l:SetText(format("《%s》", nm))
+        bc:Hide()
+    elseif root.__bookChip then
+        root.__bookChip:Hide()
+    end
     if root.__bands then
         for i = COLS + 1, #root.__bands do root.__bands[i]:Hide() end
     end
@@ -4792,6 +4870,21 @@ function PD.FillTrainerBoard()
         band:SetPoint("RIGHT", root, "TOPLEFT", x0 + COL_W, -40)
         band:Show()
         local yCur = -46
+        if bookID and rng == bookLo .. "-" .. bookHi and root.__bookChip then
+            local bc = root.__bookChip
+            if bc.__huiCard then ns.hui.HuiCardState(bc, "norm") end
+            bc:ClearAllPoints()
+            bc:SetPoint("TOPLEFT", root, "TOPLEFT", x0, yCur)
+            bc:SetSize(COL_W, PD.TR_CARD_H)
+            bc.n:ClearAllPoints()
+            bc.n:SetPoint("TOPLEFT", bc, "TOPLEFT", 8, -3)
+            bc.n:Show()
+            bc.l:ClearAllPoints()
+            bc.l:SetPoint("TOPLEFT", bc, "TOPLEFT", 8, -22)
+            bc.l:Show()
+            bc:Show()
+            yCur = yCur - (PD.TR_CARD_H + PD.TR_CARD_GAP + 6)
+        end
         for _, g in ipairs({ "A", "H", "B" }) do
             if fac == "all" or fac == g or g == "B" then
                 local rows = {}
@@ -6136,8 +6229,32 @@ function PD.Build(page)
         lvLo:SetText("")
         lvHi:SetText("")
         SyncLvPh()
+        local dirty = false
         if PD.lvLo ~= nil or PD.lvHi ~= nil then
             PD.lvLo, PD.lvHi = nil, nil
+            dirty = true
+        end
+        if (PD.searchQ or "") ~= "" then
+            PD.searchQ = ""
+            dirty = true
+        end
+        if PD.searchBox and PD.searchBox.eb then
+            PD.searchBox.eb:ClearFocus()
+            PD.searchBox.eb:SetText("")
+        end
+        if PD.toolKey ~= "all" then
+            PD.toolKey = "all"
+            dirty = true
+        end
+        if PD.moneyKey ~= nil then
+            PD.moneyKey = nil
+            dirty = true
+        end
+        if PD.qualityKey ~= nil then
+            PD.qualityKey = nil
+            dirty = true
+        end
+        if dirty then
             if PD.scroll then PD.scroll:SetVerticalScroll(0) end
             PD.RequestRender()
         end
@@ -7146,6 +7263,34 @@ function PD.PaintToolBar(frac)
     local fillW = math.max(1, math.floor((w - 2) * frac + 0.5))
     PD.__progFill:SetSize(fillW, 4)
     if not PD.__progHolder or not PD.__progHolder:IsShown() then bar:Hide() else bar:Show() end
+end
+
+PD.PROG_MIN_ROWS = 120
+
+function PD.RenderProgressPaint()
+    local p = PD.__renderProg
+    if not p then return end
+    local txt, frac
+    if p.total then
+        txt = format(L["正在整理配方 %d/%d"], p.done, p.total)
+        frac = (p.total > 0) and (p.done / p.total) or 1
+    else
+        txt = L["正在整理配方…"]
+    end
+    if p.shown == txt and p.frac == frac then return end
+    p.shown, p.frac = txt, frac
+    PD.PaintToolProgress(txt, frac)
+end
+
+function PD.RenderProgressStart(total)
+    PD.__renderProg = { total = total, done = 0 }
+    PD.RenderProgressPaint()
+end
+
+function PD.RenderProgressEnd()
+    if not PD.__renderProg then return end
+    PD.__renderProg = nil
+    PD.PaintToolProgress(nil, nil)
 end
 
 function PD.PaintToolStale(text)
@@ -8582,6 +8727,7 @@ end
 function PD.RecipeRowLayout(s)
     if not s then return s end
     s.recipe = true
+    s.ahSearch = true
     s.fs = PD.REC_FS
     s.subFs = PD.REC_SUB_FS
     if not s._matSegs then s._matSegs = PD.RecipeMatSegs(s._mats) end
@@ -9178,9 +9324,19 @@ function PD.WireTipZone(z, r)
         if button == "LeftButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
             local sp = self.__spell
             if sp and PD.InsertSpellLink(sp) then return end
+            local zid = self.__it and (type(self.__it) == "table" and self.__it[1] or self.__it)
+            if zid and (self.__ahSearch or (r and r.__ahSearch)) then
+                local nm, got = PD.ItemName(zid)
+                if got and PD.AHSearch(nm) then return end
+            end
             if self.__it then
                 DG.ItemShiftClick(self, button)
                 return
+            end
+            if r and r.__it and r.__ahSearch then
+                local rid = type(r.__it) == "table" and r.__it[1] or r.__it
+                local rnm, rgot = PD.ItemName(rid)
+                if rgot and PD.AHSearch(rnm) then return end
             end
             if r and r.__spell and PD.InsertSpellLink(r.__spell) then return end
             if r and r.__it and DG.InsertItemLink then
@@ -10770,6 +10926,61 @@ function PD.InsertSpellLink(id)
     return false
 end
 
+function PD.AHWindowShown()
+    local f = _G.AuctionHouseFrame
+    if f and type(f.IsShown) == "function" and f:IsShown() then return true end
+    local b = _G.AuctionFrame
+    if b and type(b.IsShown) == "function" and b:IsShown() then return true end
+    return false
+end
+
+local function AHNativeBox()
+    local f = _G.AuctionHouseFrame
+    local bar = f and f.SearchBar
+    if bar and bar.EditBox then return bar.EditBox, bar end
+    local b = _G.AuctionFrameBrowse
+    if b then
+        if b.SearchBar and b.SearchBar.EditBox then return b.SearchBar.EditBox, b.SearchBar end
+        if b.SearchBox then
+            if b.SearchBox.EditBox then return b.SearchBox.EditBox, b.SearchBox end
+            if b.SearchBox.editBox then return b.SearchBox.editBox, b.SearchBox end
+        end
+    end
+    return nil
+end
+
+local function AHApplyNative(name, eb, bar)
+    eb:SetText(name)
+    if type(eb.ClearFocus) == "function" then pcall(eb.ClearFocus, eb) end
+    if type(bar.OnSearchTextChanged) == "function" then pcall(bar.OnSearchTextChanged, bar) end
+    if type(bar.OnEnterPressed) == "function" then pcall(bar.OnEnterPressed, bar) end
+    if type(_G.SearchBoxTemplate_OnTextChanged) == "function" then pcall(_G.SearchBoxTemplate_OnTextChanged, bar) end
+    return true
+end
+
+function PD.AHSearch(name)
+    if type(name) ~= "string" or name == "" then return false end
+    if not PD.AHWindowShown() then return false end
+    local ok, done = pcall(function()
+        local A = _G.Auctionator
+        local v1 = A and A.API and A.API.v1
+        if v1 and type(v1.MultiSearchExact) == "function" then
+            v1.MultiSearchExact("DungeonsForever", { name })
+            return true
+        end
+        local eb, bar = AHNativeBox()
+        if not eb then return false end
+        return AHApplyNative(name, eb, bar)
+    end)
+    if ok and done == true then return true end
+    local eb, bar = AHNativeBox()
+    if eb and bar then
+        local ok2 = pcall(AHApplyNative, name, eb, bar)
+        if ok2 then return true end
+    end
+    return false
+end
+
 function PD.JoinTop(list, n, sep)
     local u = PD.UniqList(list)
     if #u == 0 then return "" end
@@ -12128,6 +12339,7 @@ PD.FAVOR_CURID = 3402
 PD.NO_SELL_KEY = "__none"
 PD.DD_TYPE = "__ddtype"
 PD.DD_MONEY = "__ddmoney"
+PD.DD_QUALITY = "__ddquality"
 PD.DD_WRIT_ZONE = "__ddwritzone"
 
 PD.__curOfFid = {}
@@ -12227,6 +12439,66 @@ function PD.RowCurHit(r)
     local ks = PD.CurKeysOfFid(r[13] and r[13][1])
     if mk == PD.NO_SELL_KEY then return ks == nil end
     return (ks and ks[mk]) and true or false
+end
+
+PD.__itemQual = {}
+
+function PD.ItemQual(id)
+    id = tonumber(id)
+    if not id or id <= 0 then return nil end
+    local m = PD.__itemQual[id]
+    if m ~= nil then return m or nil end
+    local q = nil
+    if C_Item and C_Item.GetItemInfo then
+        local ok, _, _, qual = pcall(C_Item.GetItemInfo, id)
+        if ok and type(qual) == "number" then q = qual end
+    end
+    if not q and type(GetItemInfo) == "function" then
+        local ok, _, _, qual = pcall(GetItemInfo, id)
+        if ok and type(qual) == "number" then q = qual end
+    end
+    PD.__itemQual[id] = q or false
+    return q
+end
+
+function PD.QualName(q)
+    local d = _G["ITEM_QUALITY" .. tostring(q) .. "_DESC"]
+    if type(d) == "string" and d ~= "" then return d end
+    return format("#%d", q)
+end
+
+function PD.QualColor(q)
+    local c = type(ITEM_QUALITY_COLORS) == "table" and ITEM_QUALITY_COLORS[q]
+    if type(c) == "table" then
+        if type(c.color) == "table" then return { c.color.r, c.color.g, c.color.b } end
+        if type(c.r) == "number" then return { c.r, c.g, c.b } end
+    end
+    return { 1, 1, 1 }
+end
+
+function PD.QualityHit(id)
+    if PD.qualityKey == nil then return true end
+    return PD.ItemQual(id) == PD.qualityKey
+end
+
+function PD.RecipeQualItems(d)
+    local items = {}
+    if not (d and d.rows and #d.rows > 0) then return items end
+    local cnt = {}
+    for _, r in ipairs(d.rows) do
+        local q = PD.ItemQual(r[2])
+        if q then cnt[q] = (cnt[q] or 0) + 1 end
+    end
+    local ids = {}
+    for k in pairs(cnt) do ids[#ids + 1] = k end
+    if #ids == 0 then return items end
+    table.sort(ids)
+    items[#items + 1] = { v = nil, text = L["不限"] }
+    for _, q in ipairs(ids) do
+        items[#items + 1] = { v = q, text = format("%s %d", PD.QualName(q), cnt[q]),
+                              swatch = PD.QualColor(q) }
+    end
+    return items
 end
 
 PD.__curCntMemo = {}
@@ -12463,7 +12735,12 @@ function PD.RecipeMenu(items, owner, cur, pick)
         local sel = (it.v == cur) and true or false
         local row = { text = it.text, checked = sel,
                       func = function() pick(it.v) end }
-        if sel then row.color = { 1, 0.82, 0 } end
+        if sel then
+            row.color = { 1, 0.82, 0 }
+        else
+            if it.color then row.color = it.color end
+            if it.swatch then row.swatch = it.swatch end
+        end
         list[#list + 1] = row
     end
     ns.hui.ShowMenu(list, { owner = owner, anchor = owner })
@@ -12473,6 +12750,7 @@ function PD.RecipeTool(d)
     if not d then return {}, nil end
     local tItems = PD.RecipeTypeItems(d)
     local cItems = PD.RecipeCurItems(d)
+    local qItems = PD.RecipeQualItems(d)
     local showType = #tItems > 2
     if PD.moneyKey ~= nil then
         PD.toolKey = "all"
@@ -12486,6 +12764,13 @@ function PD.RecipeTool(d)
         if not ok then PD.toolKey = "all" end
     end
     if not showType then PD.toolKey = "all" end
+    if PD.qualityKey ~= nil then
+        local okq = false
+        for i = 1, #qItems do
+            if qItems[i].v == PD.qualityKey then okq = true break end
+        end
+        if not okq then PD.qualityKey = nil end
+    end
     local total
     if d.rows and #d.rows > 0 then
         total = RecipeCounts(d.rows, 1, 4)
@@ -12493,7 +12778,7 @@ function PD.RecipeTool(d)
         total = RecipeCounts(d.enchants, 14, 3)
     end
     local tool = {}
-    local allOn = (PD.moneyKey == nil and PD.toolKey == "all") or false
+    local allOn = (PD.moneyKey == nil and PD.toolKey == "all" and PD.qualityKey == nil) or false
     tool[#tool + 1] = { key = "all", text = format(L["全部 %d"], total), on = allOn }
     if showType then
         local txt = L["类型"]
@@ -12513,6 +12798,16 @@ function PD.RecipeTool(d)
         end
         local mOn = (PD.moneyKey ~= nil)
         local def = { key = PD.DD_MONEY, text = PD.RecipeChipText(txt, L["货币"]), on = mOn, dd = true }
+        tool[#tool + 1] = def
+    end
+    if #qItems > 2 then
+        local txt = L["品质"]
+        if PD.qualityKey ~= nil then
+            local cur = PD.RecipeItemText(qItems, PD.qualityKey)
+            if cur then txt = cur end
+        end
+        local qOn = (PD.qualityKey ~= nil)
+        local def = { key = PD.DD_QUALITY, text = PD.RecipeChipText(txt, L["品质"]), on = qOn, dd = true }
         tool[#tool + 1] = def
     end
     return tool, function(k)
@@ -12536,6 +12831,15 @@ function PD.RecipeTool(d)
             end)
             return
         end
+        if k == PD.DD_QUALITY then
+            PD.RecipeMenu(qItems, PD.RecipeChip(PD.DD_QUALITY), PD.qualityKey, function(v)
+                PD.qualityKey = v
+                if PD.scroll then PD.scroll:SetVerticalScroll(0) end
+                ns.PlaySound(1)
+                PD.RequestRender()
+            end)
+            return
+        end
         PD.toolKey = k
         PD.moneyKey = nil
         if PD.scroll then PD.scroll:SetVerticalScroll(0) end
@@ -12553,7 +12857,7 @@ function PD.RecipeList(limit, q)
     local showNip = (PD.moneyKey == PD.SRC_NIP_KEY)
     if PD.moneyKey ~= nil then
         for _, r in ipairs(d.rows or {}) do
-            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.QualityHit(r[2]) and PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then return out end
             end
@@ -12568,7 +12872,7 @@ function PD.RecipeList(limit, q)
         end
         for _, c in ipairs(d.crafted or {}) do
             local fid = tonumber(c[9])
-            if PD.RowCurHit({nip=c.nip,[13]=fid and {fid}}) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then
+            if PD.RowCurHit({nip=c.nip,[13]=fid and {fid}}) and PD.QualityHit(c[2]) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then
                 local spec = PD.CraftedSpec(c)
                 if PD.SearchHit(spec) then out[#out+1] = spec end
                 if #out >= cap then return out end
@@ -12578,7 +12882,7 @@ function PD.RecipeList(limit, q)
             for _, f in ipairs(d.favor or {}) do
                 if #out < cap then
                     local sp = PD.FavorSpec(f, d)
-                    if PD.LvStartHit(f[2]) and PD.SearchHit(sp) then out[#out + 1] = sp end
+                    if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) and PD.SearchHit(sp) then out[#out + 1] = sp end
                 end
             end
         end
@@ -12608,7 +12912,7 @@ function PD.RecipeList(limit, q)
     end
     if key == "__crafted" then
         for _, c in ipairs(d.crafted or {}) do
-            if PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then out[#out + 1] = PD.CraftedSpec(c) end
+            if PD.QualityHit(c[2]) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then out[#out + 1] = PD.CraftedSpec(c) end
             if #out >= cap then break end
         end
         return out
@@ -12618,7 +12922,7 @@ function PD.RecipeList(limit, q)
     local __tGate = debugprofilestop and debugprofilestop() or 0
     for _, r in ipairs(d.rows or {}) do
         __ri = __ri + 1
-        if (not r.nip) and PD.RowKeyOK(r, fk) then
+        if (not r.nip) and PD.RowKeyOK(r, fk) and PD.QualityHit(r[2]) then
             if PD.RawHit(r, q) then
                 out[#out + 1] = PD.RecipeSpec(r)
                 if #out >= cap then break end
@@ -12627,6 +12931,11 @@ function PD.RecipeList(limit, q)
         if coroutine.running and coroutine.running()
            and debugprofilestop and (debugprofilestop() - __tGate) >= 3 then
             __tGate = debugprofilestop()
+            local rp = PD.__renderProg
+            if rp then
+                rp.done = __ri
+                PD.RenderProgressPaint()
+            end
             coroutine.yield()
         end
     end
@@ -12702,11 +13011,11 @@ function PD.ScanRecipe()
     if PD.moneyKey ~= nil then
         local cn = 0
         for _, r in ipairs(d.rows or {}) do
-            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.RawHit(r, q) then cn = cn + 1 end
+            if (showNip or not r.nip) and PD.RowCurHit(r) and PD.QualityHit(r[2]) and PD.RawHit(r, q) then cn = cn + 1 end
         end
         if PD.moneyKey == PD.FAVOR_CURID then
             for _, f in ipairs(d.favor or {}) do
-                if PD.LvStartHit(f[2]) and PD.SearchHit(PD.FavorSpec(f, d)) then cn = cn + 1 end
+                if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) and PD.SearchHit(PD.FavorSpec(f, d)) then cn = cn + 1 end
             end
         end
         return cn, nil
@@ -12716,7 +13025,7 @@ function PD.ScanRecipe()
     local n, maxW = 0, 0
     local cap = PD.capNow or PD.ROW_CAP
     for _, r in ipairs(d.rows or {}) do
-        if (not r.nip) and PD.RowKeyOK(r, fk) then
+        if (not r.nip) and PD.RowKeyOK(r, fk) and PD.QualityHit(r[2]) then
             if PD.RawHit(r, q) then
                 n = n + 1
                 if n <= cap then
@@ -12755,9 +13064,13 @@ function PD.RowsRecipe(rows)
     end
     if not d then return end
     local cap = PD.capNow or PD.ROW_CAP
+    if not PD.__quietRender and (d.rows and #d.rows or 0) >= PD.PROG_MIN_ROWS then
+        PD.RenderProgressStart(nil)
+    end
     local realN, maxW = PD.ScanRecipe()
     local list
     if realN then
+        if PD.__renderProg then PD.__renderProg.total = #(d.rows or {}) end
         list = PD.RecipeList(math.min(realN, cap), PD.searchQ)
     else
         list = PD.SearchFilter(PD.RecipeList(cap))
@@ -12791,9 +13104,9 @@ function PD.RowsRecipe(rows)
         return
     end
     if realN == 0 and (not PD.searchQ or PD.searchQ == "")
-       and (PD.toolKey ~= "all" or PD.moneyKey ~= nil) then
+       and (PD.toolKey ~= "all" or PD.moneyKey ~= nil or PD.qualityKey ~= nil) then
         PushGap(rows)
-        PushText(rows, L["当前筛选没有配方 —— 换一个类型或货币，或点「全部」。"], 12, C_GOLD)
+        PushText(rows, L["当前筛选没有配方 —— 换一个类型、货币或品质，或点「全部」。"], 12, C_GOLD)
         return
     end
     local trunc = 0
@@ -18630,6 +18943,7 @@ end
 function PD.Render()
     if not (PD.built and PD.page) or not PD.cur then return end
     PD.ResetItemNameMemo()
+    PD.__renderProg = nil
     PD.lvRouteHead = nil
     if PD.tab == "overview" and not PD.setOpen and PD.cur ~= "__index"
        and PD.subTabSlug ~= PD.cur then
@@ -18774,7 +19088,11 @@ function PD.Render()
     local parseText, parseFrac = PD.AuctionParseText()
     local barFrac = PD.solverFrac
     if parseText then headText, barFrac = parseText, parseFrac end
-    PD.PaintToolProgress(headText, barFrac)
+    if PD.__renderProg then
+        PD.RenderProgressPaint()
+    else
+        PD.PaintToolProgress(headText, barFrac)
+    end
     do
         local stale
         if tool and PD.tab == "leveling" and PD.autoSnapshotSlug == PD.cur
@@ -18840,6 +19158,8 @@ function PD.Render()
         layoutTools()
         PD.truncated = PD.PaintRows(rows)
     end
+    PD.RenderProgressEnd()
+    PD.__quietRender = nil
     ns.OpenPerf.Mark("首屏")
     PD.PlaceSettingsToggles(rows)
     PD.scroll:Show()
@@ -18935,6 +19255,7 @@ function PD.Show(slug)
         PD.cur = slug
         PD.toolKey = nil
         PD.moneyKey = nil
+        PD.qualityKey = nil
         PD.campView = "a"
         PD.tab = "overview"
         PD.setOpen = false
@@ -18994,9 +19315,42 @@ function PD.EnsureCur()
         PD.cur = slug
         PD.toolKey = nil
         PD.moneyKey = nil
+        PD.qualityKey = nil
         PD.tab = (type(db.lastTab) == "string") and db.lastTab or "overview"
         PD.setOpen = false
     end
+end
+
+function PD.TrackRenderRequest()
+    if not PD.built then return end
+    PD.__trackWant = true
+    local function go()
+        if not (C_Timer and C_Timer.After) then
+            PD.__trackWant = nil
+            if ns.PageVisible(PD.page) then PD.RequestRender() end
+            return
+        end
+        local now = debugprofilestop and debugprofilestop() or 0
+        local wait = PD.__trackLast and (PD.__trackLast + 2500 - now) or 0
+        if wait > 0 then
+            if not PD.__trackPend then
+                PD.__trackPend = true
+                C_Timer.After(wait / 1000, function()
+                    PD.__trackPend = nil
+                    if PD.__trackWant then go() end
+                end)
+            end
+            return
+        end
+        if not PD.__trackWant then return end
+        PD.__trackWant = nil
+        PD.__trackLast = now
+        if ns.PageVisible(PD.page) then
+            PD.__quietRender = true
+            PD.RequestRender()
+        end
+    end
+    if C_Timer and C_Timer.After then C_Timer.After(0.25, go) else go() end
 end
 
 local function HookTrack()
@@ -19004,16 +19358,7 @@ local function HookTrack()
     local T = ns.ProfExecution
     if not T or not T.OnChanged then return end
     PD.__trackHooked = true
-    T.OnChanged(function()
-        if not PD.built then return end
-        if PD.__trackPend then return end
-        PD.__trackPend = true
-        local function go()
-            PD.__trackPend = nil
-            if ns.PageVisible(PD.page) then PD.RequestRender() end
-        end
-        if C_Timer and C_Timer.After then C_Timer.After(0.25, go) else go() end
-    end)
+    T.OnChanged(function() PD.TrackRenderRequest() end)
 end
 
 local RD_MIN_MS = 350
@@ -19026,6 +19371,7 @@ function PD.RequestRender()
     end
     if ns.ProfPaint and ns.ProfPaint.Active("Profession") then
         PD.__pend = true
+        PD.__pendQuiet = PD.__quietRender and true or nil
         return
     end
     local now = debugprofilestop and debugprofilestop() or nil
@@ -19050,6 +19396,8 @@ function PD.RequestRender()
     ns.ProfPaint.Run("Profession", function() PD.Render() end, function()
         if PD.__pend then
             PD.__pend = false
+            PD.__quietRender = PD.__pendQuiet
+            PD.__pendQuiet = nil
             PD.RequestRender()
         end
     end)

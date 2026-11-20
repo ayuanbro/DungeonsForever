@@ -257,7 +257,7 @@ ns.ProfData = {
             ranks = {
                 { "Apprentice", "75", "Learned from a Cooking trainer.", nil },
                 { "Adept", "150", "Learned from a Cooking trainer.", nil },
-                { "Expert", "225", "Learned from the book \"{book}\"; requires Cooking 125. Sold in Silverwind Refuge (Alliance) and Shadowprey Village (Horde).", 16082 },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires Cooking 125. Sold in Silverwind Refuge (Alliance) and Shadowprey Village (Horde).", 16072 },
                 { "Master", "300", "After reaching 225 Cooking, take the quest from Dirge Quikcleave in Gadgetzan. Learned on completion (requires level 35).", nil },
             },
             camp = {

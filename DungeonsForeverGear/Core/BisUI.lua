@@ -40,7 +40,7 @@ local function EnsureBIS()
             VOLS = { { lv = tonumber(BIS.default) or 0, classes = BIS.classes } }
         end
     end
-    N_PRESET = 4
+    N_PRESET = 5
     return BIS
 end
 local N_USER = 7
@@ -2088,6 +2088,8 @@ end
 local function CurEnch(sp, dk, lvOverride)
     local id = BG.ench and BG.ench[dk]
     if id then return id end
+    local ap = BG.usingPlan
+    if ap and ap.noEnch then return nil end
     local pl = BG.usingPlan
     if pl and pl.enchs and pl.enchs[dk] then return pl.enchs[dk] end
     local pe = PlanEnch(sp, dk)
@@ -3032,6 +3034,9 @@ local function PresetList()
     out[#out + 1] = { auto = "dungeon", lv = BG.AutoLevel(), srcSet = src.dungeon }
     out[#out + 1] = { auto = "known", lv = BG.AutoLevel(), srcSet = src.known }
     out[#out + 1] = { auto = "dq", lv = BG.AutoLevel(), srcSet = src.dq }
+    if BG.PreRaidPlan and BG.PreRaidPlan() then
+        out[#out + 1] = { fixed = "preraid", lv = 60 }
+    end
     local mp = BG.ManualPlan()
     if mp then
         out[#out + 1] = { manual = true, type = L["手动过滤生成的BIS结果"],
@@ -3041,6 +3046,7 @@ local function PresetList()
 end
 
 local function PresetText(pe)
+    if pe.fixed then return L["团本前推荐"] end
     if pe.manual then return pe.type end
     if pe.auto then return format(L["%d级 自动方案"], pe.lv) end
     return pe.type
@@ -3193,6 +3199,8 @@ local function PaintPlans()
             local active
             if pe.auto then
                 active = (BG.usingPlan == nil and BG.autoPlan == pe.auto)
+            elseif pe.fixed then
+                active = (BG.usingPlan ~= nil and BG.usingPlan.fixed == pe.fixed)
             else
                 active = (BG.usingPlan ~= nil and BG.usingPlan.manual == true)
             end
@@ -3235,6 +3243,7 @@ local function PaintPlans()
             r.__side = nil
             r.__auto = pe.auto
             r.__manual = pe.manual
+            r.__fixed = pe.fixed
             r.__sel = active
             if r.__huiCard then
                 ns.hui.HuiCardState(r, (active or r:IsMouseOver()) and "hover" or "norm")
@@ -3252,6 +3261,7 @@ local function PaintPlans()
             r.__key = nil
             r.__auto = nil
             r.__manual = nil
+            r.__fixed = nil
         end
     end
     local shown = 0
@@ -3286,8 +3296,8 @@ local function PaintPlans()
             y = y + PLAN_H + 2
         end
     end
-    local hasRen = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true
-    local hasDel = BG.usingPlan ~= nil
+    local hasRen = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true and BG.usingPlan.fixed == nil
+    local hasDel = BG.usingPlan ~= nil and BG.usingPlan.fixed == nil
     BG.renameBtn:SetEnabled(hasRen)
     BG.deleteBtn:SetEnabled(hasDel)
     BG.renameBtn.lbl:SetTextColor(Unpack(hasRen and C_TEXT or C_DIM))
@@ -3541,6 +3551,7 @@ function FillBwRow(r)
         r.wishBt:Hide()
         r.pinBt:Hide()
         r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+        r.__nmMiss = nil
         r.__painted = true
         return
     end
@@ -3552,6 +3563,7 @@ function FillBwRow(r)
         BG.needNames = true
         DG.RequestItem(row.item)
     end
+    r.__nmMiss = (not okn) or nil
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
@@ -3564,7 +3576,7 @@ function FillBwRow(r)
     end
     if qid then
         local qn, qok = DG.QuestName(qid)
-        if not qok then BG.needNames = true end
+        if not qok then BG.needNames = true; r.__nmMiss = true end
         if row.cat and qok then st = L["任务奖励"] .. " · " .. qn end
         local sn = DG.QuestStartNpc and DG.QuestStartNpc(qid) or nil
         local npc = sn and sn[1] or nil
@@ -3626,6 +3638,7 @@ function FillBwRow(r)
     local boe = BindOnEquip(row.item)
     if boe == nil then
         BG.needNames = true
+        r.__nmMiss = true
         DG.RequestItem(row.item)
         r.chip3:Hide()
     elseif boe then
@@ -4349,6 +4362,11 @@ function BG.SweepNames()
     else
         BG._sweepFails = math.min((BG._sweepFails or 0) + 1, 6)
     end
+    if prevMiss == nil or miss < prevMiss then
+        for _, r in ipairs(BG.bwRows or {}) do
+            if r.__nmMiss then r.__painted = false end
+        end
+    end
     local onScreen = ns.PageVisible(BG.page)
     if not prevMiss or miss < prevMiss or (miss > 0 and onScreen) then BG.RequestRender() end
     if (BG.needNames or BG.needScores) and (BG._sweepFails or 0) < 6 then
@@ -4809,6 +4827,8 @@ local function MakePlanRow(parent)
         end
         if self.__plan then
             BG.UsePlan(self.__plan)
+        elseif self.__fixed then
+            BG.UsePreRaid()
         elseif self.__auto then
             BG.UseAutoPlan(self.__auto)
         elseif self.__manual then
@@ -6242,4 +6262,75 @@ function BG.ArrowScopeText()
     if s == "manual" then return L["跟随 BiS 选择"] end
     local lbl = BG.SpecLabel(BG.DetectSpec())
     return L["当前天赋"] .. L["："] .. (lbl or L["未识别"])
+end
+function BG.PreRaidPlan()
+    local key = tostring(BG.cls) .. "|" .. tostring(BG.tspec)
+    if BG.__preKey == key then return BG.__preVal end
+    BG.__preKey = key
+    BG.__preVal = nil
+    local src = ns.BisPreset
+    if type(src) ~= "table" or type(BG.tspec) ~= "string" then return nil end
+    local raw
+    for i = 1, #src do
+        local cl = src[i]
+        if type(cl) == "table" and cl.slug == BG.cls then
+            local list = cl.specs
+            if type(list) == "table" then
+                for j = 1, #list do
+                    local sp = list[j]
+                    if type(sp) == "table" and sp.key == BG.tspec then
+                        local pr = sp.presets and sp.presets[1]
+                        if type(pr) == "table" then raw = pr.items end
+                        break
+                    end
+                end
+            end
+            break
+        end
+    end
+    if type(raw) ~= "table" then return nil end
+    local items, n, slotOk = {}, 0, true
+    for k, v in pairs(raw) do
+        local id = (type(v) == "table") and v[1] or v
+        if type(id) == "number" then
+            local dk
+            if k == "main" then
+                local s = SlotOfAny(id)
+                if s == nil then slotOk = false end
+                dk = (s == "two-hand") and "two-hand" or "main-hand"
+            elseif k == "off" then
+                local s = SlotOfAny(id)
+                if s == nil then slotOk = false end
+                dk = ((s == "shield" or s == "held") and s) or "off-hand"
+            else
+                dk = k
+            end
+            if type(dk) == "string" and not items[dk] then
+                items[dk] = id
+                n = n + 1
+            end
+            if k == "off" and type(dk) == "string" then
+                for _, alt in ipairs({ "off-hand", "held", "shield" }) do
+                    if not items[alt] then items[alt] = id end
+                end
+            end
+        end
+    end
+    if n < 1 then return nil end
+    local p = { name = L["团本前推荐"], vol = 60, tspec = BG.tspec, items = items,
+                fixed = "preraid", noEnch = true }
+    if slotOk then BG.__preVal = p else BG.__preKey = nil end
+    return p
+end
+
+function BG.UsePreRaid()
+    local p = BG.PreRaidPlan()
+    if type(p) ~= "table" then return false end
+    BG.UsePlan(p)
+    local c = {}
+    for k, v in pairs(p.items) do c[k] = v end
+    BG.cur = c
+    BG.ench = {}
+    BG.RequestRender()
+    return true
 end

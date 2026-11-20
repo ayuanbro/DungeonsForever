@@ -50,6 +50,9 @@ end
 local priceCache = {}
 local NEG_TTL = 60
 local ahReason, ahAge = {}, {}
+local apMemo={}
+local apRev,apAt,apChk=nil,0,0
+local AP_TTL=120
 
 local function AHPrice(id)
     local c = priceCache[id]
@@ -100,6 +103,7 @@ local vendorCache = {}
 
 function RA.ResetPrices()
     priceCache = {}
+    for k in pairs(apMemo) do apMemo[k]=nil end
     vendorCache = {}
     ahReason, ahAge = {}, {}
 end
@@ -287,14 +291,67 @@ local function MatListCost(mats)
     return total, unpriced
 end
 
+local function TrimLowPrice(levels, qty)
+    if type(levels) ~= "table" or type(qty) ~= "number" or qty <= 0 then return nil end
+    local frac = 0.10
+    if qty >= 10000 then
+        frac = 0.01
+    elseif qty > 1000 then
+        frac = 0.10 - 0.09 * (math.log(qty) / math.log(10) - 3)
+    end
+    local cut = math.floor(qty * frac)
+    local acc = 0
+    local anchor
+    for _, l in ipairs(levels) do
+        acc = acc + (tonumber(l[2]) or 0)
+        if acc >= cut then
+            local p = tonumber(l[1])
+            if p and p > 0 and p ~= math.huge then anchor = p end
+            break
+        end
+    end
+    if not anchor then return nil end
+    local hookCut = anchor * 0.75
+    local remain, cost = 100, 0
+    for _, l in ipairs(levels) do
+        local p = tonumber(l[1])
+        if p and p >= hookCut then
+            local take = math.min(tonumber(l[2]) or 0, remain)
+            cost = cost + p * take
+            remain = remain - take
+            if remain <= 0 then break end
+        end
+    end
+    if remain <= 0 then return cost / 100 end
+    return anchor
+end
+
 function RA.AHPriceOf(itemID)
     if not itemID then return nil end
+    local now=(type(time)=="function") and time() or 0
+    if (now-apChk)>=1 then
+        apChk=now
+        local bridge=ns.AuctionBridge
+        local rev=bridge and bridge.SupplyRevision and bridge.SupplyRevision() or 0
+        if apRev~=rev or (now-apAt)>=AP_TTL then
+            apRev=rev;apAt=now
+            for k in pairs(apMemo) do apMemo[k]=nil end
+        end
+    end
+    local hit=apMemo[itemID]
+    if hit~=nil then return hit or nil end
     local bridge=ns.AuctionBridge
     local supply=bridge and bridge.GetAuctionSupply and bridge.GetAuctionSupply(itemID)
-    if supply and (supply.quantity or 0)>0 and type(supply.market)=="number" and supply.market>0 then
-        return supply.market
+    local v
+    if supply and (supply.quantity or 0)>0 then
+        local depth=bridge.GetAuctionDepth and bridge.GetAuctionDepth(itemID)
+        local tlp=TrimLowPrice(depth and depth.levels, supply.quantity)
+        if tlp then v=tlp
+        elseif type(supply.market)=="number" and supply.market>0 then v=supply.market end
     end
-    return AHPrice(itemID)
+    if v==nil then v=AHPrice(itemID) end
+    apMemo[itemID]=v or false
+    return v
 end
 
 function RA.NPCSellPriceOf(itemID)
@@ -1874,19 +1931,22 @@ end
 
 local cache = {}
 
-function RA.Invalidate()
+function RA.Invalidate(reason)
     local R = ns.ProfRecovery
     if R and R.Invalidate then R.Invalidate() end
     local G = ns.ProfGates
     if G and G.Invalidate then G.Invalidate() end
     for k in pairs(cache) do cache[k] = nil end
-    for k in pairs(priceCache) do
-        if k ~= "__any" then priceCache[k] = nil end
+    if reason ~= "client-inputs" then
+        for k in pairs(priceCache) do
+            if k ~= "__any" then priceCache[k] = nil end
+        end
+        priceCache.__any = nil
+        for k in pairs(apMemo) do apMemo[k]=nil end
+        for k in pairs(vendorCache) do vendorCache[k] = nil end
+        for k in pairs(ahReason) do ahReason[k] = nil end
+        for k in pairs(ahAge) do ahAge[k] = nil end
     end
-    priceCache.__any = nil
-    for k in pairs(vendorCache) do vendorCache[k] = nil end
-    for k in pairs(ahReason) do ahReason[k] = nil end
-    for k in pairs(ahAge) do ahAge[k] = nil end
 end
 
 local priceWatchers = {}

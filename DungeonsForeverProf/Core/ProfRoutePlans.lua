@@ -729,7 +729,7 @@ function RA.RestorePlan(slug,snapshot,supplied)
     return result
 end
 function RA.Invalidate(reason)
-    clearPrices()
+    if reason ~= "client-inputs" then clearPrices() end
     if reason==nil then return end
     reason=type(reason)=="string" and reason or "inputs"
     for _,job in pairs(jobs) do job.stale=true;job.staleReason=reason end

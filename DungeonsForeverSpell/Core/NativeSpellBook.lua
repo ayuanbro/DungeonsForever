@@ -473,6 +473,7 @@ local function HeaderInit(frame, d)
         frame.Text:SetText(d.text or "")
         local r, g, b = 1, 1, 1
         if not eui then r, g, b = BookTextRGB() end
+        if d.color then r, g, b = d.color[1], d.color[2], d.color[3] end
         frame.Text:SetTextColor(r, g, b)
         frame.Text:SetAlpha(1)
         ns.ThinFont(frame.Text)
@@ -724,7 +725,7 @@ local function PackGroups(groups, cols, rows, viewCount)
                 nextView()
             end
             local slots = page.views[view]
-            slots[#slots + 1] = { head = head, row = row }
+            slots[#slots + 1] = { head = head, row = row, color = g.header.color }
             advance()
         end
         for _, d in ipairs(g.elements or {}) do
@@ -762,7 +763,7 @@ local function PaintPage()
                         headPool[hi] = h
                     end
                     if h then
-                        HeaderInit(h, { text = s.head })
+                        HeaderInit(h, { text = s.head, color = s.color })
                         h:ClearAllPoints()
                         h:SetPoint("TOPLEFT", listHost, "TOPLEFT", l, -top)
                         h:SetSize(cellW * cols + OVL_COL_GAP * (cols - 1), OVL_ROW_H)

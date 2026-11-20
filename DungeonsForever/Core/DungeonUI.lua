@@ -5254,6 +5254,8 @@ function DG.BroadcastItemData(itemID)
     if BM and BM.OnItemData then BM.OnItemData(itemID) end
     local CQM = ns.ClassQuestUI
     if CQM and CQM.OnItemData then CQM.OnItemData(itemID) end
+    local CBT = ns.ClassBisUI
+    if CBT and CBT.OnItemData then CBT.OnItemData(itemID) end
     local MM = ns.MapModule
     if MM and MM.OnItemData then MM.OnItemData(itemID) end
     local PM = ns.ProfModule
