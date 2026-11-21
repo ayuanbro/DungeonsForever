@@ -522,7 +522,12 @@ function UI:EnsureConfig()
                 tg:SetScript("OnClick", function(self)
                     local st = LF.GetStore()
                     local sch = st.chooseID and st[st.chooseID]
-                    if not sch then self:SetChecked(false); return end
+                    if not sch then
+                        -- 未选方案时点击给出提示，而不是静默无反应 / with no preset selected, say so instead of silently ignoring the click
+                        self:SetChecked(false)
+                        UI:ConfigHint(L["请先点上方方案图标启用"])
+                        return
+                    end
                     local on = not (type(sch[self.dim]) == "table" and sch[self.dim][self.key] == 1)
                     LF.SetOption(sch, self.dim, self.key, on)
                     self:SetChecked(on)
@@ -731,7 +736,9 @@ function UI:RefreshConfig()
             local on = false
             if sch and type(sch[tg.dim]) == "table" and sch[tg.dim][tg.key] == 1 then on = true end
             tg:SetChecked(on)
-            if sch then tg:Enable() else tg:Disable() end
+            -- 保持可点（点击时提示先选方案），未选方案时变暗 / stay clickable (clicking explains what to do), dimmed with no preset
+            tg:SetAlpha(sch and 1 or 0.45)
+            if tg.label then tg.label:SetAlpha(sch and 1 or 0.45) end
         end
     end
 
