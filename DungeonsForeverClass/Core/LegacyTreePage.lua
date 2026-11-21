@@ -387,6 +387,7 @@ local function BuildColumn(t)
     c.name:SetPoint('TOP', c.root, 'TOP', 0, 14)
     c.name:SetJustifyH('CENTER')
     c.name:SetText(L[TREE_NAME[t]] or TREE_NAME[t])
+    if ns.FitFS then ns.FitFS(c.name, COLW - 8) end
 
     c.line = c.root:CreateTexture(nil, 'ARTWORK', nil, 1)
     c.line:SetTexture(WHITE)
@@ -532,6 +533,7 @@ BuildStrip = function()
     w.title = FS(page, 13, { 0.91, 0.79, 0.54 })
     w.title:SetPoint('TOPLEFT', page, 'TOPLEFT', LEFT0, ROW_Y - 4)
     w.title:SetText(L['推荐方案'])
+    if ns.FitFS then ns.FitFS(w.title, 54) end
 
     w.tabs = {}
     local list = Plans or {}
