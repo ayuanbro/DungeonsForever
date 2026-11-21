@@ -11,8 +11,9 @@ local Plans = ns.LegacyPlans
 
 local WHITE = 'Interface\\Buttons\\WHITE8x8'
 local BRAND = 'Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever'
-local FH = 'Fonts\\ARKai_T.ttf'
-local FN = 'Fonts\\ARHei.ttf'
+local SafeFont = ns.SafeFont or function(p) return p end
+local FH = SafeFont('Fonts\\ARKai_T.ttf')
+local FN = SafeFont('Fonts\\ARHei.ttf')
 
 local PAGE_W, BODY_H, PAGE_H = 775, 441, 492
 local SEASON_CAP = 16
@@ -70,8 +71,8 @@ local Emblem
 
 local function FS(parent, size, color, font)
     local f = parent:CreateFontString(nil, 'OVERLAY')
-    local ok = pcall(f.SetFont, f, font or FH, size, '')
-    if not ok and ns.FONT then pcall(f.SetFont, f, ns.FONT, size, '') end
+    local ok, res = pcall(f.SetFont, f, font or FH, size, '')
+    if (not ok or res == false or not f:GetFont()) and ns.FONT then pcall(f.SetFont, f, ns.FONT, size, '') end
     f:SetTextColor(color[1], color[2], color[3])
     return f
 end

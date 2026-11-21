@@ -1772,7 +1772,7 @@ function Widgets:CreateReorderList(parent, items, onChanged)
       end)
 
       if i > 1 then
-        local upBtn = self:CreateActionButton(row, "▲", 20, 20, function()
+        local upBtn = self:CreateActionButton(row, ((_G.DF_NS and _G.DF_NS.Sym) or tostring)("▲"), 20, 20, function()
           local moved = table.remove(order, i)
           table.insert(order, i - 1, moved)
           if type(onChanged) == "function" then onChanged(order) end
@@ -1782,7 +1782,7 @@ function Widgets:CreateReorderList(parent, items, onChanged)
       end
 
       if i < #order then
-        local downBtn = self:CreateActionButton(row, "▼", 20, 20, function()
+        local downBtn = self:CreateActionButton(row, ((_G.DF_NS and _G.DF_NS.Sym) or tostring)("▼"), 20, 20, function()
           local moved = table.remove(order, i)
           table.insert(order, i + 1, moved)
           if type(onChanged) == "function" then onChanged(order) end

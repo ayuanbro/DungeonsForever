@@ -634,14 +634,14 @@ ns.ClassCombat = {
     rotation = {
         WARRIOR = {
             arms = {
-                note = "按重要程度排序的优先级表。雷霆一击排这么高，是因为它大幅降低敌人攻击速度：练级时覆盖更久，副本里还能救坦克。英勇打击常被滥用，尤其低等级怒气不足时——它耗怒，而且下一刀不产怒。",
+                note = "A priority list sorted by importance. Thunder Clap ranks this high because it greatly reduces enemy attack speed: it lasts longer while leveling and can save the tank in dungeons. Heroic Strike is often overused, especially at low level when Rage is short — it costs Rage, and the swing it replaces generates no Rage.",
                 st = {
                     { spell = "Battle Shout", note = "Cast before engaging, and maintain it throughout the fight" },
                     { spell = "Rend", note = "Cast and maintaing it throughout the fight" },
                     { spell = "Overpower", note = "Cast" },
                     { spell = "Thunder Clap", note = "Cast to maintain the debuff" },
                     { spell = "Sunder Armor", note = "Cast and maintain 5 stacks on the target" },
-                    { spell = "穿刺打击", note = "Cast" },
+                    { spell = "Spearing Strike", note = "Cast" },
                     { spell = "Slam", note = "Cast if you just swung and you are not tanking the mob" },
                     { spell = "Victory Rush", note = "Cast" },
                     { spell = "Heroic Strike", note = "Cast if Rage allows for it" },
@@ -650,7 +650,7 @@ ns.ClassCombat = {
                     { spell = "Battle Shout", note = "Cast before engaging, and maintain it throughout the fight" },
                     { spell = "Rend", note = "Cast and maintain it on all targets" },
                     { spell = "Thunder Clap", note = "Cast" },
-                    { spell = "Sweeping Strikes", note = "Cast once you have 压制 ready" },
+                    { spell = "Sweeping Strikes", note = "Cast once you have Overpower ready" },
                     { spell = "Overpower", note = "Cast" },
                     { spell = "Sunder Armor", note = "Cast and maintain 5 stacks on the target" },
                     { spell = "Cleave", note = "Cast if rage allows for it" },
@@ -663,14 +663,14 @@ ns.ClassCombat = {
                     { spell = "Overpower", note = "Use" },
                     { spell = "Sunder Armor", note = "Use if the target is above 70% HP" },
                     { spell = "Execute", note = "Use" },
-                    { spell = "Heroic Strike", note = "Use or 顺劈斩" },
+                    { spell = "Heroic Strike", note = "Use or Cleave" },
                     { spell = "Execute", note = "Use" },
                 },
                 aoe = {
                 },
             },
             prot = {
-                note = "本表是技能优先级；坦克的循环取决于当下正在发生什么，没有写死的顺序，宽松照用即可。队里只有你一个战士时，优先维持战斗怒吼。别忘了反击风暴：多目标时伤害极高，持续期间换成双手武器还能显著提高它的伤害。",
+                note = "This is an ability priority list; a tank's rotation depends on what is happening at the moment, with no fixed order, so apply it loosely. If you are the only Warrior in the group, prioritize keeping Battle Shout up. Don't forget Retaliation: it deals huge damage against multiple targets, and swapping to a two-handed weapon while it is active significantly increases its damage.",
                 st = {
                     { spell = "Charge", note = "Cast as you engage" },
                     { spell = "Bloodrage", note = "Cast" },
@@ -680,7 +680,7 @@ ns.ClassCombat = {
                     { spell = "Demoralizing Shout", note = "Cast" },
                     { spell = "Sunder Armor", note = "Cast if in a group environment. Maintain 5 stacks on bosses" },
                     { spell = "Rend", note = "Cast if you're already high on threat" },
-                    { spell = "Sunder Armor", note = "Cast 英勇打击 if you have spare rage and the boss has 5 stacks" },
+                    { spell = "Sunder Armor", note = "Cast Heroic Strike if you have spare rage and the boss has 5 stacks" },
                 },
                 aoe = {
                     { spell = "Charge", note = "Cast as you engage" },
@@ -696,7 +696,7 @@ ns.ClassCombat = {
         },
         PALADIN = {
             holy = {
-                note = "光环要一直开着（虔诚光环或惩罚光环），也别忘了给自己和队友挂力量祝福或智慧祝福。",
+                note = "Keep an aura up at all times (Devotion Aura or Retribution Aura), and don't forget to put Blessing of Might or Blessing of Wisdom on yourself and your party.",
                 st = {
                     { spell = "Seal of Righteousness", note = "Maintain" },
                     { spell = "Judgement", note = "Use" },
@@ -704,15 +704,15 @@ ns.ClassCombat = {
                     { spell = "Exorcism", note = "If the enemy is an undead or demon, use" },
                     { spell = "Holy Shock", note = "Use" },
                     { spell = "Consecration", note = "Cast" },
-                    { spell = "Judgement", note = "Use with 光明圣印 to apply Judgment of Light on an enemy. You can replace your Seal afterward to do more damage, but remember that using 审判 will replace the currently active one" },
+                    { spell = "Judgement", note = "Use with Seal of Light to apply Judgement of Light on an enemy. You can replace your Seal afterward to do more damage, but remember that using Judgement will replace the currently active one" },
                     { spell = "Holy Shock", note = "Use" },
-                    { spell = "Flash of Light", note = "Cast to quickly and cheaply heal someone, or use 圣光术 for a slower, more expensive heal that heals for much more, depending on the situation" },
+                    { spell = "Flash of Light", note = "Cast to quickly and cheaply heal someone, or use Holy Light for a slower, more expensive heal that heals for much more, depending on the situation" },
                 },
                 aoe = {
                 },
             },
             prot = {
-                note = "开打前把正义之怒和光环挂好，靠圣印与审判建立仇恨；多目标优先奉献，单体省蓝。",
+                note = "Put up Righteous Fury and your aura before the pull, and build threat with Seals and Judgement; prioritize Consecration against multiple targets and conserve mana on single targets.",
                 st = {
                     { spell = "Seal of Fury", note = "Cast before engaging, and maintain it throughout the fight" },
                     { spell = "Judgement", note = "Cast" },
@@ -729,11 +729,11 @@ ns.ClassCombat = {
                 },
             },
             ret = {
-                note = "30 级阶段的循环非常简单、也很直观：基本就是技能冷却好了就放。",
+                note = "The Lv 30 rotation is very simple and intuitive: basically, use abilities as soon as they come off cooldown.",
                 st = {
-                    { spell = "十字军审判", note = "Optional: If the mob will survive moderately long, be sure to apply with your first 审判 to increase Holy damage" },
-                    { spell = "Seal of Command", note = "Activate your primary seal - and refresh when it expires. Use for slower 2-handed weapons, generally at least 3.0 speed or slower, and use 正义圣印 for everything else" },
-                    { spell = "Judgement", note = "on cooldown. This can be macro'd together with 神圣打击" },
+                    { spell = "Judgement of the Crusader", note = "Optional: If the mob will survive moderately long, be sure to apply with your first Judgement to increase Holy damage" },
+                    { spell = "Seal of Command", note = "Activate your primary seal - and refresh when it expires. Use for slower 2-handed weapons, generally at least 3.0 speed or slower, and use Seal of Righteousness for everything else" },
+                    { spell = "Judgement", note = "on cooldown. This can be macro'd together with Holy Strike" },
                     { spell = "Holy Strike", note = "on cooldown" },
                     { spell = "Consecration", note = "For multiple enemies: Drop a on the ground; not worth using against a single enemy generally due to mana constraints" },
                     { spell = "Exorcism", note = "Cast on cooldown if the enemy is Undead or Demon" },
@@ -745,22 +745,22 @@ ns.ClassCombat = {
         },
         HUNTER = {
             bm = {
-                note = "拿到召唤雄鹰之前：单体用瞄准射击、多目标用多重射击，奥术射击冷却好就用。有了召唤雄鹰之后按下面的基本循环。",
+                note = "Before you get Summon Hawk: use Aimed Shot for single target and Multi-Shot for multiple targets, and Arcane Shot whenever it's off cooldown. Once you have Summon Hawk, follow the basic rotation below.",
                 st = {
                     { spell = "Hunter's Mark", note = "Put on your target if you have the time for it" },
                     { spell = "Serpent Sting", note = "Use and refresh when needed" },
                     { spell = "Summon Hawk", note = "Use" },
-                    { spell = "Aimed Shot", note = "Use (single target) or 多重射击 (multi-target)" },
+                    { spell = "Aimed Shot", note = "Use (single target) or Multi-Shot (multi-target)" },
                     { spell = "Summon Hawk", note = "Use" },
-                    { spell = "Aimed Shot", note = "Use (single target) or 多重射击 (multi-target)" },
+                    { spell = "Aimed Shot", note = "Use (single target) or Multi-Shot (multi-target)" },
                     { spell = "Arcane Shot", note = "Use" },
-                    { spell = "Aimed Shot", note = "Use (single target) or 多重射击 (multi-target)" },
+                    { spell = "Aimed Shot", note = "Use (single target) or Multi-Shot (multi-target)" },
                 },
                 aoe = {
                 },
             },
             mm = {
-                note = "之后就是：奥术射击和瞄准射击（单体）或多重射击（多目标）冷却好了就用。",
+                note = "After that: use Arcane Shot and Aimed Shot (single target) or Multi-Shot (multi-target) whenever they come off cooldown.",
                 st = {
                     { spell = "Hunter's Mark", note = "Put on your target if you have the time for it" },
                     { spell = "Serpent Sting", note = "Use" },
@@ -769,7 +769,7 @@ ns.ClassCombat = {
                 },
             },
             surv = {
-                note = "进近战范围就排队猛禽一击；近战时优先顺序是猫鼬撕咬 > 陆行鸟踢击 > 反击。想拉开距离补远程技能（奥术射击、毒蛇钉刺、瞄准射击）时，用陆行鸟踢击的加速跑出去，等猛禽一击和猫鼬撕咬冷却差不多转好再回去。",
+                note = "Queue Raptor Strike as you enter melee range; in melee the priority is Mongoose Bite > Strider Kick > Counterattack. When you want to open distance for ranged abilities (Arcane Shot, Serpent Sting, Aimed Shot), use Strider Kick's speed boost to run out, then go back in once Raptor Strike and Mongoose Bite are nearly off cooldown.",
                 st = {
                     { spell = "Hunter's Mark", note = "Put on your target" },
                     { spell = "Serpent Sting", note = "Use" },
@@ -782,10 +782,10 @@ ns.ClassCombat = {
             assa = {
                 note = "",
                 st = {
-                    { spell = "Mutilate", note = "Use as your builder when you are at or below 3 Combo Points. You never want to cast a 毁伤 at 4+ Combo Points" },
+                    { spell = "Mutilate", note = "Use as your builder when you are at or below 3 Combo Points. You never want to cast a Mutilate at 4+ Combo Points" },
                     { spell = "Slice and Dice", note = "Maintain" },
                     { spell = "Expose Armor", note = "if your group is physical heavy and the mob will live long enough to benefit from the debuff" },
-                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies and 割裂 on high armor enemies" },
+                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies and Rupture on high armor enemies" },
                     { spell = "Slice and Dice", note = "Else, just keep spamming your builder while refreshing as close to .1s remaining as possible" },
                 },
                 aoe = {
@@ -794,11 +794,11 @@ ns.ClassCombat = {
             combat = {
                 note = "",
                 st = {
-                    { spell = "Backstab", note = "Use for dagger builds and 邪恶攻击 for non-dagger builds" },
+                    { spell = "Backstab", note = "Use for dagger builds and Sinister Strike for non-dagger builds" },
                     { spell = "Slice and Dice", note = "Maintain" },
                     { spell = "Expose Armor", note = "if your group is physical heavy and the mob will live long enough to benefit from the debuff" },
                     { spell = "Blade Flurry", note = "Use with high Energy any time multiple enemies are present or when fighting a boss" },
-                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies or 割裂 on high armor enemies" },
+                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies or Rupture on high armor enemies" },
                     { spell = "Slice and Dice", note = "Else, just keep spamming your builder while refreshing as close to .1s remaining as possible" },
                 },
                 aoe = {
@@ -807,11 +807,11 @@ ns.ClassCombat = {
             sub = {
                 note = "",
                 st = {
-                    { spell = "Stealth", note = "Always use 绞喉 from" },
+                    { spell = "Stealth", note = "Always use Garrote from" },
                     { spell = "Slice and Dice", note = "Maintain" },
-                    { spell = "Vanish", note = "Utilize both and 伺机待发 to reapply your 绞喉 after it has fully run its course" },
+                    { spell = "Vanish", note = "Utilize both and Preparation to reapply your Garrote after it has fully run its course" },
                     { spell = "Expose Armor", note = "if your group is physical heavy and the mob will live long enough to benefit from the debuff" },
-                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies and 割裂 on high armor enemies" },
+                    { spell = "Eviscerate", note = "Use any excess Combo Points on on low armor enemies and Rupture on high armor enemies" },
                     { spell = "Slice and Dice", note = "Else, just keep spamming your builder while refreshing as close to .1s remaining as possible" },
                 },
                 aoe = {
@@ -820,41 +820,41 @@ ns.ClassCombat = {
         },
         PRIEST = {
             disc = {
-                note = "副本里要照看好几条血条，但注意力主要放在坦克身上——早期副本里的群体伤害很少。",
+                note = "In dungeons you have several health bars to watch, but keep your attention mainly on the tank — there is very little group-wide damage in early dungeons.",
                 st = {
-                    { spell = "Power Word: Fortitude", note = "Keep major buffs active ( and 心灵之火)" },
+                    { spell = "Power Word: Fortitude", note = "Keep major buffs active ( and Inner Fire)" },
                     { spell = "Power Word: Shield", note = "Before combat, cast" },
-                    { spell = "Holy Fire", note = "Begin combat by casting (if you are level 20), or 惩击 otherwise" },
-                    { spell = "Mind Blast", note = "Cast , then 暗言术：痛" },
+                    { spell = "Holy Fire", note = "Begin combat by casting (if you are level 20), or Smite otherwise" },
+                    { spell = "Mind Blast", note = "Cast , then Shadow Word: Pain" },
                     { spell = "Mind Blast", note = "Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast again as it comes back off cooldown" },
                     { spell = "Renew", note = "If worried about your health, keep a active" },
-                    { spell = "Power Word: Fortitude", note = "Keep major buffs active ( and 心灵之火)" },
+                    { spell = "Power Word: Fortitude", note = "Keep major buffs active ( and Inner Fire)" },
                     { spell = "Power Word: Shield", note = "Before combat, cast" },
                     { spell = "Smite", note = "Begin combat by casting ; otherwise" },
-                    { spell = "Penance", note = "Cast , then 暗言术：痛" },
+                    { spell = "Penance", note = "Cast , then Shadow Word: Pain" },
                     { spell = "Mind Blast", note = "Use Wand attacks until the enemy is defeated. If they have a lot of health, then you can cast too" },
                     { spell = "Renew", note = "If worried about your health, keep a active" },
                     { spell = "Renew", note = "Keep on the Tank" },
                     { spell = "Heal", note = "Use as your primary heal" },
                     { spell = "Flash Heal", note = "Use if someone is in imminent danger" },
-                    { spell = "法术", note = "When the party is healthy, Wand trash to buy yourself time to regenerate mana. （ ​#371806） the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana" },
+                    { spell = "Spell", note = "When the party is healthy, Wand trash to buy yourself time to regenerate mana. （ ​#371806） the \"five second rule\" we discussed earlier, and try to give yourself a clear window to regain mana" },
                 },
                 aoe = {
                 },
             },
             holy = {
-                note = "注意力几乎都在坦克身上；这些副本里的群体伤害很少。",
+                note = "Your attention goes almost entirely to the tank; there is very little group-wide damage in these dungeons.",
                 st = {
-                    { spell = "Power Word: Fortitude", note = "Keep and 心灵之火 up" },
+                    { spell = "Power Word: Fortitude", note = "Keep and Inner Fire up" },
                     { spell = "Power Word: Shield", note = "Before combat, cast" },
                     { spell = "Holy Fire", note = "Open with" },
-                    { spell = "Mind Blast", note = "Cast , then 暗言术：痛" },
+                    { spell = "Mind Blast", note = "Cast , then Shadow Word: Pain" },
                     { spell = "Mind Blast", note = "Wand until the mob dies. Recast if it comes back up and the mob still has a lot of health" },
                     { spell = "Renew", note = "Keep on yourself if the mob is hitting hard" },
-                    { spell = "Power Word: Fortitude", note = "Keep and 心灵之火 up" },
+                    { spell = "Power Word: Fortitude", note = "Keep and Inner Fire up" },
                     { spell = "Power Word: Shield", note = "Before combat, cast" },
                     { spell = "Smite", note = "Open with" },
-                    { spell = "Mind Blast", note = "Cast once you have it, then 暗言术：痛" },
+                    { spell = "Mind Blast", note = "Cast once you have it, then Shadow Word: Pain" },
                     { spell = "Renew", note = "Keep on yourself if the mob is hitting hard" },
                     { spell = "Renew", note = "Keep on the Tank" },
                     { spell = "Heal", note = "is the heal you live on" },
@@ -866,9 +866,9 @@ ns.ClassCombat = {
                 },
             },
             shadow = {
-                note = "30 级暗牧输出比较直接：噬灵瘟疫在点出噬灵传染之前非常费蓝，敌人本来就掉得快的话可以跳过。精神鞭笞在这个等级伤害不比魔杖高多少，但会重置五秒规则；而且它是引导技能、会被攻击推条——蓝不缺时再放心用。副本里尽量给所有敌人挂暗言术：痛并及时补，心灵震爆理想状态是冷却好就用，但这个等级可能同时撞上蓝量和仇恨问题。",
+                note = "Shadow Priest DPS at Lv 30 is fairly straightforward: Devouring Plague is very mana-hungry until you take Devouring Contagion, so skip it if enemies are already dying quickly. Mind Flay does little more damage than your wand at this level, but it resets the five-second rule; it is also channeled and gets pushed back by attacks — use it freely only when mana isn't a concern. In dungeons, try to keep Shadow Word: Pain on every enemy and refresh it promptly. Ideally Mind Blast is used on cooldown, but at this level you may run into both mana and threat problems.",
                 st = {
-                    { spell = "Power Word: Fortitude", note = "Make sure your major buffs are active, like and 心灵之火. Undead players should also maintain 虚弱之触" },
+                    { spell = "Power Word: Fortitude", note = "Make sure your major buffs are active, like and Inner Fire. Undead players should also maintain Touch of Weakness" },
                     { spell = "Power Word: Shield", note = "(Optional) Before combat, cast" },
                     { spell = "Mind Blast", note = "Begin combat by casting" },
                     { spell = "Shadow Word: Pain", note = "Cast" },
@@ -885,10 +885,10 @@ ns.ClassCombat = {
                 st = {
                     { spell = "Strength of Earth Totem", note = "Drop for your group" },
                     { spell = "Lightning Bolt", note = "Use to attack targets at range" },
-                    { spell = "Searing Totem", note = "Drop against a single target or 熔岩图腾 against multiple targets" },
-                    { spell = "节能施法", note = "Use procs on 火焰新星 as much as possible, as it costs a significant amount of Mana but is also our hardest-hitting spell" },
+                    { spell = "Searing Totem", note = "Drop against a single target or Magma Totem against multiple targets" },
+                    { spell = "Clearcasting", note = "Use procs on Fire Nova as much as possible, as it costs a significant amount of Mana but is also our hardest-hitting spell" },
                     { spell = "Fire Nova", note = "Use against multiple targets" },
-                    { spell = "Flame Shock", note = "Alternate between and 地震术" },
+                    { spell = "Flame Shock", note = "Alternate between and Earth Shock" },
                 },
                 aoe = {
                 },
@@ -896,8 +896,8 @@ ns.ClassCombat = {
             enh = {
                 note = "",
                 st = {
-                    { spell = "Lightning Bolt", note = "Enhancement Shamans are mostly reliant on their auto attacks. You will be using your shocks or to pull enemies to you and then usually preserve mana by not casting anything besides an occasional 风暴打击 to fish for 强化风暴打击 procs. You should keep your 闪电之盾 up between pulls, just to optimize your passive damage while also still using some leftover mana" },
-                    { spell = "Searing Totem", note = "When you are in dungeons or fighting multiple enemies, you should focus on dropping your and using 火焰新星 as much as possible, until you either risk pulling threat or run out of mana" },
+                    { spell = "Lightning Bolt", note = "Enhancement Shamans are mostly reliant on their auto attacks. You will be using your shocks or to pull enemies to you and then usually preserve mana by not casting anything besides an occasional Stormstrike to fish for Improved Stormstrike procs. You should keep your Lightning Shield up between pulls, just to optimize your passive damage while also still using some leftover mana" },
+                    { spell = "Searing Totem", note = "When you are in dungeons or fighting multiple enemies, you should focus on dropping your and using Fire Nova as much as possible, until you either risk pulling threat or run out of mana" },
                 },
                 aoe = {
                 },
@@ -905,9 +905,9 @@ ns.ClassCombat = {
             resto = {
                 note = "",
                 st = {
-                    { spell = "Strength of Earth Totem", note = "Drop support totems, such as (with 元素的召唤 if dropping 2+ Totems at once or in a pre-pull situation) for your group" },
+                    { spell = "Strength of Earth Totem", note = "Drop support totems, such as (with Call of the Elements if dropping 2+ Totems at once or in a pre-pull situation) for your group" },
                     { spell = "Healing Wave", note = "Heal deeply injured targets with , especially the tank!" },
-                    { spell = "Searing Totem", note = "Drop and use 火焰新星 on cooldown until low on mana against multiple targets if there isn't significant incoming damage" },
+                    { spell = "Searing Totem", note = "Drop and use Fire Nova on cooldown until low on mana against multiple targets if there isn't significant incoming damage" },
                 },
                 aoe = {
                 },
@@ -915,7 +915,7 @@ ns.ClassCombat = {
         },
         MAGE = {
             arcane = {
-                note = "循环很基础：单体先叠奥术冲击再放飞弹；多目标预读烈焰风暴后一直刷魔爆术。",
+                note = "The rotation is basic: on a single target, stack Arcane Blast and then cast Arcane Missiles; against multiple targets, precast Flamestrike and then spam Arcane Explosion.",
                 st = {
                     { spell = "Arcane Blast", note = "(never above 2 stacks unless it's a boss)" },
                     { spell = "Arcane Missiles", note = "Use if Missile Barrage proc'ed" },
@@ -927,11 +927,11 @@ ns.ClassCombat = {
                 },
             },
             fire = {
-                note = "循环很基础：单体预读炎爆术接火球术填充；多目标预读烈焰风暴后一直刷魔爆术。",
+                note = "The rotation is basic: on a single target, precast Pyroblast and use Fireball as filler; against multiple targets, precast Flamestrike and then spam Arcane Explosion.",
                 st = {
                     { spell = "Scorch", note = "x5 if it's a high health target" },
                     { spell = "Fireball", note = "Cast" },
-                    { spell = "Pyroblast", note = "Once 热力迸发 is stacked, cast" },
+                    { spell = "Pyroblast", note = "Once Hot Streak is stacked, cast" },
                     { spell = "Flamestrike", note = "Pre-Cast (high mana cost option)" },
                     { spell = "Arcane Explosion", note = "Spam" },
                 },
@@ -939,7 +939,7 @@ ns.ClassCombat = {
                 },
             },
             frost = {
-                note = "循环很基础：单体以寒冰箭为主；多目标预读烈焰风暴后一直刷魔爆术。",
+                note = "The rotation is basic: on a single target, Frostbolt is your main spell; against multiple targets, precast Flamestrike and then spam Arcane Explosion.",
                 st = {
                     { spell = "Frostbolt", note = "" },
                     { spell = "Flamestrike", note = "Pre-Cast (high mana cost option)" },
@@ -952,24 +952,24 @@ ns.ClassCombat = {
         },
         WARLOCK = {
             affli = {
-                note = "这个等级的伤害来自 DOT 加吸取生命。点了痛苦天赋之后，吸取生命比丢魔杖强，还能把生命分流付出的血补回来。DOT 要先挂——它们需要时间跳。单拉用恐惧来回倒；想练得快可以一次拉两只。",
+                note = "At this level your damage comes from DoTs plus Drain Life. Once you have Affliction talents, Drain Life beats wanding and also restores the health you spent on Life Tap. Apply your DoTs first — they need time to tick. When fighting a single mob, Fear it back and forth; if you want to level faster, you can pull two at a time.",
                 st = {
                     { spell = "Summon Succubus", note = "Send in" },
-                    { spell = "Corruption", note = "and 痛苦灾祸" },
+                    { spell = "Corruption", note = "and Curse of Agony" },
                     { spell = "Drain Life", note = "until the mob dies" },
-                    { spell = "Corruption", note = "First mob: , 痛苦灾祸 and 生命虹吸, then 恐惧术 it" },
+                    { spell = "Corruption", note = "First mob: , Curse of Agony and Siphon Life, then Fear it" },
                     { spell = "Summon Succubus", note = "Second mob: send in and apply the same DoTs" },
-                    { spell = "Fear", note = "吸取生命 the second mob. Re- the first whenever Fear ends" },
+                    { spell = "Fear", note = "Drain Life the second mob. Re- the first whenever Fear ends" },
                     { spell = "Life Tap", note = "Low on mana: cast instead of Drain Life. Drain Life heals the health back" },
                 },
                 aoe = {
                 },
             },
             demo = {
-                note = "这个等级魅魔是主要输出，靠恶魔印记能把怪拉住一整场。你要做的是保持印记，并用吸取生命填空——它能把生命分流的血补回来。还没有恶魔印记之前魅魔拉不住怪：先挂腐蚀术和痛苦灾祸，再吸取生命，做好被怪打一会儿的准备。",
+                note = "At this level the Succubus is your main source of damage, and with Demonic Mark she can hold the mob for the whole fight. Your job is to keep the Mark up and fill the gaps with Drain Life — it restores the health spent on Life Tap. Before you have Demonic Mark, the Succubus can't hold the mob: apply Corruption and Curse of Agony first, then Drain Life, and be ready to take hits for a while.",
                 st = {
                     { spell = "Summon Succubus", note = "Send in" },
-                    { spell = "Corruption", note = "+ 痛苦灾祸 the mob has a lot of health" },
+                    { spell = "Corruption", note = "+ Curse of Agony the mob has a lot of health" },
                     { spell = "Searing Pain", note = "to brand the mob" },
                     { spell = "Drain Life", note = "for the rest of the fight" },
                     { spell = "Searing Pain", note = "Recast whenever the brand drops, roughly every 6 seconds" },
@@ -979,14 +979,14 @@ ns.ClassCombat = {
                 },
             },
             destro = {
-                note = "这个等级的伤害来自 DOT 加一个填充法术。开怪有两种方式，到能暗影灼烧收尾时伤害差不多，用哪种取决于怪离你多远：近就默认近距离起手，需要边风筝边打下几只就用远程起手。收尾阶段默认丢魔杖，蓝有富余就打暗影箭；做任务时吸取生命也是好选择（魔杖差时尤其好），它吸回来的血正好补上生命分流的代价。",
+                note = "At this level your damage comes from DoTs plus a filler spell. There are two ways to open, and both deal about the same damage by the time you can finish with Shadowburn; which one you use depends on how far away the mob is: use the close-range opener by default when it's near, and the ranged opener when you need to kite it and land a few hits on the way in. For the finish, wand by default, and cast Shadow Bolt if you have mana to spare; while questing, Drain Life is also a good choice (especially with a poor wand), since the health it drains offsets the cost of Life Tap.",
                 st = {
-                    { spell = "Bane of Agony", note = "腐蚀术 and 献祭. The DoTs let your pet keep aggro while you set up" },
+                    { spell = "Bane of Agony", note = "Corruption and Immolate. The DoTs let your pet keep aggro while you set up" },
                     { spell = "Shadow Bolt", note = "until the mob turns to you" },
-                    { spell = "Shadow Bolt", note = "followed by 献祭 while the mob runs to you" },
-                    { spell = "Bane of Agony", note = "Once it reaches melee, switch to instant casts so you don't suffer pushback: , plus 腐蚀术 if you have 5/5 强化腐蚀术" },
-                    { spell = "Immolate", note = "燃烧 just before runs out, so you lose as little of the DoT as possible" },
-                    { spell = "Shadowburn", note = "暗影灼烧 as the killing blow, once the mob is at or below one hit" },
+                    { spell = "Shadow Bolt", note = "followed by Immolate while the mob runs to you" },
+                    { spell = "Bane of Agony", note = "Once it reaches melee, switch to instant casts so you don't suffer pushback: , plus Corruption if you have 5/5 Improved Corruption" },
+                    { spell = "Immolate", note = "Conflagrate just before runs out, so you lose as little of the DoT as possible" },
+                    { spell = "Shadowburn", note = "Shadowburn as the killing blow, once the mob is at or below one hit" },
                 },
                 aoe = {
                 },
@@ -994,52 +994,52 @@ ns.ClassCombat = {
         },
         DRUID = {
             balance = {
-                note = "法熊循环：远程起手后主要靠月火与星火术，被贴上就切熊形态顶住。",
+                note = "Caster-bear rotation: open at range and rely mainly on Moonfire and Starfire; when enemies reach you, switch to Bear Form and hold them off.",
                 st = {
-                    { spell = "愤怒", note = "Pull with" },
+                    { spell = "Wrath", note = "Pull with" },
                     { spell = "Entangling Roots", note = "Cast to hold the enemy at range" },
                     { spell = "Starfire", note = "Cast twice" },
-                    { spell = "愤怒", note = "Cast , then follow with two more 星火术" },
-                    { spell = "愤怒", note = "Repeat the and 星火术 cycle until the enemy dies" },
-                    { spell = "愤怒", note = "Opening with banks 日月之蚀 charges, so each pair of 星火术 that follows casts faster. If the enemy breaks free of 纠缠根须, stop your current cast and reapply 纠缠根须 before continuing. A 星火术 pushed back by melee hits costs you more time than the recast" },
+                    { spell = "Wrath", note = "Cast , then follow with two more Starfire" },
+                    { spell = "Wrath", note = "Repeat the and Starfire cycle until the enemy dies" },
+                    { spell = "Wrath", note = "Opening with banks Eclipse charges, so each pair of Starfire that follows casts faster. If the enemy breaks free of Entangling Roots, stop your current cast and reapply Entangling Roots before continuing. A Starfire pushed back by melee hits costs you more time than the recast" },
                     { spell = "Insect Swarm", note = "Pull with" },
                     { spell = "Moonfire", note = "Apply" },
                     { spell = "Rejuvenation", note = "Cast on yourself as they close in" },
-                    { spell = "Thorns", note = "Let the pack hit you, cleaving them with while you keep your dots and 回春术 running" },
-                    { spell = "Moonfire", note = "Pull up to three or four enemies with . (If you will naturally pull more, there is no need to cast 月火术 on all targets; it's better to get more hots onto yourself before going into 熊形态)" },
-                    { spell = "Rejuvenation", note = "Cast (or 愈合 if you have time) on yourself while they run to you" },
+                    { spell = "Thorns", note = "Let the pack hit you, cleaving them with while you keep your dots and Rejuvenation running" },
+                    { spell = "Moonfire", note = "Pull up to three or four enemies with . (If you will naturally pull more, there is no need to cast Moonfire on all targets; it's better to get more hots onto yourself before going into Bear Form)" },
+                    { spell = "Rejuvenation", note = "Cast (or Regrowth if you have time) on yourself while they run to you" },
                     { spell = "Bear Form", note = "Shift into" },
                     { spell = "Demoralizing Roar", note = "Cast to reduce their damage" },
-                    { spell = "横扫", note = "until everything is dead" },
-                    { spell = "Enrage", note = "Use to generate extra rage for more 横扫, particularly at the start of a pull when your rage is low" },
+                    { spell = "Swipe", note = "until everything is dead" },
+                    { spell = "Enrage", note = "Use to generate extra rage for more Swipe, particularly at the start of a pull when your rage is low" },
                 },
                 aoe = {
                 },
             },
             feral = {
-                note = "野性德 DPS 的核心是尽量维持流血不断，同时保证变形之力冷却好了就用。",
+                note = "The core of Feral DPS is keeping your bleeds up without interruption, while making sure Shifting Power is used whenever it's off cooldown.",
                 st = {
-                    { spell = "变形之力", note = "if you will not waste any Energy, should always be under 50 Energy when used, and 节能施法 is not active" },
+                    { spell = "Shifting Power", note = "if you will not waste any Energy, should always be under 50 Energy when used, and Clearcasting is not active" },
                     { spell = "Rip", note = "if you have 4/5 combo-points and the target will live for 6 seconds or longer. Never apply if it's already active. Prioritize 5 combo-points if the target lives long enough" },
                     { spell = "Swipe", note = "if the target will live for 6 seconds or longer. Never apply if it's already active" },
                     { spell = "Faerie Fire", note = "if it's not active and you won't waste Energy" },
                     { spell = "Shred", note = "as long as it doesn't affect the uptime of the previous abilities" },
-                    { spell = "Claw", note = "if you can not 撕碎 due to positional requirement" },
-                    { spell = "Faerie Fire", note = "if you can't press anything else to get a chance of a 节能施法 proc" },
+                    { spell = "Claw", note = "if you can not Shred due to positional requirement" },
+                    { spell = "Faerie Fire", note = "if you can't press anything else to get a chance of a Clearcasting proc" },
                 },
                 aoe = {
                 },
             },
             resto = {
-                note = "恢复德的治疗很灵活，很多种打法都能有效治住队伍。可以自己试试不同等级的直接治疗、或者少维持一个 HOT，看哪种手感更适合你。",
+                note = "Restoration Druid healing is very flexible; many different styles can keep a group alive effectively. Experiment with different ranks of direct heals, or maintaining one fewer HoT, to see which feels best for you.",
                 st = {
                     { spell = "Thorns", note = "Keep up on the tank" },
                     { spell = "Rejuvenation", note = "Keep up on the tank and anyone you expect to take damage" },
-                    { spell = "Insect Swarm", note = "DPS for Deep Balance: everything, 纠缠根须 a few mobs away from the tank" },
-                    { spell = "愤怒", note = "DPS for Deep Restoration: Spam or shift to 猎豹形态 for better mana regen" },
-                    { spell = "Regrowth", note = "When a direct heal is needed, start with to get the HoT up. Then use low ranks of 治疗之触 to fill the gaps" },
-                    { spell = "Swiftmend", note = "If a life is in danger, use to pick them up. Even if a HoT is not up yet, 回春术 -> 迅捷治愈 is a 1.0s save" },
-                    { spell = "Swiftmend", note = "If is on cooldown or we do not have 1.0s to spare, cast 自然迅捷 with a max rank 治疗之触" },
+                    { spell = "Insect Swarm", note = "DPS for Deep Balance: everything, Entangling Roots a few mobs away from the tank" },
+                    { spell = "Wrath", note = "DPS for Deep Restoration: Spam or shift to Cat Form for better mana regen" },
+                    { spell = "Regrowth", note = "When a direct heal is needed, start with to get the HoT up. Then use low ranks of Healing Touch to fill the gaps" },
+                    { spell = "Swiftmend", note = "If a life is in danger, use to pick them up. Even if a HoT is not up yet, Rejuvenation -> Swiftmend is a 1.0s save" },
+                    { spell = "Swiftmend", note = "If is on cooldown or we do not have 1.0s to spare, cast Nature's Swiftness with a max rank Healing Touch" },
                     { spell = "Tranquility", note = "When the emergency is party-wide, like too many enemies were pulled and threat is a mess, cast to keep everyone alive" },
                 },
                 aoe = {

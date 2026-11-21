@@ -511,7 +511,7 @@ local function BuildNode(t, i, nd)
     badgeBg:Hide()
 
     local badge = badgeLayer:CreateFontString(nil, 'OVERLAY', nil, 1)
-    badge:SetFont('Fonts\\ARKai_T.ttf', 11, 'OUTLINE')
+    badge:SetFont((ns.SafeFont or tostring)('Fonts\\ARKai_T.ttf'), 11, 'OUTLINE')
     badge:SetTextColor(0.10, 1.00, 0.10)
     badge:SetPoint('BOTTOM', badgeBg, 'BOTTOM', 0, 1)
     badge:Hide()
@@ -1067,13 +1067,13 @@ local function BuildSpentCard()
     box:SetFrameLevel(f:GetFrameLevel() + 1)
 
     spentAmount = box:CreateFontString(nil, 'OVERLAY')
-    spentAmount:SetFont('Fonts\\ARKai_T.ttf', 32, '')
+    spentAmount:SetFont((ns.SafeFont or tostring)('Fonts\\ARKai_T.ttf'), 32, '')
     spentAmount:SetTextColor(0.10, 1.00, 0.10)
     spentAmount:SetPoint('CENTER')
     spentAmount:SetText('0')
 
     local label = f:CreateFontString(nil, 'OVERLAY')
-    label:SetFont('Fonts\\ARKai_T.ttf', 15, '')
+    label:SetFont((ns.SafeFont or tostring)('Fonts\\ARKai_T.ttf'), 15, '')
     label:SetTextColor(1, 1, 1)
     label:SetText(L['已投入天赋'])
     label:SetPoint('RIGHT', box, 'LEFT', -6, 0)
@@ -1098,7 +1098,7 @@ local function BuildNeedCard()
     bg:SetPoint('RIGHT', f, 'RIGHT', 0, 0)
 
     local label = f:CreateFontString(nil, 'OVERLAY')
-    label:SetFont('Fonts\\ARKai_T.ttf', 15, '')
+    label:SetFont((ns.SafeFont or tostring)('Fonts\\ARKai_T.ttf'), 15, '')
     label:SetTextColor(1, 1, 1)
     label:SetText(L['等级'])
     label:SetPoint('RIGHT', f, 'RIGHT', -60, 0)
@@ -1109,7 +1109,7 @@ local function BuildNeedCard()
     box:SetFrameLevel(f:GetFrameLevel() + 1)
 
     needAmount = box:CreateFontString(nil, 'OVERLAY')
-    needAmount:SetFont('Fonts\\ARKai_T.ttf', 32, '')
+    needAmount:SetFont((ns.SafeFont or tostring)('Fonts\\ARKai_T.ttf'), 32, '')
     needAmount:SetTextColor(0.10, 1.00, 0.10)
     needAmount:SetPoint('CENTER')
     needAmount:SetText('0')
@@ -1451,7 +1451,7 @@ local function UpdateLists(pending)
         shownRows = shownRows + 1
         local row = planRows[shownRows]
         local it = oop[i]
-        if row.seq then row.seq:SetText('◇') end
+        if row.seq then row.seq:SetText(ns.SYM.dia0) end
         row.ic:SetTexture('Interface\\Icons\\' .. tostring(it.nd.icon))
         row.ic:SetDesaturated(true)
         row.lv:SetText('')

@@ -27,6 +27,7 @@ Core\Data\Data_DungeonLoot.lua
 Core\Data\Data_DungeonQuests.lua
 Core\Data\Data_DungeonQuestSide.lua
 Core\Data\Data_DungeonQuestProf.lua
+Core\Data\enUS\Data_DungeonQuestProf.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_DungeonQuestObj.lua
 Core\Data\Data_DungeonGuide.lua
 Core\Data\Data_BossPos.lua
@@ -76,8 +77,14 @@ Core\Data\enUS\Data_DungeonEntry.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_SubzoneMaps.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_Professions.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_RaidSets.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestStartNpc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestStartLoc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_QuestEndNpc.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_Route.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_FloorName.lua [AllowLoadTextLocale enUS]
 Core\Data\Data_ProfCraftIndex.lua
 Core\Data\Data_DungeonQuestFlow.lua
+Core\Data\enUS\Data_DungeonQuestFlow.lua [AllowLoadTextLocale enUS]
 Core\LootFilter.lua
 Core\DungeonLevelSync.lua
 Core\DungeonUI.lua

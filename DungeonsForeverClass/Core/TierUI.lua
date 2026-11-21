@@ -29,6 +29,7 @@ TT.CARD_TOP = 8
 TT.NAV_X, TT.NAV_PAD = TT.EDGE, 8
 TT.NAV_TOP = TT.CARD_TOP + 8
 TT.NAV_W = ((type(DF_Locale) == "function") and DF_Locale() == "enUS") and 184 or 148
+TT.EN_UI = (type(DF_Locale) == "function") and DF_Locale() ~= "zhCN" and DF_Locale() ~= "zhTW"
 TT.NAV_ITEM_H, TT.NAV_ICON, TT.NAV_FS = 24, 20, 16
 TT.NAV_ITEM_GAP = 8
 TT.NAV_ITEM_STEP = TT.NAV_ITEM_H + TT.NAV_ITEM_GAP
@@ -1128,7 +1129,7 @@ function PREP.PaintCards()
         c.__on = on
         if ns.hui and ns.hui.HuiCardState then ns.hui.HuiCardState(c, on and "hover" or "norm") end
         c.no:SetText(format("%02d", k))
-        c.nm:SetText("《" .. d.name .. "》")
+        c.nm:SetText(L["《"] .. d.name .. L["》"])
         c.lv:SetText(format(L["%d 级起"], d.lv))
         c.zone:SetText(d.zone or "")
         local st = PREP.StateOf(d)
@@ -1413,7 +1414,7 @@ function PREP.PaintRight()
 
     PREP.PaintHeader(side, both)
 
-    ch.title:SetText("《" .. d.name .. "》")
+    ch.title:SetText(L["《"] .. d.name .. L["》"])
     local st = PREP.StateOf(d)
     if ch.stChip then
         ns.hui.PaintSolidChip(ch.stChip, PrepStateText(st), PREP_INK[st] or PREP_INK.todo, nil, 14)
@@ -1502,7 +1503,7 @@ function PREP.PaintRight()
             f.disc:SetVertexColor(fill[1], fill[2], fill[3], 1)
             f.mark:SetTexture(PREP_MARK[mk])
             f.mark:SetVertexColor(ink[1], ink[2], ink[3], 1)
-            local qt = "《" .. (s.q or "") .. "》"
+            local qt = L["《"] .. (s.q or "") .. L["》"]
             f.q:SetText(qt)
             local qw = f.q:GetStringWidth()
             if type(qw) ~= "number" or qw <= 0 then qw = TextChars(qt) * 14 end
@@ -2044,7 +2045,7 @@ local function AddRaces(items, innerW)
         for _, item in ipairs(groups[side]) do
             local chip = TakeSpecChip()
             if not chip then break end
-            local text = ((item.mark == "star") and "★" or "") .. item.name
+            local text = ((item.mark == "star") and ns.SYM.star or "") .. item.name
             local cfs = chip.fs
             cfs:SetText(text)
             chip.frame:Show()
@@ -2284,7 +2285,7 @@ TT.PaintHeader = function()
     local spRec = SpecRec(cls, spec)
 
     local cr, cg, cb = ClassColor(cls)
-    TT.specTitle:SetText(ClassName(cls) .. " · " .. (spRec and spRec.name or spec))
+    TT.specTitle:SetText(ClassName(cls) .. " · " .. (spRec and ((TT.EN_UI and spRec.nameEn) or spRec.name) or spec))
     TT.specTitle:SetTextColor(cr, cg, cb)
     TT.specMeta:SetText("")
     TT.specMeta:Hide()
@@ -2687,7 +2688,7 @@ function TT.PaintNav()
                     local bt = TT.specTabs[i]
                     if bt then
                         bt.__specKey = sp.key
-                        bt:SetText(sp.name)
+                        bt:SetText((TT.EN_UI and sp.nameEn) or sp.name)
                         local w = tonumber(bt:GetFontString():GetStringWidth()) or 0
                         w = math.max(TT.SPEC_BTN_W, w + 2 * TT.SPEC_BTN_PAD)
                         bt:SetWidth(w)

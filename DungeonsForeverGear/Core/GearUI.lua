@@ -269,8 +269,42 @@ local G = {}
 ns.GearModule = G
 
 local ROW_FIELDS = { id = 1, name = 2, pack = 3, icon = 4 }
+-- 非中文客户端：物品名按 ID 取客户端本地化名称（官方英文名），取不到再用数据里的名字。
+-- Non-Chinese clients: use the client's localized item name by ID, falling back to the data name.
+local ITEM_NAME_LOCAL = (function()
+    local lc = (type(DF_Locale) == "function" and DF_Locale()) or (GetLocale and GetLocale()) or "zhCN"
+    return lc ~= "zhCN" and lc ~= "zhTW"
+end)()
+local itemNameCache = {}
+local function LocalItemName(id)
+    local hit = itemNameCache[id]
+    if hit then return hit end
+    local nm
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, v = pcall(C_Item.GetItemNameByID, id)
+        if ok then nm = v end
+    end
+    if not nm and GetItemInfo then
+        local ok, v = pcall(GetItemInfo, id)
+        if ok then nm = v end
+    end
+    if type(nm) == "string" and nm ~= "" then
+        itemNameCache[id] = nm
+        return nm
+    end
+end
+ns.LocalItemName = LocalItemName
 local ROW_MT = {
     __index = function(t, k)
+        if k == "name" and ITEM_NAME_LOCAL then
+            local nm = LocalItemName(t[1])
+            if nm then return nm end
+            -- 名字尚未缓存：中文名在英文字体下是方块，先显示物品 ID / not cached yet: avoid boxes, show the item ID
+            if ns.WIDE_UI and type(t[2]) == "string" and t[2]:find("[\228-\233]") then
+                return format(L["物品 #%d"], t[1])
+            end
+            return t[2]
+        end
         local f = ROW_FIELDS[k]
         if f then return t[f] end
         if k == "done" then return true end
@@ -479,12 +513,32 @@ local function UsetypePass(r)
     return true
 end
 
+-- 英文数据的来源前缀是英文（Vendor、Quest: …、Tailoring (300) 等）：统一换成中文前缀，沿用下面按中文判断的逻辑
+-- English gear data uses English source prefixes (Vendor, Quest: ..., Tailoring (300), ...): map them to the Chinese
+-- prefixes the logic below matches on
+local KIND_EN = {
+    ["Vendor"] = "商人", ["Quest reward"] = "任务奖励", ["World drop"] = "世界掉落", ["Boss drop"] = "首领掉落",
+    ["Any enemy"] = "任何敌人", ["Mob drop"] = "怪物掉落", ["Rare spawn"] = "稀有掉落", ["Rare drop"] = "稀有掉落",
+    ["Trash drop"] = "小怪掉落", ["Several bosses"] = "多个首领", ["Object"] = "物件", ["Crafted"] = "专业制作",
+}
+local function NormKind(kind)
+    if type(kind) ~= "string" then return kind end
+    local z = KIND_EN[kind]
+    if z then return z end
+    if kind:find("^Quest:") then return "任务奖励" end
+    local n = kind:match("^%a[%a ]* %((%d+)%)$")
+    if n then return "制作（" .. n .. "）" end
+    return kind
+end
+
 local function SrcKindOf(id)
     local src = GD_SRC and GD_SRC[id]
     local kind, place
     if type(src) == "string" and src ~= "" then
         kind, place = src:match("^(.-)|(.*)$")
         if not kind then kind = src end
+        kind = NormKind(kind)
+        if place == "Crafted" then place = "专业制作" end
     end
     if kind then
         if kind == "商人" then return "vendor" end
@@ -514,7 +568,7 @@ local function SrcKindOf(id)
             for i = 1, #WBOSS_PLACE do
                 if place:find(WBOSS_PLACE[i], 1, true) then return "mob" end
             end
-            if place:find("稀有", 1, true) then return "mob" end
+            if place:find("稀有", 1, true) or place:find("Rare", 1, true) then return "mob" end
         end
         return "dungeon"
     end
@@ -589,6 +643,8 @@ local function WishBucketOf(id, e)
     local kind, place
     local src = GD_SRC and GD_SRC[id]
     if type(src) == "string" then kind, place = src:match("^(.-)|(.*)$") end
+    kind = NormKind(kind)
+    if place == "Crafted" then place = "专业制作" end
     if WISH_WORLD_KINDS[kind] then
         return "world", L["开放世界"], 200001
     end
@@ -1647,11 +1703,11 @@ local function PaintRow(r)
     end
     local wid = e.id
     if wid and WishIs(wid) then
-        SetTextC(r.star.tex, "★")
+        SetTextC(r.star.tex, ns.SYM.star)
         r.star.tex:SetTextColor(1, 0.82, 0)
         r.star:SetAlpha(1)
     else
-        SetTextC(r.star.tex, "☆")
+        SetTextC(r.star.tex, ns.SYM.star0)
         r.star.tex:SetTextColor(Unpack(C_GREY))
         r.star:SetAlpha(1)
     end

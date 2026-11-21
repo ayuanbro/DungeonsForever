@@ -727,7 +727,7 @@ function UI:RefreshConfig()
 
     if cfg.classBtn then
         local vc = LF.ViewClass()
-        cfg.classBtn.label:SetText(L["过滤职业"] .. "：" .. (LF.ClassName(vc) or L["跟随角色"]))
+        cfg.classBtn.label:SetText(L["过滤职业"] .. L["："] .. (LF.ClassName(vc) or L["跟随角色"]))
         cfg.classBtn:Enable()
     end
 end

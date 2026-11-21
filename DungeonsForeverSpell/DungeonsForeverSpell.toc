@@ -26,6 +26,7 @@ Core\Data\zhTW\Data_WeaponTraining.lua [AllowLoadTextLocale zhTW]
 Core\Data\zhTW\Data_ClassTrainers.lua [AllowLoadTextLocale zhTW]
 Core\Data\enUS\Data_SpellBook.lua [AllowLoadTextLocale enUS]
 Core\Data\enUS\Data_ClassTrainers.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_WeaponTraining.lua [AllowLoadTextLocale enUS]
 Core\SpellTraining.lua
 Core\WeaponMasters.lua
 Core\ClassTrainers.lua

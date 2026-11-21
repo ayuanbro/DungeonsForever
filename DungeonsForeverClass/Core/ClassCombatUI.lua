@@ -636,7 +636,7 @@ function CU.RenderRotation()
     Reset()
     local d = Combat()
     local y = CU.TOP_PAD
-    y = PutLabel(L["自上而下 = 优先级，用第一个就绪的"] .. "，" .. L["金色 = 以后才解锁"]
+    y = PutLabel(L["自上而下 = 优先级，用第一个就绪的"] .. L["，"] .. L["金色 = 以后才解锁"]
         .. " · " .. L["点击拣起放入动作条"], C_DIM, y, 0, TT.FULL_W - 2 * CU.PAD)
     y = y + CU.GAP
     local rot = d and d.rotation and d.rotation[cls] and d.rotation[cls][spec]
@@ -722,7 +722,7 @@ local function MacroCard(d, cls, m)
     if #missing > 0 then
         color = CU.WARN
         state = L["还缺技能"]
-        tip = format(L["还缺技能：%s"], table.concat(missing, "、"))
+        tip = format(L["还缺技能：%s"], table.concat(missing, L["、"]))
     end
     local icon
     local firstKey = (m.body or ""):match("{(.-)}")
@@ -892,6 +892,9 @@ CB.SRC_CAT = {
     ["专业制作"] = "c", ["任务奖励"] = "q", ["商人"] = "v",
     ["世界掉落"] = "w", ["首领掉落"] = "b", ["任何敌人"] = "b",
     ["Tribute"] = "b", ["稀有"] = "b",
+    -- 英文数据的来源前缀 / English source prefixes
+    ["Crafted"] = "c", ["Quest reward"] = "q", ["Quest:"] = "q", ["Vendor"] = "v",
+    ["World drop"] = "w", ["Boss drop"] = "b", ["Any enemy"] = "b", ["Rare spawn"] = "b", ["Rare"] = "b",
 }
 
 function CB.GearSrcRaw(id)

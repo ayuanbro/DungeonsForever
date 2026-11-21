@@ -88,7 +88,7 @@ local function ShowSpellTip(owner, d)
         GameTooltip:AddLine(d.name or L["未知法术"], 1, 1, 1)
     end
     if d.from or d.to then
-        GameTooltip:AddLine((d.from or "?") .. " → " .. (d.to or "?"), ACC[1], ACC[2], ACC[3])
+        GameTooltip:AddLine((d.from or "?") .. (" " .. ns.SYM.arrow .. " ") .. (d.to or "?"), ACC[1], ACC[2], ACC[3])
     end
     if d.slots and #d.slots > 0 then
         local t = {}
@@ -96,7 +96,7 @@ local function ShowSpellTip(owner, d)
             local b = SR.BindFor(d.slots[i])
             t[i] = b and (d.slots[i] .. " (" .. b .. ")") or tostring(d.slots[i])
         end
-        GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, "、"), 0.82, 0.86, 0.9, true)
+        GameTooltip:AddLine(L["槽位"] .. " " .. table.concat(t, L["、"]), 0.82, 0.86, 0.9, true)
     elseif d.noBar then
         GameTooltip:AddLine(L["技能书里有，动作条上没有"], 0.82, 0.86, 0.9, true)
     end
@@ -157,15 +157,15 @@ local function SlotText(slots)
         local k = SR.BindFor(slots[i])
         if k then b[#b + 1] = k end
     end
-    local s = L["槽位"] .. " " .. table.concat(a, "、")
-    if #b > 0 then s = s .. " · " .. L["按键"] .. " " .. table.concat(b, "、") end
+    local s = L["槽位"] .. " " .. table.concat(a, L["、"])
+    if #b > 0 then s = s .. " · " .. L["按键"] .. " " .. table.concat(b, L["、"]) end
     return s
 end
 
 local function RankMarkup(from, to)
     local a = from or "?"
     local b = to or "?"
-    return "|cff7f8998" .. a .. "|r  →  |cff46bf72" .. b .. "|r"
+    return "|cff7f8998" .. a .. ("|r  " .. ns.SYM.arrow .. "  |cff46bf72") .. b .. "|r"
 end
 
 local function PaintRow(r, data, mode)
@@ -1106,7 +1106,7 @@ local ENTRY_TEXT = "法术管理"
 local function PaintEntry(n)
     if not entry then return end
     local txt = L[ENTRY_TEXT]
-    if n and n > 0 then txt = txt .. "（" .. n .. "）" end
+    if n and n > 0 then txt = txt .. L["（"] .. n .. L["）"] end
     entry.label:SetText(txt)
     local ok, w = pcall(entry.label.GetStringWidth, entry.label)
     if ok and type(w) == "number" and w > 0 then

@@ -983,7 +983,7 @@ FV.Build = function(page)
     FV.searchPH:SetText(L["搜索阵营…"])
     coroutine.yield()
 
-    local fb = NewButton(leftCard, "▽ " .. L["筛选"], 88, 24, 14)
+    local fb = NewButton(leftCard, (ns.SYM.tri .. " ") .. L["筛选"], 88, 24, 14)
     fb:SetPoint("TOPRIGHT", leftCard, "TOPRIGHT", -FV.PAD, -10)
     SetButtonSelected(fb, false)
     fb:SetScript("OnClick", function()
@@ -1506,9 +1506,9 @@ function FV:SyncPopup()
         if on then n = n + 1 end
     end
     if n >= #OPTS then
-        FV.filterBtn:SetText("▽ " .. L["筛选"])
+        FV.filterBtn:SetText((ns.SYM.tri .. " ") .. L["筛选"])
     else
-        FV.filterBtn:SetText("▽ " .. L["筛选"] .. " " .. n)
+        FV.filterBtn:SetText((ns.SYM.tri .. " ") .. L["筛选"] .. " " .. n)
     end
 end
 
@@ -2291,7 +2291,7 @@ function FV:PaintQuestDetail()
                 nPre = nPre + 1
                 local f = FV.qdPre[nPre]
                 f.__qid = pid
-                f.txt:SetText(format("《%s》", QNameByID(pid)))
+                f.txt:SetText(format(L["《%s》"], QNameByID(pid)))
                 f.txt:SetWidth(W - 20)
                 put(f, 30)
                 gap(6)

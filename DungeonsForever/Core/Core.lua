@@ -408,13 +408,16 @@ end
 
 do
     local candidates = {}
-    if DF_Locale() == "zhCN" then
+    local loc = DF_Locale()
+    if loc == "zhCN" then
         candidates[#candidates + 1] = "ARHei.ttf"
     end
-    for _, name in ipairs({
+    -- 非中文界面不选中文字体：其拉丁字母是等宽粗糙字形，改用游戏默认字体。
+    -- Non-Chinese UI: skip CJK fonts (their Latin glyphs look poor); use the game's default font.
+    for _, name in ipairs((loc == "zhCN" or loc == "zhTW") and {
         "ARKai_T.ttf", "ARHei.ttf", "ARKai_C.ttf",
         "bLEI00D.TTF", "bHEI00M.TTF", "bKAI00M.TTF", "arheiuhk_bd.TTF",
-    }) do
+    } or {}) do
         candidates[#candidates + 1] = name
     end
     local probe = UIParent:CreateFontString()
@@ -435,6 +438,141 @@ do
         ns.FONT = STANDARD_TEXT_FONT
     end
     ns.FONT = ns.FONT or "Fonts\\FRIZQT__.TTF"
+end
+
+do
+    -- 非中文客户端没有 ARKai/ARHei 等中文字体：SetFont 不报错只返回 false，字串会空白或成方块。
+    -- Non-CJK clients ship no ARKai/ARHei: probe once per path and fall back to ns.FONT.
+    local ok_cache = {}
+    local L0 = DF_Locale()
+    local CJK_UI = (L0 == "zhCN" or L0 == "zhTW")
+    function ns.SafeFont(path)
+        if type(path) ~= "string" or not CJK_UI then return ns.FONT end
+        local hit = ok_cache[path]
+        if hit == nil then
+            local probe = UIParent:CreateFontString()
+            probe:Hide()
+            local ok, res = pcall(probe.SetFont, probe, path, 12, "")
+            hit = (ok and res ~= false and probe:GetFont() ~= nil) and true or false
+            ok_cache[path] = hit
+        end
+        return hit and path or ns.FONT
+    end
+end
+
+do
+    -- 符号字形：游戏英文字体没有 ★☆●→①… 等字形（显示为方块）。中文界面原样，其他界面换成贴图或 ASCII。
+    -- Symbol glyphs: the English game font lacks ★☆●→① etc. (renders as boxes).
+    -- Chinese UI keeps them; other UIs get inline textures or ASCII stand-ins.
+    local l0 = DF_Locale()
+    local cjk = (l0 == "zhCN" or l0 == "zhTW")
+    local STAR = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:0|t"
+    local STAR0 = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:0:0:0:0:64:64:0:64:0:64:120:120:120|t"
+    local MAP = cjk and {} or {
+        ["★"] = STAR, ["☆"] = STAR0, ["●"] = "\226\128\162", ["○"] = "o", ["◆"] = "\226\128\162", ["◇"] = "o",
+        ["▽"] = "v", ["▼"] = "v", ["▲"] = "^", ["↑"] = "^", ["↓"] = "v", ["→"] = "->", ["←"] = "<-",
+        ["≈"] = "~", ["≥"] = ">=", ["≤"] = "<=", ["└"] = "-", ["✓"] = "+", ["✔"] = "+",
+        ["①"] = "1.", ["②"] = "2.", ["③"] = "3.", ["④"] = "4.", ["⑤"] = "5.", ["⑥"] = "6.", ["⑦"] = "7.",
+        ["⑧"] = "8.", ["⑨"] = "9.", ["⑩"] = "10.",
+        ["「"] = "\"", ["」"] = "\"", ["『"] = "\"", ["』"] = "\"", ["【"] = "[", ["】"] = "]", ["\227\128\128"] = " ",
+    }
+    ns.SYM = {
+        star = cjk and "★" or STAR, star0 = cjk and "☆" or STAR0,
+        dot = cjk and "●" or "\226\128\162", arrow = cjk and "→" or "->",
+        approx = cjk and "≈" or "~", ge = cjk and "≥" or ">=",
+        dia = cjk and "◆" or "\226\128\162", dia0 = cjk and "◇" or "o", tri = cjk and "▽" or "v",
+        n = cjk and { "①", "②", "③", "④", "⑤", "⑥", "⑦" } or { "1.", "2.", "3.", "4.", "5.", "6.", "7." },
+    }
+    -- 非中文界面：英文词更长，部分固定宽度布局需要放宽
+    -- Non-Chinese UI: English labels run longer, so some fixed-width layouts widen
+    ns.WIDE_UI = not cjk
+
+    -- 文字超出给定宽度时先缩小字号（最小 minSize），仍放不下则截断为省略号
+    -- Shrink a FontString's font (down to minSize) until it fits maxW; truncate with "..." as a last resort
+    function ns.FitFS(fs, maxW, minSize)
+        if not (fs and fs.GetStringWidth and maxW and maxW > 0) then return end
+        local path, size, flags = fs:GetFont()
+        if not path or not size then return end
+        fs.__fitBase = fs.__fitBase or size
+        size = fs.__fitBase
+        if fs:GetFont() ~= nil then pcall(fs.SetFont, fs, path, size, flags or "") end
+        local floor = minSize or math.max(9, size - 3)
+        while (fs:GetStringWidth() or 0) > maxW and size > floor do
+            size = size - 1
+            pcall(fs.SetFont, fs, path, size, flags or "")
+        end
+        if (fs:GetStringWidth() or 0) > maxW then
+            fs:SetWidth(maxW)
+            if fs.SetWordWrap then fs:SetWordWrap(false) end
+        end
+    end
+
+    -- 记录被截断前的完整文字，供悬停提示使用 / remember the full text before it gets shortened, for the hover tooltip
+    function ns.FullText(fs, s)
+        if fs then fs.__fullText = s end
+        return true
+    end
+
+    -- 悬停在被截断的文字上时，用提示框显示完整内容（只在没有其他提示框时）
+    -- Hovering truncated text shows the full text in a tooltip (only when no other tooltip is up)
+    local function TruncatedUnderMouse(frame)
+        local regions = { frame:GetRegions() }
+        if frame.GetFontString and frame:GetFontString() then regions[#regions + 1] = frame:GetFontString() end
+        for _, r in ipairs(regions) do
+            if r.GetObjectType and r:GetObjectType() == "FontString" and r:IsVisible()
+                and (not r.IsMouseOver or r:IsMouseOver()) then
+                local shown = r:GetText()
+                local full = r.__fullText
+                if type(full) == "string" and full ~= "" and full ~= shown then return full end
+                if shown and shown ~= "" and r.IsTruncated and r:IsTruncated() then return shown end
+            end
+        end
+    end
+    local function InWindow(frame)
+        local root = ns.MainFrame
+        local p = frame
+        for _ = 1, 30 do
+            if not p then return false end
+            if p == root then return true end
+            p = p.GetParent and p:GetParent()
+        end
+        return false
+    end
+    local watch = CreateFrame("Frame")
+    local acc, owner = 0, nil
+    watch:SetScript("OnUpdate", function(_, el)
+        acc = acc + el
+        if acc < 0.15 then return end
+        acc = 0
+        local root = ns.MainFrame
+        if not (root and root:IsShown()) then return end
+        local focus
+        if GetMouseFoci then focus = (GetMouseFoci() or {})[1] elseif GetMouseFocus then focus = GetMouseFocus() end
+        if owner and focus ~= owner then
+            if GameTooltip:GetOwner() == owner and GameTooltip.__dfTrunc then
+                GameTooltip.__dfTrunc = nil
+                GameTooltip:Hide()
+            end
+            owner = nil
+        end
+        if not focus or focus == owner or focus == WorldFrame or not InWindow(focus) then return end
+        if GameTooltip:IsShown() then return end
+        local ok, full = pcall(TruncatedUnderMouse, focus)
+        if ok and full then
+            owner = focus
+            GameTooltip:SetOwner(focus, "ANCHOR_TOP")
+            GameTooltip:SetText(full, 1, 1, 1, 1, true)
+            GameTooltip.__dfTrunc = true
+            GameTooltip:Show()
+        end
+    end)
+
+    -- 把字串里的符号换成当前界面能显示的形式（中文界面原样返回）
+    -- Replace symbols in a string with displayable forms (no-op on Chinese UI)
+    function ns.Sym(s)
+        if cjk or type(s) ~= "string" or not s:find("[\226\227]") then return s end
+        return (s:gsub("[\226\227][\128-\191][\128-\191]", MAP))
+    end
 end
 
 do

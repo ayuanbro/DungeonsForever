@@ -69,6 +69,24 @@ local RACE_ZH = {
     [95] = "天裔", [96] = "天裔",
 }
 
+-- 非中文客户端：种族名优先取客户端本地化名称，取不到再走 L[]。
+-- Non-Chinese clients: prefer the client's localized race name, then L[].
+local IS_ZH = (function()
+    local lc = (type(DF_Locale) == "function" and DF_Locale()) or (GetLocale and GetLocale()) or "zhCN"
+    return lc == "zhCN" or lc == "zhTW"
+end)()
+local function RaceName(id)
+    local zh = RACE_ZH[id]
+    if not zh or IS_ZH then return zh end
+    if C_CreatureInfo and C_CreatureInfo.GetRaceInfo then
+        local ok, info = pcall(C_CreatureInfo.GetRaceInfo, id)
+        if ok and type(info) == "table" and type(info.raceName) == "string" and info.raceName ~= "" then
+            return info.raceName
+        end
+    end
+    return L[zh]
+end
+
 local FAC_TEX = {
     A = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Alliance",
     H = "Interface\\AddOns\\DungeonsForever\\Media\\icon\\FACTION\\FactionIcon_Horde",
@@ -162,6 +180,14 @@ end
 local function QName(id)
     local q = Info(id)
     if not q then return format(L["任务 #%d"], id), false end
+    if not IS_ZH then
+        local t = C_QuestLog and C_QuestLog.GetTitleForQuestID
+        if t then
+            local ok, cn = pcall(t, id)
+            if ok and type(cn) == "string" and cn ~= "" then return cn, true end
+        end
+        if q.n and q.n ~= "" then return q.n, true end
+    end
     local n = q.cn or q.n
     if n and n ~= "" then return n, (q.cn ~= nil) end
     return format(L["任务 #%d"], id), false
@@ -379,7 +405,7 @@ end
 
 local function RaceLabel(id)
     if not id then return L["全部种族"] end
-    return RACE_ZH[id] or (L["种族"] .. tostring(id))
+    return RaceName(id) or (L["种族"] .. tostring(id))
 end
 
 local function OwnInfo()
@@ -557,7 +583,7 @@ local function Ensure()
         local seen = {}
         for _, id in ipairs(CQ.raceOpts or {}) do
             local rid = id
-            local nm = RACE_ZH[rid] or (L["种族"] .. tostring(rid))
+            local nm = RaceName(rid) or (L["种族"] .. tostring(rid))
             if not seen[nm] then
                 seen[nm] = true
                 items[#items + 1] = {
@@ -1120,7 +1146,7 @@ local function AddRaceChips(y, races)
     if type(races) ~= "table" or #races == 0 then return y end
     local list, seen = {}, {}
     for _, rid in ipairs(races) do
-        local rn = RACE_ZH[rid]
+        local rn = RaceName(rid)
         if rn and not seen[rn] then
             seen[rn] = true
             list[#list + 1] = { n = rn, id = rid }
@@ -1130,7 +1156,7 @@ local function AddRaceChips(y, races)
     if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.PaintSolidChip and ns.hui.ChipDY) then
         local names = {}
         for i = 1, #list do names[i] = list[i].n end
-        return AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. "：|r" .. table.concat(names, "、"), C_TEXT, 24)
+        return AddLine(y, DG.Hex(C_GREY) .. L["限定种族"] .. L["：|r"] .. table.concat(names, L["、"]), C_TEXT, 24)
     end
     local chipH = ns.hui.ChipH(DET_FS)
     local lineH = chipH + RACE_GAP
@@ -1414,7 +1440,7 @@ renderQuest = function(id, y)
         lvTxt = lvTxt .. (lvTxt ~= "" and " · " or "") .. (lc and DG.Hex(lc) .. seg .. "|r" or seg)
     end
     if lvTxt ~= "" then
-        y = AddLine(y, DG.Hex(C_GREY) .. L["可接等级"] .. "：|r" .. lvTxt, C_TEXT, 24)
+        y = AddLine(y, DG.Hex(C_GREY) .. L["可接等级"] .. L["：|r"] .. lvTxt, C_TEXT, 24)
     end
 
     local diffTxt
@@ -1431,7 +1457,7 @@ renderQuest = function(id, y)
         if tagn and tagn ~= "" then diffTxt = tostring(tagn) end
     end
     if diffTxt then
-        y = AddLine(y, DG.Hex(C_GREY) .. L["任务难度"] .. "：|r" .. diffTxt, C_TEXT, 24)
+        y = AddLine(y, DG.Hex(C_GREY) .. L["任务难度"] .. L["：|r"] .. diffTxt, C_TEXT, 24)
     end
 
     local pts = StartPts(q)
@@ -1461,7 +1487,7 @@ renderQuest = function(id, y)
     else
         fac = L["双阵营共有"]
     end
-    y = AddLine(y, DG.Hex(C_GREY) .. L["阵营"] .. "：|r"
+    y = AddLine(y, DG.Hex(C_GREY) .. L["阵营"] .. L["：|r"]
         .. (facCol and DG.Hex(facCol) or "") .. fac .. (facCol and "|r" or ""), C_TEXT, 24)
 
     y = AddRaceChips(y, q.races)
@@ -1475,7 +1501,7 @@ renderQuest = function(id, y)
         local gi = idx and GroupOf(chain, idx)
         local stepN = chain.groups and #chain.groups or #chain.ids
         if gi then
-            y = AddLine(y, DG.Hex(C_GREY) .. L["链内进度"] .. "：|r"
+            y = AddLine(y, DG.Hex(C_GREY) .. L["链内进度"] .. L["：|r"]
                 .. format(L["第 %d / %d 步"], gi, stepN)
                 .. " · " .. DG.Hex(C_GREY) .. chain.t .. "|r", C_TEXT, 24)
         end
@@ -1559,7 +1585,7 @@ renderQuest = function(id, y)
     end
     if type(q.spells) == "table" then
         for _, sid in ipairs(q.spells) do
-            segs[#segs + 1] = L["技能"] .. "：" .. (SpellName(sid) or format("#%d", sid))
+            segs[#segs + 1] = L["技能"] .. L["："] .. (SpellName(sid) or format("#%d", sid))
         end
     end
     if #segs > 0 then

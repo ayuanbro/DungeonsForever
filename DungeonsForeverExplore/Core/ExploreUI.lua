@@ -30,7 +30,7 @@ local BANNER = ns.ExploreBanner or {}
 
 local BAG_REQ_LVL, BAG_QUEST_LVL = 14, 40
 local BAG_CHAIN = {
-    { key = "p1", no = "①", title = "…and that note you found", lvl = 22, xp = 1750,
+    { key = "p1", no = ns.SYM.n[1], title = "…and that note you found", lvl = 22, xp = 1750,
       q = { A = 79008, H = 79007 },
       note = L["全链起点：无 NPC，在阿历克斯顿农场烧毁的田地点「烧焦的残骸」起链，旁边立着一块镶钉木板；两阵营从这里反向出发。"],
       route = { H = { body = {
@@ -43,7 +43,7 @@ local BAG_CHAIN = {
                 place = L["贫瘠之地 · 陶拉祖营地以南烧毁塔楼"], obj = L["烧焦的残骸"] },
       },
       rw = { { 2459 }, { 3388 } } },
-    { key = "p2", no = "②", title = "Stepping Stones", lvl = 24, xp = 1950, q = 79192,
+    { key = "p2", no = ns.SYM.n[2], title = "Stepping Stones", lvl = 24, xp = 1950, q = 79192,
       note = L["两阵营互交互：在对方大陆的「烧焦的残骸 / 镶钉木板」上交①，再从镶钉木板接取本步；必给里的旧工具箱是 12 格包。"],
       route = { H = {
           head = L["路线：奥格瑞玛坐飞艇 → 飞艇跳海 → 西部荒野"],
@@ -64,7 +64,7 @@ local BAG_CHAIN = {
       rw = { { 2901, note = L["二选一"] }, { 3334, note = L["二选一"] },
              { 1652 }, { 4470, note = L["营火材料"] }, { 4471, note = L["营火材料"] },
              { 221498, note = L["12 格包"] } } },
-    { key = "p3", no = "③", title = "Scramble", lvl = 24, xp = 200, q = 79980,
+    { key = "p3", no = ns.SYM.n[3], title = "Scramble", lvl = 24, xp = 200, q = 79980,
       note = { L["从烈日石居东北 "], { 406, 50.9, 52.3 }, L[" 的小路离开大路，往西翻过山到废弃营地，点箱子上的「散落杂物」交接；烈日石居是部落据点，联盟会从守卫旁经过。"] },
       route = { H = {
           head = L["路线：回程与石爪山"],
@@ -85,12 +85,12 @@ local BAG_CHAIN = {
       loc = { area = 406, x = nil, y = nil, zn = L["同营地 · 营火"],
               place = L["石爪山脉 · 同营地营火（可选）"], obj = L["营火"] },
       rw = {} },
-    { key = "p4", no = "④", title = "Wet Job", lvl = 32, xp = 2550, q = 79974,
+    { key = "p4", no = ns.SYM.n[4], title = "Wet Job", lvl = 32, xp = 2550, q = 79974,
       note = L["爬上营地北边的山丘，跳到土堆上点它，途中要跳过一道缺口；注意摔落伤害。"],
       loc = { area = 406, x = 39.6, y = 49.9, zn = L["石爪山脉 39.6,49.9"],
               place = L["石爪山脉 · 营地正北山丘土堆"], obj = L["土堆"] },
       rw = { { 5432 }, { 20709 } } },
-    { key = "p5", no = "⑤", title = "Eagle's Fist", lvl = 32, xp = 2550, q = 79975,
+    { key = "p5", no = ns.SYM.n[5], title = "Eagle's Fist", lvl = 32, xp = 2550, q = 79975,
       note = L["沿巨石水坝走出去、面向北方湿地，跳到坝顶下方的矮人头像雕刻上交接；水坝有联盟守卫，部落小心。"],
       route = { H = {
           head = L["路线：灵魂两次从塞拉摩坐船到湿地 → 洛克莫丹"],
@@ -114,7 +114,7 @@ local BAG_CHAIN = {
       loc = { area = 38, x = 49.4, y = 12.9, zn = L["洛克莫丹 49.4,12.9"],
               place = L["洛克莫丹 · 巨石水坝矮人头像雕刻"], obj = L["雕刻塑像"] },
       rw = {} },
-    { key = "p6", no = "⑥", title = "This Must Be The Place", lvl = 32, xp = 1950, q = 79976,
+    { key = "p6", no = ns.SYM.n[6], title = "This Must Be The Place", lvl = 32, xp = 1950, q = 79976,
       note = { L["最大难点：敦霍尔德城堡东南方的推车（"], { 267, 87.4, 49.7 },
                L[" ）跳上索拉丁之墙，穿过墙内房间点阿拉希一侧的信使行囊（"], { 45, 22.4, 24.2 },
                L[" ）交接、再点下方草草收起的包裹拿睡袋；PVP 服小心。"] },
@@ -127,14 +127,14 @@ local BAG_FINAL_ID = 211527
 local BAG_FINAL_DESC = L["铺开睡袋躺进去休息：每躺满 1 分钟叠 1 层 +1% 经验，最多 3 层（共 3%），持续 2 小时；铺开需原地站 15 秒，睡袋落地留 20 分钟，使用冷却 1 小时。每 1~2 小时铺一次、躺满 3 分钟即可常驻 3%，队友可同躺。"]
 local BAG_RW_GROUPS = {
     { head = L["二选一 · 第②步"],
-      items = { { 2901, "②" }, { 3334, "②" } } },
+      items = { { 2901, ns.SYM.n[2] }, { 3334, ns.SYM.n[2] } } },
     { head = L["三选一 · 第③步"],
-      items = { { 3463, L["③ · 魔杖"] }, { 217314, "③" }, { 217315, "③" } } },
+      items = { { 3463, L["③ · 魔杖"] }, { 217314, ns.SYM.n[3] }, { 217315, ns.SYM.n[3] } } },
     { head = L["链中必给"],
-      items = { { 221498, L["12 格包 · ②"] }, { 216619, "×5 · ③⑥" }, { 1652, "②" },
-                { 4470, L["② 营火材料"] }, { 4471, L["② 营火材料"] }, { 3464, "③" },
-                { 3465, "③" }, { 2459, "①" }, { 3388, "①" },
-                { 5432, "④" }, { 20709, "④" } } },
+      items = { { 221498, L["12 格包 · ②"] }, { 216619, ns.Sym("×5 · ③⑥") }, { 1652, ns.SYM.n[2] },
+                { 4470, L["② 营火材料"] }, { 4471, L["② 营火材料"] }, { 3464, ns.SYM.n[3] },
+                { 3465, ns.SYM.n[3] }, { 2459, ns.SYM.n[1] }, { 3388, ns.SYM.n[1] },
+                { 5432, ns.SYM.n[4] }, { 20709, ns.SYM.n[4] } } },
 }
 
 local BM_ID = {
@@ -268,7 +268,7 @@ EG.BM_BUNDLE = BM_BUNDLE
 EG.BagChain = BAG_CHAIN
 EG.BagReward = BAG_FINAL_ID
 
-EG.NAV_X, EG.NAV_W = PAGE_INSET, 148
+EG.NAV_X, EG.NAV_W = PAGE_INSET, ns.WIDE_UI and 184 or 148
 EG.NAV_GROUP_H = 24
 EG.NAV_ITEM_H, EG.NAV_GAP = 24, 8
 EG.NAV_ICON = 18
@@ -950,7 +950,7 @@ local function PaintCoords(r, rec)
         local zn2 = LocName(last)
         if zn1 ~= zn2 or dsg then r.d:SetText(zn1) end
         r.c2:SetText(format("%.1f, %.1f", s1[2] or 0, s1[3] or 0))
-        r.arr:SetText("→")
+        r.arr:SetText(ns.SYM.arrow)
         if dsg then
             r.d2:SetText(zn2)
             r.d2:ClearAllPoints()
@@ -3143,7 +3143,7 @@ local function PetSeg(card, k)
     return sg
 end
 
-local PET_NUM = { "①", "②", "③", "④", "⑤" }
+local PET_NUM = { ns.SYM.n[1], ns.SYM.n[2], ns.SYM.n[3], ns.SYM.n[4], ns.SYM.n[5] }
 
 local function PetFlow(card, idx, segs, y, maxW)
     local x = 0
@@ -4754,7 +4754,7 @@ function EG.Build(page)
             EG.bagProg:SetWordWrap(false)
 
             local NOTE_PAD = 8
-            local NCOL_W = 138
+            local NCOL_W = ns.WIDE_UI and 178 or 138
             local NOTE_TAIL1 = L["：吃一口立即回 500 血、12 秒内再回 1050，并回复法力 / 50 怒气 / 100 能量，5 分钟冷却、最多叠 30 个；"]
             local NOTE_SUB = L["旧版的休息经验加成在无限服已移除，当应急干粮就好；吃下去还会附一波「方便零嘴」（0.75 秒 60% 移速）；"]
             local NOTE_TAIL2 = L["：躺满 1 分钟 +1% 经验、最多 3 层、持续 2 小时；铺开需原地站 15 秒、睡袋落地留 20 分钟，冷却 1 小时，队友可同躺"]
@@ -5014,6 +5014,8 @@ function EG.Build(page)
                 nb.icon = ic
                 local nf = MakeFS(nb, 14, C_TEXT, "LEFT")
                 nf:SetPoint("LEFT", ic, "RIGHT", 4, 0)
+                nf:SetWidth(NM.colW - 10 - 22 - 6)
+                nf:SetWordWrap(false)
                 nb.nm = nf
                 nb:SetScript("OnEnter", function(self) EG.BagChipTip(self, true) end)
                 nb:SetScript("OnLeave", function(self) EG.BagChipTip(self, false) end)
@@ -5782,7 +5784,7 @@ Y()
                 local items = {}
                 for _, k in ipairs({ "native", "circle", "custom" }) do
                     items[#items + 1] = {
-                        text = (cur == k and "● " or "") .. GS_NAME[k],
+                        text = (cur == k and (ns.SYM.dot .. " ") or "") .. GS_NAME[k],
                         icon = GS_ICON[k],
                         func = function() pick(k) end,
                     }

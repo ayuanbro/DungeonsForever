@@ -155,52 +155,60 @@ local PRIM_STAT = {
 
 local SPEC_DIR = {
     warrior = {
-        { key = "arms",   label = "武器", role = "phys", icon = "Interface\\Icons\\ability_warrior_savageblow" },
-        { key = "fury",   label = "狂暴", role = "phys", icon = "Interface\\Icons\\ability_warrior_innerrage" },
-        { key = "prot",   label = "防战", role = "tank", icon = "Interface\\Icons\\ability_warrior_defensivestance" },
+        { key = "arms",   label = "武器", en = "Arms", role = "phys", icon = "Interface\\Icons\\ability_warrior_savageblow" },
+        { key = "fury",   label = "狂暴", en = "Fury", role = "phys", icon = "Interface\\Icons\\ability_warrior_innerrage" },
+        { key = "prot",   label = "防战", en = "Protection", role = "tank", icon = "Interface\\Icons\\ability_warrior_defensivestance" },
     },
     paladin = {
-        { key = "holy",   label = "奶骑", role = "heal", icon = "Interface\\Icons\\Spell_Holy_HolyBolt" },
-        { key = "prot",   label = "防骑", role = "tank", icon = "Interface\\Icons\\Spell_Holy_DevotionAura" },
-        { key = "ret",    label = "惩戒", role = "phys", icon = "Interface\\Icons\\Spell_Holy_AuraOfLight" },
+        { key = "holy",   label = "奶骑", en = "Holy", role = "heal", icon = "Interface\\Icons\\Spell_Holy_HolyBolt" },
+        { key = "prot",   label = "防骑", en = "Protection", role = "tank", icon = "Interface\\Icons\\Spell_Holy_DevotionAura" },
+        { key = "ret",    label = "惩戒", en = "Retribution", role = "phys", icon = "Interface\\Icons\\Spell_Holy_AuraOfLight" },
     },
     hunter = {
-        { key = "bm",     label = "兽王", role = "phys", icon = "Interface\\Icons\\Ability_Hunter_BeastTaming" },
-        { key = "mm",     label = "射击", role = "phys", icon = "Interface\\Icons\\Ability_Marksmanship" },
-        { key = "surv",   label = "生存", role = "phys", icon = "Interface\\Icons\\Ability_Hunter_SwiftStrike" },
+        { key = "bm",     label = "兽王", en = "Beast Mastery", role = "phys", icon = "Interface\\Icons\\Ability_Hunter_BeastTaming" },
+        { key = "mm",     label = "射击", en = "Marksmanship", role = "phys", icon = "Interface\\Icons\\Ability_Marksmanship" },
+        { key = "surv",   label = "生存", en = "Survival", role = "phys", icon = "Interface\\Icons\\Ability_Hunter_SwiftStrike" },
     },
     rogue = {
-        { key = "assa",   label = "奇袭", role = "phys", icon = "Interface\\Icons\\ability_rogue_eviscerate" },
-        { key = "combat", label = "战斗", role = "phys", icon = "Interface\\Icons\\ability_backstab" },
-        { key = "sub",    label = "敏锐", role = "phys", icon = "Interface\\Icons\\ability_stealth" },
+        { key = "assa",   label = "奇袭", en = "Assassination", role = "phys", icon = "Interface\\Icons\\ability_rogue_eviscerate" },
+        { key = "combat", label = "战斗", en = "Combat", role = "phys", icon = "Interface\\Icons\\ability_backstab" },
+        { key = "sub",    label = "敏锐", en = "Subtlety", role = "phys", icon = "Interface\\Icons\\ability_stealth" },
     },
     priest = {
-        { key = "disc",   label = "戒律", role = "heal", icon = "Interface\\Icons\\spell_holy_wordfortitude" },
-        { key = "holy",   label = "神牧", role = "heal", icon = "Interface\\Icons\\spell_holy_guardianspirit" },
-        { key = "shadow", label = "暗牧", role = "spell", icon = "Interface\\Icons\\spell_shadow_shadowwordpain" },
+        { key = "disc",   label = "戒律", en = "Discipline", role = "heal", icon = "Interface\\Icons\\spell_holy_wordfortitude" },
+        { key = "holy",   label = "神牧", en = "Holy", role = "heal", icon = "Interface\\Icons\\spell_holy_guardianspirit" },
+        { key = "shadow", label = "暗牧", en = "Shadow", role = "spell", icon = "Interface\\Icons\\spell_shadow_shadowwordpain" },
     },
     shaman = {
-        { key = "ele",    label = "元素", role = "spell", icon = "Interface\\Icons\\spell_nature_lightning" },
-        { key = "enh",    label = "增强", role = "phys", icon = "Interface\\Icons\\spell_nature_lightningshield" },
-        { key = "resto",  label = "奶萨", role = "heal", icon = "Interface\\Icons\\Spell_Nature_HealingWaveGreater" },
+        { key = "ele",    label = "元素", en = "Elemental", role = "spell", icon = "Interface\\Icons\\spell_nature_lightning" },
+        { key = "enh",    label = "增强", en = "Enhancement", role = "phys", icon = "Interface\\Icons\\spell_nature_lightningshield" },
+        { key = "resto",  label = "奶萨", en = "Restoration", role = "heal", icon = "Interface\\Icons\\Spell_Nature_HealingWaveGreater" },
     },
     mage = {
-        { key = "arcane", label = "奥法", role = "spell", icon = "Interface\\Icons\\inv_misc_rune_03" },
-        { key = "fire",   label = "火法", role = "spell", icon = "Interface\\Icons\\spell_fire_firebolt02" },
-        { key = "frost",  label = "冰法", role = "spell", icon = "Interface\\Icons\\spell_frost_frostbolt02" },
+        { key = "arcane", label = "奥法", en = "Arcane", role = "spell", icon = "Interface\\Icons\\inv_misc_rune_03" },
+        { key = "fire",   label = "火法", en = "Fire", role = "spell", icon = "Interface\\Icons\\spell_fire_firebolt02" },
+        { key = "frost",  label = "冰法", en = "Frost", role = "spell", icon = "Interface\\Icons\\spell_frost_frostbolt02" },
     },
     warlock = {
-        { key = "affli",  label = "痛苦", role = "spell", icon = "Interface\\Icons\\spell_shadow_deathcoil" },
-        { key = "demo",   label = "恶魔", role = "spell", icon = "Interface\\Icons\\spell_shadow_metamorphosis" },
-        { key = "destro", label = "毁灭", role = "spell", icon = "Interface\\Icons\\spell_shadow_rainoffire" },
+        { key = "affli",  label = "痛苦", en = "Affliction", role = "spell", icon = "Interface\\Icons\\spell_shadow_deathcoil" },
+        { key = "demo",   label = "恶魔", en = "Demonology", role = "spell", icon = "Interface\\Icons\\spell_shadow_metamorphosis" },
+        { key = "destro", label = "毁灭", en = "Destruction", role = "spell", icon = "Interface\\Icons\\spell_shadow_rainoffire" },
     },
     druid = {
-        { key = "balance", label = "鸟德", role = "spell", icon = "Interface\\Icons\\spell_nature_starfall" },
-        { key = "cat",     label = "猫德", role = "phys", icon = "Interface\\Icons\\Ability_Druid_CatForm" },
-        { key = "bear",    label = "熊德", role = "tank", icon = "Interface\\Icons\\ability_racial_bearform" },
-        { key = "resto",   label = "奶德", role = "heal", icon = "Interface\\Icons\\Spell_Nature_HealingTouch" },
+        { key = "balance", label = "鸟德", en = "Balance", role = "spell", icon = "Interface\\Icons\\spell_nature_starfall" },
+        { key = "cat",     label = "猫德", en = "Feral (Cat)", role = "phys", icon = "Interface\\Icons\\Ability_Druid_CatForm" },
+        { key = "bear",    label = "熊德", en = "Feral (Bear)", role = "tank", icon = "Interface\\Icons\\ability_racial_bearform" },
+        { key = "resto",   label = "奶德", en = "Restoration", role = "heal", icon = "Interface\\Icons\\Spell_Nature_HealingTouch" },
     },
 }
+
+-- 英文客户端：专精标签用英文（label 为中文简称，不走通用 L[] 以免与同名词条冲突）
+-- Non-Chinese UI: English spec names (labels are Chinese nicknames; kept out of the shared L[] table)
+BG.SPEC_EN_UI = (type(DF_Locale) == "function") and DF_Locale() ~= "zhCN" and DF_Locale() ~= "zhTW"
+function BG.SpecTabName(sr)
+    if BG.SPEC_EN_UI and sr.en then return sr.en end
+    return L[sr.label] or sr.label
+end
 
 local function RoleOfKey(cls, key)
     for _, sr in ipairs(SPEC_DIR[cls] or {}) do
@@ -1777,7 +1785,7 @@ end
 
 local function TSpecLabel()
     for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
-        if sr.key == BG.tspec then return L[sr.label] or sr.label end
+        if sr.key == BG.tspec then return BG.SpecTabName(sr) end
     end
     return SpecLabel()
 end
@@ -1933,7 +1941,7 @@ local function KitEff(text)
     if sp then parts[#parts + 1] = L["法术强度"] .. " +" .. sp end
     if def then parts[#parts + 1] = L["防御技能"] .. " +" .. def end
     if arm then parts[#parts + 1] = L["护甲"] .. " +" .. arm end
-    return table.concat(parts, "，")
+    return table.concat(parts, L["，"])
 end
 
 local function EnsureEnchDB()
@@ -2180,7 +2188,7 @@ local function EnchTip(owner, e)
         for _, m in ipairs(e.mats) do
             parts[#parts + 1] = (DG.ItemName(m[1]) or tostring(m[1])) .. " x" .. tostring(m[2] or 1)
         end
-        GameTooltip:AddLine(format(L["材料：%s"], table.concat(parts, "、")), 0.7, 0.7, 0.7, true)
+        GameTooltip:AddLine(format(L["材料：%s"], table.concat(parts, L["、"])), 0.7, 0.7, 0.7, true)
     end
     GameTooltip:Show()
 end
@@ -2226,7 +2234,7 @@ local function SrcText(src)
         return who .. (src.dung or L["副本"]) .. (src.rate and (" · " .. src.rate) or "")
     elseif t == "craft" then
         local pn = PROF_NAMES[src.prof] or src.prof or L["制造"]
-        return pn .. (src.lvl and format("（%d）", src.lvl) or "")
+        return pn .. (src.lvl and format(L["（%d）"], src.lvl) or "")
             .. (src.note and (" · " .. src.note) or "")
     elseif t == "rare" then
         return L["稀有 · "] .. (src.note or "")
@@ -2282,7 +2290,7 @@ local function PaintTopbar()
             local sr = dir[i]
             if sr then
                 bt:SetShown(true)
-                bt:SetText(L[sr.label] or sr.label)
+                bt:SetText(BG.SpecTabName(sr))
                 if bt.__icon then bt.__icon:SetTexture(sr.icon) end
                 local on = (sr.role == "tank" and BG.spec == "tank")
                     or (sr.role ~= "tank" and BG.spec ~= "tank" and BG.tspec == sr.key)
@@ -3641,7 +3649,7 @@ function FillBwRow(r)
     end
     if gm and gm.WishIs then
         local on = gm.WishIs(row.item)
-        r.wishBt.star:SetText(on and "★" or "☆")
+        r.wishBt.star:SetText(on and ns.SYM.star or ns.SYM.star0)
         if on then
             r.wishBt.star:SetTextColor(1, 0.82, 0, 1)
         else
@@ -4478,7 +4486,7 @@ function BG.OpenClassMenu(owner)
                 math.floor(rc.b * 255 + 0.5))
         end
         items[#items + 1] = {
-            text = (c.slug == BG.cls and "● " or "") .. ClassName(c.slug),
+            text = (c.slug == BG.cls and (ns.SYM.dot .. " ") or "") .. ClassName(c.slug),
             color = color,
             func = function() BG.SelectClass(c.slug) end,
         }
@@ -5763,7 +5771,7 @@ local function BuildEnchCard(parent)
         local items = {}
         for _, d in ipairs(defs) do
             items[#items + 1] = {
-                text = (BG.enchFilter == d.key and "● " or "") .. tostring(d.label),
+                text = (BG.enchFilter == d.key and (ns.SYM.dot .. " ") or "") .. tostring(d.label),
                 func = function()
                     BG.enchFilter = d.key
                     BG.RequestRender()
@@ -6243,7 +6251,7 @@ end
 
 function BG.SpecLabel(key)
     for _, sr in ipairs(SPEC_DIR[BG.cls] or {}) do
-        if sr.key == key then return L[sr.label] or sr.label end
+        if sr.key == key then return BG.SpecTabName(sr) end
     end
     return nil
 end
@@ -6253,7 +6261,7 @@ function BG.ArrowScopeText()
     if s == "all" then return L["任一专精"] end
     if s == "manual" then return L["跟随 BiS 选择"] end
     local lbl = BG.SpecLabel(BG.DetectSpec())
-    return L["当前天赋"] .. "：" .. (lbl or L["未识别"])
+    return L["当前天赋"] .. L["："] .. (lbl or L["未识别"])
 end
 function BG.PreRaidPlan()
     local key = tostring(BG.cls) .. "|" .. tostring(BG.tspec)

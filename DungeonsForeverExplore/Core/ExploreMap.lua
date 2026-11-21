@@ -1386,7 +1386,7 @@ local function mkDropdownRow(content, y, label, items, get, set, onChange)
         local menu = {}
         for _, it in ipairs(items) do
             menu[#menu + 1] = {
-                text = (it.v == cur and "● " or "") .. it.t,
+                text = (it.v == cur and (ns.SYM.dot .. " ") or "") .. it.t,
                 func = function()
                     set(it.v)
                     b:sync()

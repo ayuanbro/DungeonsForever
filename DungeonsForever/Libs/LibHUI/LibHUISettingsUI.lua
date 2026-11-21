@@ -1183,11 +1183,11 @@ function UI:RenderControl(app, parent, control, yOffset, reuseRow)
         UI:GetImpDragger():Show()
       end)
 
-      local upButton = Widgets:CreateActionButton(line, "↑", 22, 20, function()
+      local upButton = Widgets:CreateActionButton(line, ((_G.DF_NS and _G.DF_NS.Sym) or tostring)("↑"), 22, 20, function()
         if type(control.moveEntry) == "function" then control.moveEntry(index, -1) end
       end)
       upButton:SetPoint("RIGHT", line, "RIGHT", -64, 0)
-      local downButton = Widgets:CreateActionButton(line, "↓", 22, 20, function()
+      local downButton = Widgets:CreateActionButton(line, ((_G.DF_NS and _G.DF_NS.Sym) or tostring)("↓"), 22, 20, function()
         if type(control.moveEntry) == "function" then control.moveEntry(index, 1) end
       end)
       downButton:SetPoint("RIGHT", line, "RIGHT", -36, 0)

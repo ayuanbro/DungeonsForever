@@ -4443,6 +4443,7 @@ function PD.BindRow(r, spec, h)
             local avail = (r:GetWidth() or 0) - x - rightW - 6
             local subTxt = r.b:GetText() or ""
             if avail > 40 then
+                r.b.__fullText = subTxt
                 r.b:SetText(PD.Fit(subTxt, 11, avail))
             else
                 r.b:SetText("")
@@ -4608,9 +4609,9 @@ function PD.FillBonusTable()
             end
             SetIcon(r.icon, p.icon)
             r.name:SetText(p.name or slug)
-            r.cells[1]:SetText(table.concat(t1, "、"))
-            r.cells[2]:SetText(table.concat(t2, "、"))
-            r.cells[3]:SetText(table.concat(t3, "、"))
+            r.cells[1]:SetText(table.concat(t1, L["、"]))
+            r.cells[2]:SetText(table.concat(t2, L["、"]))
+            r.cells[3]:SetText(table.concat(t3, L["、"]))
             if buffTxt ~= "" then
                 r.cmp1:SetText(cmpName ~= "" and cmpName or L["营地增益"])
                 r.cmp1:SetTextColor(Unpack(C_GREY))
@@ -4922,6 +4923,11 @@ function PD.FillTrainerBoard()
                         c.xy:SetPoint("TOPRIGHT", c, "TOPRIGHT", -8, -22)
                         c.xy:SetText(format("%g, %g", t.x, t.y))
                         c.xy:Show()
+                        -- 名字/地区不压到坐标上 / keep name and zone clear of the coordinates
+                        c.n:SetWidth(COL_W - 16)
+                        c.n:SetWordWrap(false)
+                        c.l:SetWidth(math.max(40, COL_W - 16 - (c.xy:GetStringWidth() or 60) - 6))
+                        c.l:SetWordWrap(false)
                         c.__tr = t
                         c:SetScript("OnClick", function()
                             PD.MarkVendorLoc({ nil, t.map, t.x, t.y })
@@ -5690,7 +5696,7 @@ function PD.Build(page)
     PD.trFacBtns = {}
     for i = 1, 2 do
         local k = (i == 1) and "A" or "H"
-        local bt = NewButton(page, k == "A" and L["联盟"] or L["部落"], 64, PD.SUB_H, 14)
+        local bt = NewButton(page, k == "A" and L["联盟"] or L["部落"], ns.WIDE_UI and 84 or 64, PD.SUB_H, 14)
         bt.__huiKeepTextColor = true
         SetButtonSelected(bt, false)
         local bfs = bt:GetFontString()
@@ -5913,6 +5919,7 @@ function PD.Build(page)
         f.fs:SetTextColor(r or 0.95, g or 0.75, b or 0.4, 1)
         local w = FSW(f.fs)
         if w > maxW then
+            f.fs.__fullText = text
             f.fs:SetText(PD.Fit(text, 12, maxW))
             w = FSW(f.fs, w)
         end
@@ -5926,7 +5933,7 @@ function PD.Build(page)
         if not text or text == "" then f:Hide() return end
         f:SetText(text)
         local w = math.max(60, (card:GetWidth() or 240) - 28)
-        if FSW(f) > w then f:SetText(PD.Fit(text, 12, w)) end
+        if FSW(f) > w then f:SetText(ns.FullText(f, text) and PD.Fit(text, 12, w)) end
         f:Show()
     end
     function PD.PlaceCards(n)
@@ -6750,7 +6757,7 @@ function PD.PickTabs()
                     bt:ClearAllPoints()
                     local kx = (k == "H") and 0 or 1
                     bt:SetPoint("TOPLEFT", PD.page, "TOPLEFT",
-                                PD.RIGHT_X + PD.RIGHT_W - PD.LIST_PAD - 64 - kx * 72,
+                                PD.RIGHT_X + PD.RIGHT_W - PD.LIST_PAD - (bt:GetWidth() or 64) - kx * ((bt:GetWidth() or 64) + 8),
                                 -PD.SUB_Y)
                     SetButtonSelected(bt, sel)
                     local bf = bt:GetFontString()
@@ -7519,7 +7526,7 @@ function PD.PaintLvTiles()
         local nm = (RA and RA.SchemeLabel) and RA.SchemeLabel(sk) or sk
         local head = curK and "|cffffd100" or "|cffffffff"
         schemeLines[#schemeLines + 1] = {
-            head .. nm .. "|r|cff8f8f8f：|r|cffb3b3b3" .. (schemeDesc[sk] or "") .. "|r",
+            head .. nm .. L["|r|cff8f8f8f：|r|cffb3b3b3"] .. (schemeDesc[sk] or "") .. "|r",
             1, 1, 1,
         }
     end
@@ -8033,7 +8040,7 @@ function PD.CampTipLines(c)
     end
     local function add(label, v)
         if type(v) == "string" and v ~= "" then
-            lines[#lines + 1] = { label .. "：" .. v }
+            lines[#lines + 1] = { label .. L["："] .. v }
         end
     end
     add(L["角色"], c[7])
@@ -9748,7 +9755,7 @@ function PD.LearningGapText(diagnostic)
     if diagnostic and not diagnostic.item then
         for _,id in ipairs(diagnostic.missingItemIDs or {}) do identity=identity.." · "..format(L["教材 #%d"],id) end
     end
-    return identity.."："..table.concat(parts,"；")
+    return identity..L["："]..table.concat(parts,L["；"])
 end
 
 PD.CARD_FIXW = nil
@@ -11004,7 +11011,7 @@ function PD.EnchantSpec(en)
         if total <= 0 or unpriced >= #en[9] then
             costStr = "—"
         else
-            costStr = (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+            costStr = (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStr(total, "copper")
         end
     end
     local ahStr
@@ -11485,7 +11492,7 @@ function PD.VendorBlockLines(lines, itemID)
             if type(nm) == "string" and nm ~= "" and nm ~= "?" then names[#names + 1] = nm end
         end
         local txt = format(L["另有 %d 处"], #list - shown)
-        if #names > 0 then txt = txt .. " · " .. table.concat(names, "、") end
+        if #names > 0 then txt = txt .. " · " .. table.concat(names, L["、"]) end
         lines[#lines + 1] = { txt, Unpack(C_MT) }
     end
 end
@@ -11724,7 +11731,7 @@ function PD.MatsCostText(mats)
     local total, unpriced = RA.MatListCost(mats)
     unpriced = unpriced or 0
     if not total or total <= 0 or unpriced >= #mats then return "—" end
-    return (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+    return (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStr(total, "copper")
 end
 
 function PD.MatsCostTextC(mats)
@@ -11732,7 +11739,7 @@ function PD.MatsCostTextC(mats)
     local total, unpriced = RA.MatListCost(mats)
     unpriced = unpriced or 0
     if not total or total <= 0 or unpriced >= #mats then return "—" end
-    return (unpriced > 0 and "≈" or "") .. RA.MoneyStrTip(total)
+    return (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStrTip(total)
 end
 
 function PD.PatternTipLines(id, title)
@@ -11866,7 +11873,7 @@ function PD.PriceTipLines(itemID, mats, opts)
             costTxt = "—"
         else
             approx = unpriced > 0
-            costTxt = (approx and "≈" or "") .. RA.MoneyStr(cost, "copper")
+            costTxt = (approx and ns.SYM.approx or "") .. RA.MoneyStr(cost, "copper")
         end
     end
     local o = type(opts) == "table" and opts or nil
@@ -11904,7 +11911,7 @@ function PD.PriceTipLines(itemID, mats, opts)
         end
     end
     if ah and cost and nMats and cost > 0 then
-        local pre = approx and "≈" or ""
+        local pre = approx and ns.SYM.approx or ""
         local diff = ah - cost
         local net = math.floor(ah * 0.95) - cost
         local l4 = format(L["差价: %s"], pre .. (diff > 0 and "+" or "") .. RA.MoneyStr(diff, "copper"))
@@ -12111,7 +12118,7 @@ function PD.RecipeSpec(r)
         if total <= 0 or unpriced >= #r[12] then
             costStr = "—"
         else
-            costStr = (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+            costStr = (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStr(total, "copper")
         end
     end
     local ahStr
@@ -12122,7 +12129,7 @@ function PD.RecipeSpec(r)
     local gapStr, gapColor
     if ah and total and total > 0 then
         local diff = ah - total
-        gapStr = ((unpriced and unpriced > 0) and "≈" or "") .. (diff < 0 and "-" or "+") .. RA.MoneyStr(math.abs(diff), "copper")
+        gapStr = ((unpriced and unpriced > 0) and ns.SYM.approx or "") .. (diff < 0 and "-" or "+") .. RA.MoneyStr(math.abs(diff), "copper")
         if diff > 0 then gapColor = AH_PCT_RED elseif diff < 0 then gapColor = AH_PCT_GREEN else gapColor = { 0.75, 0.75, 0.75 } end
     end
     return {
@@ -12240,7 +12247,7 @@ function PD.CraftedSpec(c)
         if total <= 0 or unpriced >= #c[8] then
             costStr = "—"
         else
-            costStr = (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+            costStr = (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStr(total, "copper")
         end
     end
     local ahStr
@@ -12304,7 +12311,7 @@ function PD.FavorSpec(f, d)
         if total <= 0 or unpriced >= #mats then
             costStr = "—"
         else
-            costStr = (unpriced > 0 and "≈" or "") .. RA.MoneyStr(total, "copper")
+            costStr = (unpriced > 0 and ns.SYM.approx or "") .. RA.MoneyStr(total, "copper")
         end
     end
     local ahStr
@@ -13195,7 +13202,7 @@ function PD.RowsFishing(rows)
                             v = format(L["%d 项"], #v)
                         end
                         if v ~= "" then
-                            lines[#lines + 1] = { format("%s：%s",
+                            lines[#lines + 1] = { format(L["%s：%s"],
                                 DG.FISH_FIELD_LABEL[i - 5], tostring(v)), 0.6, 0.9, 0.6 }
                         end
                     end
@@ -14057,12 +14064,12 @@ function PD.PlanCostText(plan)
     if plan.referenceOnly then
         if not plan.referenceShopping then return L["配方资料待补全"] end
         if not plan.referenceQuoted then return L["请扫描拍卖行"] end
-        return L["材料参考价"].." "..(plan.referenceCostComplete and "" or "≥")..RA.MoneyStr(plan.matTotal or 0,"copper")
+        return L["材料参考价"].." "..(plan.referenceCostComplete and "" or ns.SYM.ge)..RA.MoneyStr(plan.matTotal or 0,"copper")
     end
     if PD.PlanLearningBlocked(plan) and (plan.total or 0)==0 then return L["路线尚未完整，费用待确认"] end
     if plan.completeCost==false and (plan.total or 0)==0 then return L["请扫描拍卖行"] end
     local floor = (plan.completeCost==false) or ((plan.np or 0) > 0)
-    return (floor and "≥" or "")..RA.MoneyStr(plan.total or 0,"copper")
+    return (floor and ns.SYM.ge or "")..RA.MoneyStr(plan.total or 0,"copper")
 end
 
 function PD.CopyPlanSummary(plan)
@@ -14576,7 +14583,7 @@ function PD.SpecQuestLines(goal)
     local out = {}
     out[#out + 1] = { format(L["%s入门任务"], PD.SpecQuestBranch(goal)), 1, 0.82, 0.35 }
     if goal.questName and goal.questName ~= "" then
-        out[#out + 1] = { format(L["任务名：%s"], "《" .. tostring(goal.questName) .. "》"), 0.82, 0.82, 0.82 }
+        out[#out + 1] = { format(L["任务名：%s"], L["《"] .. tostring(goal.questName) .. L["》"]), 0.82, 0.82, 0.82 }
     end
     out[#out + 1] = { format(L["接取地点：%s"], PD.SpecQuestWhere(goal)), 0.75, 0.75, 0.75 }
     local mats = {}
@@ -14585,7 +14592,7 @@ function PD.SpecQuestLines(goal)
         mats[#mats + 1] = format("%s ×%d", nm, input[2] or 1)
     end
     if #mats > 0 then
-        out[#out + 1] = { format(L["需要材料：%s"], table.concat(mats, "、")), 0.75, 0.75, 0.75 }
+        out[#out + 1] = { format(L["需要材料：%s"], table.concat(mats, L["、"])), 0.75, 0.75, 0.75 }
     end
     local prerequisites=ns.ProfGates and ns.ProfGates.PrerequisiteText(goal) or ""
     if prerequisites~="" then
@@ -14612,7 +14619,7 @@ function PD.RowsSpecQuest(rows)
     local branch = PD.SpecQuestBranch(goal)
     local state, r, g, b = PD.SpecQuestState(goal)
     local primary = goal.questName and goal.questName ~= ""
-                    and ("《" .. tostring(goal.questName) .. "》") or branch
+                    and (L["《"] .. tostring(goal.questName) .. L["》"]) or branch
     rows[#rows + 1] = {
         kind = "row", h = PD.ROW_H, col = 1,
         text = format(L["专精入门任务：%s"], primary),
@@ -15662,7 +15669,7 @@ end
 
 function PD.RouteHistoryCost(entry)
     local text = RA.MoneyStr(tonumber(entry.total) or 0, "copper")
-    if entry.complete == false then text = "≥" .. text end
+    if entry.complete == false then text = ns.SYM.ge .. text end
     return text
 end
 
@@ -16178,7 +16185,7 @@ function PD.RowsLeveling(rows)
                 ranges[#ranges + 1] = format("%d–%d", b.from or 0, b.to or 0)
             end
             warning(format(L["有 %d 个步骤受专精限制（%s）：%s；请在配方页核对专精要求后重新计算。"], #shownSum.blockedSteps,
-                table.concat(names, " / "), table.concat(ranges, "、")), 0.95, 0.75, 0.4)
+                table.concat(names, " / "), table.concat(ranges, L["、"])), 0.95, 0.75, 0.4)
         end
     end
     do
@@ -16239,7 +16246,7 @@ function PD.RowsLeveling(rows)
                 whyLong[st]=L["固定攻略参考；逐配方资料待补全。"]
             elseif st.unpricedFallback then
                 if st.cost and st.cost > 0 then
-                    cost = "≥" .. RA.MoneyStr(st.cost)
+                    cost = ns.SYM.ge .. RA.MoneyStr(st.cost)
                 else
                     cost = L["请扫描拍卖行"]
                 end
@@ -16247,7 +16254,7 @@ function PD.RowsLeveling(rows)
                 whyLong[st] = PD.UnpriceWhy(st)
             elseif st.unpriced or st.cost == nil then
                 if st.cost and st.cost > 0 then
-                    cost = "≥" .. RA.MoneyStr(st.cost)
+                    cost = ns.SYM.ge .. RA.MoneyStr(st.cost)
                 else
                     cost = L["请核对价格"]
                 end
@@ -16264,7 +16271,7 @@ function PD.RowsLeveling(rows)
                     local cc = RA.StepConsumeCost(st)
                     if cc and cc > 0 then shown, consumeOnly = cc, true end
                 end
-                cost = (st.est and "≈" or "") .. RA.MoneyStr(shown)
+                cost = (st.est and ns.SYM.approx or "") .. RA.MoneyStr(shown)
                 if consumeOnly then
                     whyLong[st] = spend > 0
                         and format(L["本步显示消耗材料的价值；本步实际新增采购支出 %s。"], RA.MoneyStr(spend))
@@ -16627,7 +16634,7 @@ function PD.FormulaBlockedText(entry)
         end
     end
     if reason=="learningDataMissing" or reason=="learningRequirementsUnknown" then
-        return L["资料待补"].."："..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
+        return L["资料待补"]..L["："]..PD.LearningGapText({spell=entry.spell,item=entry.id,missingReasons=entry.missingReasons})
     elseif reason=="formulaLimited" or reason=="limitedFormulaDisabled" then
         return L["限量NPC采购已关闭；可开启「允许NPC限量销售图纸」，或使用有价格且近期在售数量至少1张的拍卖行图纸。"]
     end
@@ -17291,7 +17298,7 @@ function PD.RowsAutoShop(rows, data)
             local nm = DG.ItemName(it.id)
             parts[#parts + 1] = format("%s ×%d", nm or ("#" .. tostring(it.id)), it.lack)
         end
-        PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, "、")), 12, { 0.95, 0.75, 0.4 }, 1)
+        PushText(rows, format(L["当前制作步骤背包还缺：%s"], table.concat(parts, L["、"])), 12, { 0.95, 0.75, 0.4 }, 1)
     end
     local represented
     if follow and follow.ShoppingForPlan and (data.planVersion==2 or data.reserve and data.reserve.mode~="off") then
@@ -17343,7 +17350,7 @@ function PD.RowsAutoShop(rows, data)
         PushText(rows, format(training and L["另需 %d 项配方学习"] or L["另需 %d 种未学图纸"], #data.formulas), 14, C_GREY, 2)
         local formulaTotal = data.formulasTotal or data.formulaTotal
         if type(formulaTotal) == "number" then
-            local amount=data.formulaComplete==false and (formulaTotal==0 and L["请核对价格"] or ("≥"..RA.MoneyStr(formulaTotal,"copper")))
+            local amount=data.formulaComplete==false and (formulaTotal==0 and L["请核对价格"] or (ns.SYM.ge..RA.MoneyStr(formulaTotal,"copper")))
                 or RA.MoneyStr(formulaTotal,"copper")
             PushText(rows, format(training and L["学习支出：%s"] or L["图纸支出：%s"], amount), 14, C_GREY, 2)
         end
@@ -18045,6 +18052,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
     r.a:SetWidth(nameW)
     r.a:SetWordWrap(false)
     local _, afs = r.a:GetFont()
+    r.a.__fullText = r.a:GetText() or ""
     r.a:SetText(PD.Fit(r.a:GetText() or "", afs or 13, nameW))
     r.b:SetWidth(nameW)
     if not head then
@@ -18085,6 +18093,7 @@ function PD.PaintCrateColumns(r, spec, h, padL)
             local chipX = math.max(0, nameW - chipW)
             local subTxt = r.b:GetText() or ""
             if PD.TextW(subTxt, 11) > chipX then
+                r.b.__fullText = subTxt
                 r.b:SetText(PD.Fit(subTxt, 11, chipX))
             end
             r.tagChip:ClearAllPoints()
@@ -19651,7 +19660,7 @@ local function pfWhere()
         local s = bt:GetText()
         if type(s) == "string" and s ~= "" then who = s end
     end
-    return string.format("「%s·%s」", tostring(who),
+    return string.format(L["「%s·%s」"], tostring(who),
                          PD.setOpen and "设置" or tostring(PD.tab or "?"))
 end
 
