@@ -3677,3 +3677,4 @@ L["点击：把教材链接插入聊天框"] = "Click: insert the book link into
 L["教材"] = "book"
 
 L["暂无商人售卖数据"] = "No vendor goods data"
+L["次数最少"] = "Fewest crafts"
