@@ -4437,7 +4437,7 @@ function DG.EnsureDetailBuilt()
     U.dungeonDetailHero = hero
     U.dungeonDetailBase = hero:GetFrameLevel()
 
-    local back = NewButton(detail, L["副本"], 76, 24, 14)
+    local back = NewButton(detail, L["副本"], ns.WIDE_UI and 100 or 76, 24, 14)
     back:SetFrameLevel(hero:GetFrameLevel() + 1)
     back:SetPoint("TOPLEFT", detail, "TOPLEFT", 8, -8)
     back:SetScript("OnClick", function()
@@ -6217,8 +6217,9 @@ function U:RenderDungeonLoot()
                 hdr[nH] = hd
             end
             local en = s[1] or ""
+            if en == s[2] then en = "" end
             local sub = s[3] or ""
-            if sub ~= "" then en = (en ~= "" and (en .. " · " .. sub) or sub) end
+            if sub ~= "" and sub ~= s[2] then en = (en ~= "" and (en .. " · " .. sub) or sub) end
             hd.name:SetText(s[2] .. (en ~= "" and ("  " .. DG.Hex(C_GREY) .. en .. "|r") or ""))
             hd.name:ClearAllPoints()
             hd.name:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y)
