@@ -160,7 +160,7 @@ function M.Primary(src)
     if type(src) ~= "table" then return nil end
     local vs = VendorList(src)
     if vs then
-        local gold, currency = false, false
+        local gold, currency, plain = false, false, false
         for i = 1, #vs do
             local v = vs[i]
             if type(v) == "table" then
@@ -172,11 +172,14 @@ function M.Primary(src)
                     gold = true
                 elseif cur ~= 0 then
                     currency = true
+                else
+                    plain = true
                 end
             end
         end
         if gold then return "vendor" end
         if currency then return "currency" end
+        if plain then return "vendor" end
     end
     local ds = DropList(src)
     if ds and #ds > 0 then return "drop" end

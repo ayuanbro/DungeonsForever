@@ -204,7 +204,7 @@ function QB:Collect()
         end
     end
 
-    if cfg.groups.prof and ns.LoadForeverPages and ns.ModuleOn("Professions") then
+    if cfg.groups.prof and ns.LoadForeverPages and ns.ProfModule and ns.ModuleOn("Professions") then
         out[#out + 1] = { grp = L["专业"] }
         local D = ns.ProfData
         local PD = ns.ProfModule

@@ -712,6 +712,7 @@ do
 end
 
 local loadedFuncs = {}
+local initsDrained = false
 local boot = CreateFrame("Frame")
 boot:RegisterEvent("ADDON_LOADED")
 boot:SetScript("OnEvent", function(self, event, name)
@@ -719,6 +720,7 @@ boot:SetScript("OnEvent", function(self, event, name)
     if name ~= addonName then return end
     self:UnregisterEvent("ADDON_LOADED")
     DB()
+    initsDrained = true
     for _, fn in ipairs(loadedFuncs) do
         local ok, err = xpcall(fn, function(e)
             return tostring(e) .. "\n" .. debugstack(2)
@@ -781,9 +783,18 @@ do
 end
 
 function ns.Init(fn)
-    loadedFuncs[#loadedFuncs + 1] = fn
     local sink = rawget(ns, "__inits")
     if sink then sink[#sink + 1] = fn end
+    if initsDrained then
+        local ok, err = xpcall(fn, function(e)
+            return tostring(e) .. "\n" .. debugstack(2)
+        end)
+        if not ok then
+            print("|cffff5040[无限副本手册] 初始化回调出错（已跳过，不影响后续模块）：|r\n" .. tostring(err))
+        end
+        return
+    end
+    loadedFuncs[#loadedFuncs + 1] = fn
 end
 
 function ns.PlaySound(id)

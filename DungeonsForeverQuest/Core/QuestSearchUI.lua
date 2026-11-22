@@ -192,6 +192,38 @@ local function MapJump(id, kind, zone, x, y)
     pcall(DG.MarkNPC, npcId, { mapID, x, y, "" })
 end
 
+local function InsertChatLink(link)
+    if type(link) ~= "string" or link == "" then return false end
+    if type(ChatEdit_GetActiveWindow) == "function"
+        and type(ChatEdit_InsertLink) == "function"
+        and ChatEdit_GetActiveWindow() then
+        ChatEdit_InsertLink(link)
+        return true
+    end
+    if type(ChatFrame_OpenChat) == "function" then
+        ChatFrame_OpenChat(link)
+        return true
+    end
+    return false
+end
+
+local function ItemToChat(id)
+    if type(id) ~= "number" then return false end
+    local link
+    if DG and type(DG.ItemLink) == "function" then
+        local ok, v = pcall(DG.ItemLink, id)
+        if ok and type(v) == "string" and v ~= "" then link = v end
+    end
+    if type(link) ~= "string" or not strfind(link, "|H", 1, true) then
+        local nm = NameOf(id, "item")
+        if type(nm) ~= "string" or nm == "" then nm = string.format(L["条目 #%d"], id) end
+        link = string.format("|cff9d9d9d|Hitem:%d:0:0:0:0:0:0:0|h[%s]|h|r", id, nm)
+    end
+    return InsertChatLink(link)
+end
+
+local QuestToChat
+
 local QSTATE = {}
 
 local function RefreshStatus()
@@ -565,6 +597,10 @@ local function MakeRow(parent)
     r.tchip:SetPoint("RIGHT", r, "RIGHT", -10, cdy)
     r.tchip:Hide()
     r:SetScript("OnClick", function()
+        if IsShiftKeyDown() and r.rec then
+            if r.rec.kind == "item" and ItemToChat(r.rec.id) then return end
+            if r.rec.kind == "quest" and QuestToChat(r.rec.id) then return end
+        end
         QS.sel = r.rec
         QS.PaintList()
         QS.PaintDetail()
@@ -777,6 +813,13 @@ local function QuestNameOf(qid)
     return nm
 end
 
+QuestToChat = function(qid)
+    if type(qid) ~= "number" then return false end
+    local lv = tonumber(FieldOf(qid, "quest", "level")) or 0
+    local link = string.format("|cffffff00|Hquest:%d:%d|h[%s]|h|r", qid, lv, QuestNameOf(qid))
+    return InsertChatLink(link)
+end
+
 local function QuestIdList(id, kind, key)
     local out = {}
     local v = FieldOf(id, kind, key)
@@ -891,6 +934,10 @@ local function NpcRow(i)
     end)
     if SetTip then SetTip(r.btn, L["在世界地图标记该位置"]) end
     r:SetScript("OnClick", function()
+        if IsShiftKeyDown() and r.linkId then
+            if r.linkKind == "item" and ItemToChat(r.linkId) then return end
+            if r.linkKind == "quest" and QuestToChat(r.linkId) then return end
+        end
         if r.onClick then
             r.onClick()
             return
@@ -953,6 +1000,7 @@ local function CardOf(i)
         if self.ink then self.name:SetTextColor(Unpack(self.ink)) end
     end)
     r:SetScript("OnClick", function(self)
+        if IsShiftKeyDown() and self.qid and QuestToChat(self.qid) then return end
         if self.qid then QS.GoTo(self.qid, "quest") end
     end)
     r.name = MakeFS(r, 14, C_MAIN, "LEFT")
@@ -1012,6 +1060,81 @@ local function QuestCardRow(qid, ind)
     r:SetPoint("TOPLEFT", DET.child, "TOPLEFT", PAD + ind, R.y)
     r:Show()
     R.y = R.y - CARD_H - CARD_GAP
+end
+
+local QREC_MEMO = {}
+
+local function QuestRecM(id)
+    local hit = QREC_MEMO[id]
+    if hit ~= nil then return hit or nil end
+    local r = QuestRec(id)
+    QREC_MEMO[id] = r or false
+    return r
+end
+
+local function DirectPre(qid)
+    local qr = QuestRecM(qid)
+    if not qr then return nil end
+    local one = IdList(qr.preQuestSingle)
+    local all = IdList(qr.preQuestGroup)
+    if #one + #all == 0 then return nil end
+    local out, seen = {}, {}
+    for i = 1, #one do
+        out[#out + 1] = one[i]
+        seen[one[i]] = true
+    end
+    for i = 1, #all do
+        if not seen[all[i]] then
+            seen[all[i]] = true
+            out[#out + 1] = all[i]
+        end
+    end
+    return out
+end
+
+local CHAIN_CAP = 30
+
+local function CollectPre(qid)
+    local nodes, seen = {}, { [qid] = true }
+    local function walk(id, depth)
+        if depth > 30 or #nodes >= CHAIN_CAP then return end
+        local pre = DirectPre(id)
+        if pre then
+            for i = 1, #pre do
+                local p = pre[i]
+                if type(p) == "number" and not seen[p] then
+                    seen[p] = true
+                    walk(p, depth + 1)
+                    if #nodes >= CHAIN_CAP then return end
+                    nodes[#nodes + 1] = p
+                end
+            end
+        end
+    end
+    walk(qid, 0)
+    return nodes
+end
+
+local function CollectNext(qid)
+    local out, seen = {}, { [qid] = true }
+    local function push(id)
+        out[#out + 1] = id
+        seen[id] = true
+        local qr = QuestRecM(id)
+        local nq = qr and tonumber(qr.nextQuestInChain) or 0
+        if nq > 0 and not seen[nq] then push(nq) end
+    end
+    local qr = QuestRecM(qid)
+    local heads = {}
+    local nq = qr and tonumber(qr.nextQuestInChain) or 0
+    if nq > 0 then heads[#heads + 1] = nq end
+    local kids = qr and IdList(qr.childQuests) or {}
+    for i = 1, #kids do heads[#heads + 1] = kids[i] end
+    for i = 1, #heads do
+        if #out >= CHAIN_CAP then break end
+        if not seen[heads[i]] then push(heads[i]) end
+    end
+    return out
 end
 
 local function Head(title, onClick)
@@ -1396,6 +1519,7 @@ local function ResetDetail()
     if DET.itemIcon then DET.itemIcon:Hide() end
     if DET.itemBtn then DET.itemBtn:Hide() end
     if DET.itemName then DET.itemName:Hide() end
+    if DET.questBtn then DET.questBtn:Hide() end
     HiddenFrom(DET.npcRows, 1)
     for i = 1, #(DET.cards or {}) do DET.cards[i]:Hide() end
     DET.note:SetText(L["左侧输入关键词，点任意一条结果查看详情与位置"])
@@ -1563,28 +1687,18 @@ local function PaintQuestDetail(rec)
     local preOne = IdList(qrec.preQuestSingle)
     local preAll = IdList(qrec.preQuestGroup)
     if #preOne + #preAll > 0 then
+        local chain = CollectPre(id)
         Head(L["前置任务"])
-        for i = 1, math.min(#preOne, 8) do QuestCardRow(preOne[i], 0) end
         if #preAll > 0 then
-            if #preOne > 0 then Line({ text = L["需全部完成"], ink = C_SUB }) end
-            for i = 1, math.min(#preAll, 8) do QuestCardRow(preAll[i], 0) end
+            Line({ text = L["需全部完成"], ink = C_SUB })
         end
+        for i = 1, #chain do QuestCardRow(chain[i], 0) end
     end
 
-    local fol = {}
-    local nq = tonumber(qrec.nextQuestInChain) or 0
-    if nq > 0 then fol[#fol + 1] = nq end
-    local kids = IdList(qrec.childQuests)
-    for i = 1, #kids do
-        local dup = false
-        for j = 1, #fol do
-            if fol[j] == kids[i] then dup = true end
-        end
-        if not dup then fol[#fol + 1] = kids[i] end
-    end
+    local fol = CollectNext(id)
     if #fol > 0 then
         Head(L["后续任务"])
-        for i = 1, math.min(#fol, 8) do QuestCardRow(fol[i], 0) end
+        for i = 1, #fol do QuestCardRow(fol[i], 0) end
     end
 
     if descText ~= "" then
@@ -1780,6 +1894,9 @@ local function PaintItemDetail(rec)
         DET.itemBtn:EnableMouseWheel(true)
         DET.itemBtn:SetScript("OnEnter", function(self) ItemTip(self, DET.itemId) end)
         DET.itemBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        DET.itemBtn:SetScript("OnClick", function()
+            if IsShiftKeyDown() and DET.itemId and ItemToChat(DET.itemId) then return end
+        end)
         DET.itemBtn:SetScript("OnMouseWheel", function(self, delta)
             local cur = DET.scroll:GetVerticalScroll() or 0
             if type(cur) ~= "number" then cur = 0 end
@@ -1900,6 +2017,23 @@ function QS.PaintDetail()
     end
     DET.title:SetText(nmTxt)
     DET.title:SetTextColor(Unpack(rec.kind == "quest" and C_GOLD or C_TITLE))
+    if rec.kind == "quest" then
+        if not DET.questBtn then
+            local qb = CreateFrame("Button", nil, DET.child)
+            qb:SetFrameLevel((DET.child:GetFrameLevel() or 1) + 2)
+            qb:SetScript("OnClick", function()
+                local s = QS.sel
+                if IsShiftKeyDown() and s and s.kind == "quest" then QuestToChat(s.id) end
+            end)
+            DET.questBtn = qb
+        end
+        DET.questBtn:ClearAllPoints()
+        DET.questBtn:SetPoint("TOPLEFT", DET.child, "TOPLEFT", PAD, -6)
+        DET.questBtn:SetSize(DetW() - 8, 30)
+        DET.questBtn:Show()
+    elseif DET.questBtn then
+        DET.questBtn:Hide()
+    end
     PaintTitleTag(rec)
     for i = 1, #DET.heads do DET.heads[i]:Hide() end
     for i = 1, #DET.bodies do DET.bodies[i]:Hide() end
