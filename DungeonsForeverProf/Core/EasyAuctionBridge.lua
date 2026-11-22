@@ -5,13 +5,13 @@ if not ns.LoadForeverPages then return end
 local EB = {}
 ns.EasyBridge = EB
 
-local DB_NAME = "EasyAuctionDB12"
+local API_NS = "EasyAuctionAPI"
 local CACHE_TTL = 2
-local INDEX_TTL = 30
+local LIST_LIMIT = 200
 
 local floor, huge = math.floor, math.huge
-local pairs, next, type, tonumber, tostring = pairs, next, type, tonumber, tostring
-local match, sub = string.match, string.sub
+local pairs, type, tonumber, tostring = pairs, type, tonumber, tostring
+local match = string.match
 local time = time
 
 local function Now()
@@ -41,122 +41,52 @@ local function MaxAge()
     return 172800
 end
 
-local function Database()
-    local db = _G[DB_NAME]
-    if type(db) ~= "table" or type(db.scopes) ~= "table" then return nil end
-    return db
+local function API()
+    local api = _G[API_NS]
+    if type(api) ~= "table" or type(api.IsReady) ~= "function" then return nil end
+    local ok, ready = pcall(api.IsReady)
+    if not ok or ready ~= true then return nil end
+    return api
 end
 
-local function ScopePrefix()
-    local region = GetCurrentRegion and GetCurrentRegion() or nil
-    local realm = GetRealmName and GetRealmName() or nil
-    if type(region) ~= "number" or region <= 0 then return nil end
-    if type(realm) ~= "string" or realm == "" then return nil end
-    local faction = UnitFactionGroup and UnitFactionGroup("player") or nil
-    if type(faction) ~= "string" or faction == "" then faction = "Neutral" end
-    return tostring(region) .. ":" .. realm .. ":" .. faction
+local infoAt, infoValue
+
+local function MarketInfo(api)
+    if type(api.GetMarketInfo) ~= "function" then return nil end
+    local now = Now()
+    if infoValue and now - infoAt < CACHE_TTL then return infoValue end
+    local ok, info = pcall(api.GetMarketInfo)
+    if not ok or type(info) ~= "table" then info = nil end
+    infoAt, infoValue = now, info
+    return info
 end
 
-local function SelectMarket()
-    local db = Database()
-    if not db then return nil end
-    local prefix = ScopePrefix()
-    if not prefix then return nil end
-    local size, head = #prefix, prefix .. ":"
-    local best, bestKey, bestStamp, bestExact
-    for key, market in pairs(db.scopes) do
-        if type(key) == "string" and type(market) == "table" then
-            local exact = key == prefix
-            if exact or sub(key, 1, size + 1) == head then
-                local stamp = Int(market.lastFullScanAt, 0) or 0
-                if not best or stamp > bestStamp
-                    or (stamp == bestStamp and exact and not bestExact) then
-                    best, bestKey, bestStamp, bestExact = market, key, stamp, exact
-                end
-            end
-        end
-    end
-    if best then return db, best, bestKey end
+local function RecordOf(api, id)
+    if type(api.GetRecord) ~= "function" then return nil end
+    local ok, item = pcall(api.GetRecord, id)
+    if ok and type(item) == "table" then return item, true end
+    if type(api.ResolveItemKey) ~= "function" then return nil end
+    local okKey, key = pcall(api.ResolveItemKey, id)
+    if not okKey or type(key) ~= "string" or key == "" then return nil end
+    ok, item = pcall(api.GetRecord, key)
+    if ok and type(item) == "table" then return item, false end
     return nil
-end
-
-local cacheAt, cacheDB, cacheMarket, cacheScope
-
-local function Market()
-    local now = Now()
-    if cacheMarket and now - cacheAt < CACHE_TTL then
-        return cacheDB, cacheMarket, cacheScope
-    end
-    local db, market, scope = SelectMarket()
-    cacheAt, cacheDB, cacheMarket, cacheScope = now, db, market, scope
-    return db, market, scope
-end
-
-local indexMarket, indexMap, indexAt
-
-local function Index(market)
-    local now = Now()
-    if indexMarket == market and indexMap and now - indexAt < INDEX_TTL then return indexMap end
-    local map = {}
-    local items = market.items
-    if type(items) == "table" then
-        for key, item in pairs(items) do
-            if type(key) == "string" and type(item) == "table" then
-                local id = tonumber(match(key, "^(%d+):"))
-                if id then
-                    local list = map[id]
-                    if not list then list = {}; map[id] = list end
-                    list[#list + 1] = item
-                end
-            end
-        end
-    end
-    indexMarket, indexMap, indexAt = market, map, now
-    return map
-end
-
-local function FreshStamp(item)
-    return Int(item.bookUpdated, 0) or Int(item.seen, 0) or Int(item.updated, 0)
-end
-
-local function ObservedStamp(item)
-    return Int(item.seen, 0) or Int(item.updated, 0) or Int(item.bookUpdated, 0)
-end
-
-local function ItemFor(market, id)
-    local items = market.items
-    if type(items) ~= "table" then return nil, false end
-    local exact = items[id .. ":0:0:0"]
-    if type(exact) == "table" then return exact, true end
-    local list = Index(market)[id]
-    if type(list) ~= "table" or #list == 0 then return nil, false end
-    local best, bestStamp
-    for index = 1, #list do
-        local item = list[index]
-        local stamp = FreshStamp(item)
-        if item.bookStatus == "fresh" and stamp and (not bestStamp or stamp > bestStamp) then
-            best, bestStamp = item, stamp
-        end
-    end
-    if best then return best, false end
-    best, bestStamp = nil, nil
-    for index = 1, #list do
-        local item = list[index]
-        local stamp = ObservedStamp(item)
-        if stamp and (not bestStamp or stamp > bestStamp) then best, bestStamp = item, stamp end
-    end
-    return best, false
 end
 
 function EB.Record(id)
     if type(id) ~= "number" or id <= 0 then return nil end
-    local _, market, scope = Market()
-    if type(market) ~= "table" then return nil end
-    local item, exact = ItemFor(market, id)
+    local api = API()
+    if not api then return nil end
+    local item, exact = RecordOf(api, id)
     if type(item) ~= "table" then return nil end
     local status = item.bookStatus
     local complete = exact == true and (status == "fresh" or status == "empty")
-    local stamp = complete and FreshStamp(item) or ObservedStamp(item)
+    local stamp
+    if complete then
+        stamp = Int(item.bookUpdated, 0) or Int(item.seen, 0) or Int(item.updated, 0)
+    else
+        stamp = Int(item.seen, 0) or Int(item.updated, 0) or Int(item.bookUpdated, 0)
+    end
     if not stamp or stamp <= 0 then return nil end
     local quantity
     if status == "empty" and exact then
@@ -171,9 +101,11 @@ function EB.Record(id)
         quantity = Int(item.quantity, 0) or Int(item.bookQuantity, 0)
     end
     if quantity == nil then return nil end
+    local info = MarketInfo(api)
+    local scope = type(info) == "table" and info.scope or nil
     return {
         q = quantity,
-        p = Num(item.min, 1) or Num(item.rivalMin, 1) or Num(item.market, 1) or Num(item.last, 1),
+        p = Num(item.min, 1) or Num(item.rivalMin, 1) or Num(item.market, 1) or Num(item.price, 1),
         t = stamp,
         c = complete == true,
         ox = false,
@@ -181,7 +113,7 @@ function EB.Record(id)
         v = 1,
         mk = "ea:" .. tostring(scope),
         ob = "EasyAuction",
-        method = "easyauction-db",
+        method = "easyauction-api",
         ea = true,
     }
 end
@@ -197,10 +129,13 @@ function EB.Status(id)
 end
 
 function EB.Available()
-    local ok, _, market = pcall(Market)
-    if not ok or type(market) ~= "table" then return false end
-    local items = market.items
-    return type(items) == "table" and next(items) ~= nil
+    local api = API()
+    if not api then return false end
+    local info = MarketInfo(api)
+    if type(info) ~= "table" then return false end
+    local count = Int(info.itemCount, 0)
+    if count then return count > 0 end
+    return true
 end
 
 function EB.Price(id)
@@ -216,27 +151,22 @@ end
 local snapshotAt, snapshotValue
 
 function EB.Snapshot()
-    local _, market, scope = Market()
-    if type(market) ~= "table" then return nil end
+    local api = API()
+    if not api then return nil end
+    local info = MarketInfo(api)
+    if type(info) ~= "table" then return nil end
+    local scope = tostring(info.scope)
     local now = Now()
-    if snapshotValue and snapshotValue.marketKey == "ea:" .. tostring(scope)
+    if snapshotValue and snapshotValue.marketKey == "ea:" .. scope
         and now - snapshotAt < CACHE_TTL then return snapshotValue end
-    local stamp = Int(market.lastFullScanAt, 0)
-    if not stamp then
-        for _, item in pairs(market.items or {}) do
-            if type(item) == "table" and item.bookStatus == "fresh" then
-                local value = FreshStamp(item)
-                if value and value > 0 and (not stamp or value > stamp) then stamp = value end
-            end
-        end
-    end
+    local stamp = Int(info.scanObservedAt, 0) or Int(info.updatedAt, 0)
     if not stamp or stamp <= 0 then return nil end
     local now2 = Now()
     local expired = stamp > now2 or (now2 - stamp) > MaxAge()
     local value = {
         status = expired and "expired" or "available",
         observedAt = stamp,
-        marketKey = "ea:" .. tostring(scope),
+        marketKey = "ea:" .. scope,
         expiresAt = stamp + MaxAge(),
         source = "easyauction",
     }
@@ -245,90 +175,102 @@ function EB.Snapshot()
 end
 
 function EB.AuctionCut()
-    local db = Database()
-    if not db then return nil end
-    local settings = db.settings
-    local prof = type(settings) == "table" and settings.professions
-    local cut = type(prof) == "table" and Num(prof.auctionCut, 0) or nil
+    local api = API()
+    if not api or type(api.GetSettings) ~= "function" then return nil end
+    local ok, settings = pcall(api.GetSettings)
+    if not ok or type(settings) ~= "table" then return nil end
+    local cut = Num(settings.auctionCut, 0)
     if not cut or cut > 1 then return nil end
     return cut * 100
 end
 
 function EB.Invalidate()
-    cacheAt, cacheDB, cacheMarket, cacheScope = nil, nil, nil, nil
+    infoAt, infoValue = nil, nil
     snapshotAt, snapshotValue = nil, nil
 end
 
-local LIST_NS = "EasyAuction12"
-local LIST_LIMIT = 200
-
-local function ListStore()
-    local root = _G[LIST_NS]
-    local store = type(root) == "table" and root.Store or nil
-    if type(store) ~= "table" then return nil end
-    if type(store.GetLists) ~= "function" or type(store.CreateList) ~= "function"
-        or type(store.DeleteList) ~= "function" or type(store.SetListItem) ~= "function" then
+local function ListAPI()
+    local api = API()
+    if type(api) ~= "table" then return nil end
+    if type(api.GetShoppingLists) ~= "function" or type(api.CreateShoppingList) ~= "function"
+        or type(api.SetShoppingListItem) ~= "function" then
         return nil
     end
-    return root, store
+    return api
 end
 
 function EB.CanLists()
-    local _, store = ListStore()
-    if not store then return false end
-    local ok, lists = pcall(store.GetLists)
+    local api = ListAPI()
+    if not api then return false end
+    local ok, lists = pcall(api.GetShoppingLists)
     return ok and type(lists) == "table"
 end
 
-local function FindList(store, name)
-    local ok, lists = pcall(store.GetLists)
+local function FindList(api, name)
+    local ok, lists = pcall(api.GetShoppingLists)
     if not ok or type(lists) ~= "table" then return nil end
+    local temporary
     for index = 1, #lists do
         local list = lists[index]
-        if type(list) == "table" and list.name == name then return list end
+        if type(list) == "table" and list.name == name and Int(list.id, 1) then
+            if not list.temporary then return list, false end
+            if not temporary then temporary = list end
+        end
     end
-    return nil
+    return temporary, true
 end
 
-local function RefreshLists(root)
-    local ui = type(root) == "table" and root.UI or nil
-    if type(ui) == "table" and type(ui.Refresh) == "function" then pcall(ui.Refresh) end
+function EB.ReplaceList(name, items)
+    local api = ListAPI()
+    if not api then return false, "storeUnavailable" end
+    if type(name) ~= "string" or name == "" then return false, "badName" end
+    if type(items) ~= "table" or #items == 0 then return false, "empty" end
+    local entries = {}
+    for index = 1, #items do
+        local entry = items[index]
+        if type(entry) == "table" then
+            local id = Int(entry.id, 1)
+            local need = Int(entry.need, 1)
+            if id and need then entries[#entries + 1] = { id = id, need = need, name = entry.name } end
+        end
+    end
+    if #entries == 0 then return false, "noItem" end
+    local list, temporary = FindList(api, name)
+    if list and temporary then
+        if type(api.DeleteTemporaryShoppingList) == "function" then
+            pcall(api.DeleteTemporaryShoppingList, list.id)
+        end
+        list = nil
+    end
+    if list then
+        local wanted = {}
+        for index = 1, #entries do wanted[entries[index].id] = true end
+        if type(list.items) == "table" then
+            for key in pairs(list.items) do
+                local id = tonumber(match(key, "^(%d+):"))
+                if id and not wanted[id] then pcall(api.SetShoppingListItem, list.id, key, 0) end
+            end
+        end
+    else
+        local ok, id = pcall(api.CreateShoppingList, name)
+        if not ok or not Int(id, 1) then return false, "createFailed" end
+        list = { id = id }
+    end
+    local written = 0
+    for index = 1, #entries do
+        local entry = entries[index]
+        local entryName = type(entry.name) == "string" and entry.name or nil
+        local ok = pcall(api.SetShoppingListItem, list.id, entry.id, entry.need, nil, entryName)
+        if ok then written = written + 1 end
+    end
+    if written == 0 then return false, "noItem" end
+    return true, nil, written
 end
 
 local function EscapeName(text)
     if type(text) ~= "string" or text == "" then return nil end
     if not match(text, "[^%z\1-\31\127]") then return nil end
     return (text:gsub("[%%|%c]", function(value) return string.format("%%%02X", string.byte(value)) end))
-end
-
-function EB.ReplaceList(name, items)
-    local root, store = ListStore()
-    if not store then return false, "storeUnavailable" end
-    if type(name) ~= "string" or name == "" then return false, "badName" end
-    if type(items) ~= "table" or #items == 0 then return false, "empty" end
-    local existing = FindList(store, name)
-    if existing then pcall(store.DeleteList, existing.id) end
-    local made, list = pcall(store.CreateList, name)
-    if not made or type(list) ~= "table" then return false, "createFailed" end
-    local written = 0
-    for index = 1, #items do
-        local entry = items[index]
-        if type(entry) == "table" then
-            local id = Int(entry.id, 1)
-            local need = Int(entry.need, 1)
-            if id and need then
-                local key = { itemID = id, itemLevel = 0, itemSuffix = 0, battlePetSpeciesID = 0 }
-                local ok = pcall(store.SetListItem, list.id, key, entry.name, need)
-                if ok then written = written + 1 end
-            end
-        end
-    end
-    RefreshLists(root)
-    if written == 0 then
-        pcall(store.DeleteList, list.id)
-        return false, "noItem"
-    end
-    return true, nil, written
 end
 
 function EB.ShareText(name, items)

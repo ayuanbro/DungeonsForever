@@ -218,7 +218,7 @@ local ROLE_CONST = {
     mage = "spell", warlock = "spell", hunter = "phys",
     warrior = "phys", rogue = "phys",
 }
-local PURE_PHYS = { warrior = true, rogue = true, hunter = true }
+local PURE_PHYS = { warrior = true, rogue = true }
 BG.SCHOOL_OK = {
     paladin = { HOLY = true },
     priest = { HOLY = true, SHADOW = true },
@@ -268,6 +268,57 @@ local function RoleOf(cls)
     return role
 end
 
+BG.SPEC_WT = {
+    mage = {
+        arcane = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.5, MANA_REGENERATION = 0.75,
+            HIT_RATING = 0.7, CRIT_RATING = 0.34, HASTE_RATING = 0.47,
+            ARCANE_DAMAGE_DONE = 0.95, FIRE_DAMAGE_DONE = 0.1, FROST_DAMAGE_DONE = 0.1 },
+        fire = { role = "spell", INTELLECT = 0.45, SPIRIT = 0.5, MANA_REGENERATION = 0.75,
+            HIT_RATING = 0.74, CRIT_RATING = 0.51, HASTE_RATING = 0.66,
+            FIRE_DAMAGE_DONE = 0.95, ARCANE_DAMAGE_DONE = 0.17, FROST_DAMAGE_DONE = 0.32 },
+        frost = { role = "spell", INTELLECT = 0.45, SPIRIT = 0.5, MANA_REGENERATION = 0.75,
+            HIT_RATING = 0.98, CRIT_RATING = 0.4, HASTE_RATING = 0.51,
+            FROST_DAMAGE_DONE = 0.95, ARCANE_DAMAGE_DONE = 0.13, FIRE_DAMAGE_DONE = 0.05 },
+    },
+    warlock = {
+        affli = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.4, MANA_REGENERATION = 1,
+            HIT_RATING = 0.64, CRIT_RATING = 0.4, HASTE_RATING = 0.64,
+            FIRE_DAMAGE_DONE = 0.35, SHADOW_DAMAGE_DONE = 0.91 },
+        demo = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.4, MANA_REGENERATION = 1,
+            HIT_RATING = 0.64, CRIT_RATING = 0.4, HASTE_RATING = 0.56,
+            FIRE_DAMAGE_DONE = 0.8, SHADOW_DAMAGE_DONE = 0.8 },
+        destro = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.4, MANA_REGENERATION = 1,
+            HIT_RATING = 0.64, CRIT_RATING = 0.51, HASTE_RATING = 0.72,
+            FIRE_DAMAGE_DONE = 0.6, SHADOW_DAMAGE_DONE = 0.8 },
+    },
+    priest = {
+        shadow = { role = "spell", INTELLECT = 0.5, SPIRIT = 0.7, MANA_REGENERATION = 1.5,
+            HIT_RATING = 0.72, CRIT_RATING = 0.43, HASTE_RATING = 0.52, SHADOW_DAMAGE_DONE = 1 },
+    },
+    druid = {
+        balance = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.7, MANA_REGENERATION = 1,
+            HIT_RATING = 0.97, CRIT_RATING = 0.51, HASTE_RATING = 0.64,
+            ARCANE_DAMAGE_DONE = 0.64, NATURE_DAMAGE_DONE = 0.43 },
+    },
+    shaman = {
+        ele = { role = "spell", INTELLECT = 0.6, SPIRIT = 0.8, MANA_REGENERATION = 1.3,
+            HIT_RATING = 0.56, CRIT_RATING = 0.51, HASTE_RATING = 0.56,
+            NATURE_DAMAGE_DONE = 1, FIRE_DAMAGE_DONE = 0, FROST_DAMAGE_DONE = 0 },
+    },
+    hunter = {
+        bm = { role = "phys", ATTACK_POWER = 0.43, RANGED_ATTACK_POWER = 0.43 },
+        mm = { role = "phys", ATTACK_POWER = 0.55, RANGED_ATTACK_POWER = 0.55, RANGED_DPS = 6.5,
+            CRIT_RATING = 0.36, HASTE_RATING = 0.32 },
+        surv = { role = "phys", STRENGTH = 0.3, SPIRIT = 0.35, STAMINA = 0.3, MANA_REGENERATION = 2,
+            ATTACK_POWER = 0.55, RANGED_ATTACK_POWER = 0.55, WEAPON_DPS = 6,
+            CRIT_RATING = 0.39, HASTE_RATING = 0.32 },
+    },
+    warrior = {
+        arms = { role = "phys", AGILITY = 0.69, CRIT_RATING = 0.52, HASTE_RATING = 0.48 },
+        fury = { role = "phys", AGILITY = 0.57, CRIT_RATING = 0.49, HASTE_RATING = 0.56 },
+    },
+}
+
 local function SpecWeights(cls, specId, roleOverride)
     local role = roleOverride or RoleOfKey(cls, BG.wRole) or RoleOfKey(cls, BG.tspec) or RoleOf(cls)
     local phys = role == "phys"
@@ -277,7 +328,7 @@ local function SpecWeights(cls, specId, roleOverride)
         SPIRIT = phys and 0.3 or 0.35,
         STAMINA = 0.1,
         ARMOR = 0.004,
-        ATTACK_POWER = phys and 0.48 or 0.05,
+        ATTACK_POWER = phys and 0.48 or 0,
         RANGED_ATTACK_POWER = 0,
         SPELL_POWER = phys and 0.4 or 1,
         CRIT_RATING = phys and 0.75 or 0.7,
@@ -296,62 +347,152 @@ local function SpecWeights(cls, specId, roleOverride)
         w.STRENGTH = (PRIM_STAT[cls] == "STRENGTH") and 1 or 0.05
         w[PRIM_STAT[cls] or "STRENGTH"] = 1
         if cls == "paladin" then
-            w.INTELLECT = 0.08
-            w.SPIRIT = 0
-            w.STAMINA = 0.5
-            w.HOLY_DAMAGE_DONE = 0.12
-        elseif cls == "shaman" then
             w.AGILITY = 0.4
-            w.INTELLECT = 0.7
-            w.SPIRIT = 0.1
+            w.INTELLECT = 0.6
+            w.SPIRIT = 0.05
+            w.STAMINA = 0.3
+            w.ATTACK_POWER = 0.45
+            w.WEAPON_DPS = 6
+            w.HIT_RATING = 0.79
+            w.CRIT_RATING = 0.43
+            w.HASTE_RATING = 0.2
+            w.MANA_REGENERATION = 1
+            w.SPELL_POWER = 0.5
+            w.SPELL_DAMAGE_DONE = 0.5
+            w.HOLY_DAMAGE_DONE = 0.5
+        elseif cls == "shaman" then
+            w.AGILITY = 0.3
+            w.INTELLECT = 0.6
+            w.SPIRIT = 0.5
+            w.STAMINA = 0.3
+            w.ATTACK_POWER = 0.42
+            w.WEAPON_DPS = 6
+            w.HIT_RATING = 0.66
+            w.CRIT_RATING = 0.55
+            w.HASTE_RATING = 0.48
+            w.MANA_REGENERATION = 1.2
+            w.SPELL_POWER = 0.3
+            w.SPELL_DAMAGE_DONE = 0.3
+            w.NATURE_DAMAGE_DONE = 0.3
         elseif cls == "druid" then
-            w.INTELLECT = 0.3
-            w.SPIRIT = 0.16
+            w.STRENGTH = 1.3
+            w.INTELLECT = 0.1
+            w.SPIRIT = 0.05
+            w.STAMINA = 0.3
+            w.ATTACK_POWER = 0.4
+            w.WEAPON_DPS = 6
+            w.HIT_RATING = 0.57
+            w.CRIT_RATING = 0.36
+            w.HASTE_RATING = 0.35
+            w.MANA_REGENERATION = 0.3
+        elseif cls == "hunter" then
+            w.STRENGTH = 0.05
+            w.INTELLECT = 0.8
+            w.SPIRIT = 0.7
+            w.STAMINA = 0.1
+            w.ATTACK_POWER = 0.43
+            w.HIT_RATING = 0.94
+            w.CRIT_RATING = 0.49
+            w.HASTE_RATING = 0.4
+            w.MANA_REGENERATION = 1.3
+            w.RANGED_DPS = 6
+            w.WEAPON_DPS = 2
+            w.SPELL_DAMAGE_DONE = 0
+            w.ARCANE_DAMAGE_DONE = 0
+            w.FIRE_DAMAGE_DONE = 0
+            w.FROST_DAMAGE_DONE = 0
+            w.NATURE_DAMAGE_DONE = 0
+            w.SHADOW_DAMAGE_DONE = 0
+            w.SPELL_POWER = 0
+        elseif cls == "warrior" then
+            w.AGILITY = 0.66
+            w.STAMINA = 0.3
+            w.SPIRIT = 0.05
+            w.ATTACK_POWER = 0.45
+            w.WEAPON_DPS = 6
+            w.HIT_RATING = 0.75
+            w.CRIT_RATING = 0.5
+            w.HASTE_RATING = 0.52
+            w.SPELL_DAMAGE_DONE = 0
+            w.ARCANE_DAMAGE_DONE = 0
+            w.FIRE_DAMAGE_DONE = 0
+            w.FROST_DAMAGE_DONE = 0
+            w.NATURE_DAMAGE_DONE = 0
+            w.SHADOW_DAMAGE_DONE = 0
+            w.SPELL_POWER = 0
+        elseif cls == "rogue" then
+            w.STRENGTH = 0.9
+            w.STAMINA = 0.3
+            w.SPIRIT = 0.05
+            w.ATTACK_POWER = 0.8
+            w.WEAPON_DPS = 6
+            w.HIT_RATING = 0.94
+            w.CRIT_RATING = 0.55
+            w.HASTE_RATING = 0.56
+            w.SPELL_DAMAGE_DONE = 0
+            w.ARCANE_DAMAGE_DONE = 0
+            w.FIRE_DAMAGE_DONE = 0
+            w.FROST_DAMAGE_DONE = 0
+            w.NATURE_DAMAGE_DONE = 0
+            w.SHADOW_DAMAGE_DONE = 0
+            w.SPELL_POWER = 0
         end
-        w.RANGED_ATTACK_POWER = w.ATTACK_POWER
-        w.SPELL_DAMAGE_DONE = 0.08
-        w.ARCANE_DAMAGE_DONE = 0.06
-        w.FIRE_DAMAGE_DONE = 0.06
-        w.FROST_DAMAGE_DONE = 0.06
-        w.NATURE_DAMAGE_DONE = 0.06
-        w.SHADOW_DAMAGE_DONE = 0.06
-        w.HEALTH_REGEN = 0.08
-        if cls == "hunter" then
-            w.RANGED_DPS = 2.5
-            w.WEAPON_DPS = 1.0
-        else
-            w.WEAPON_DPS = 5.0
-        end
+        if cls == "hunter" then w.RANGED_ATTACK_POWER = w.ATTACK_POWER end
     elseif heal then
-        w.INTELLECT = 0.5
-        w.SPIRIT = 0.5
-        w.MANA_REGENERATION = 1.5
-        w.CRIT_RATING = 0.3
-        w.HASTE_RATING = 0.3
-        w.SPELL_HEALING_DONE = 0.95
-        w.SPELL_DAMAGE_DONE = 0.05
-        w.ARCANE_DAMAGE_DONE = 0.05
-        w.FIRE_DAMAGE_DONE = 0.05
-        w.FROST_DAMAGE_DONE = 0.05
-        w.NATURE_DAMAGE_DONE = 0.05
-        w.SHADOW_DAMAGE_DONE = 0.05
+        w.AGILITY = 0.05
+        w.HIT_RATING = 0
+        w.INTELLECT = 0.9
+        w.SPIRIT = 0.9
+        w.MANA_REGENERATION = 1.4
+        w.CRIT_RATING = 0.34
+        w.HASTE_RATING = 0.45
+        w.SPELL_HEALING_DONE = 0.9
+        w.SPELL_DAMAGE_DONE = 0
+        w.ARCANE_DAMAGE_DONE = 0
+        w.FIRE_DAMAGE_DONE = 0
+        w.FROST_DAMAGE_DONE = 0
+        w.NATURE_DAMAGE_DONE = 0
+        w.SHADOW_DAMAGE_DONE = 0
         w.HEALTH_REGEN = 0.04
         if cls == "paladin" then
-            w.HOLY_DAMAGE_DONE = 0.05
+            w.INTELLECT = 1
+            w.SPIRIT = 0.4
+            w.MANA_REGENERATION = 1
+            w.CRIT_RATING = 0.26
+            w.HASTE_RATING = 0.31
+            w.SPELL_HEALING_DONE = 0.54
         elseif cls == "priest" then
-            w.HOLY_DAMAGE_DONE = 0.05
+            w.SPIRIT = 1
+            w.MANA_REGENERATION = 1.5
+            w.CRIT_RATING = 0.4
+            w.HASTE_RATING = 0.48
+            w.SPELL_HEALING_DONE = 0.7
+        elseif cls == "druid" then
+            w.INTELLECT = 0.8
+            w.SPIRIT = 1
+            w.CRIT_RATING = 0.34
+            w.HASTE_RATING = 0.4
+            w.SPELL_HEALING_DONE = 1.21
+        elseif cls == "shaman" then
+            w.INTELLECT = 1
+            w.SPIRIT = 0.9
+            w.HASTE_RATING = 0.59
+            w.SPELL_HEALING_DONE = 0.9
         end
     else
-        w.SPIRIT = 0.35
-        w.CRIT_RATING = 0.7
-        w.HASTE_RATING = 0.55
-        w.SPELL_DAMAGE_DONE = 0.85
-        w.SPELL_HEALING_DONE = 0.05
-        w.ARCANE_DAMAGE_DONE = 0.7
-        w.FIRE_DAMAGE_DONE = 0.7
-        w.FROST_DAMAGE_DONE = 0.7
-        w.NATURE_DAMAGE_DONE = 0.7
-        w.SHADOW_DAMAGE_DONE = 0.7
+        w.AGILITY = 0.05
+        w.INTELLECT = 0.55
+        w.SPIRIT = 0.6
+        w.MANA_REGENERATION = 1.2
+        w.CRIT_RATING = 0.45
+        w.HASTE_RATING = 0.6
+        w.SPELL_DAMAGE_DONE = 1
+        w.SPELL_HEALING_DONE = 0
+        w.ARCANE_DAMAGE_DONE = 0.6
+        w.FIRE_DAMAGE_DONE = 0.6
+        w.FROST_DAMAGE_DONE = 0.6
+        w.NATURE_DAMAGE_DONE = 0.6
+        w.SHADOW_DAMAGE_DONE = 0.8
         w.HEALTH_REGEN = 0.03
     end
     if specId == "pvp" then
@@ -383,31 +524,57 @@ local function SpecWeights(cls, specId, roleOverride)
         w.SHADOW_DAMAGE_DONE = 0
         w.HOLY_DAMAGE_DONE = 0
         if cls == "warrior" then
-            w.STRENGTH = 0.55
-            w.AGILITY = 0.45
-            w.ATTACK_POWER = 0.3
-            w.WEAPON_DPS = 3.0
+            w.STRENGTH = 0.6
+            w.AGILITY = 0.5
+            w.ATTACK_POWER = 0.04
+            w.WEAPON_DPS = 5
+            w.HIT_RATING = 0.63
+            w.CRIT_RATING = 0.24
+            w.HASTE_RATING = 0.17
+            w.DODGE_RATING = 0.55
+            w.PARRY_RATING = 0.37
+            w.BLOCK_RATING = 0.81
+            w.DEFENSE_SKILL_RATING = 1.2
+            w.SPIRIT = 0.05
         elseif cls == "druid" then
-            w.STRENGTH = 0.55
-            w.AGILITY = 0.6
-            w.ATTACK_POWER = 0.35
-            w.WEAPON_DPS = 3.5
+            w.STRENGTH = 0.3
+            w.AGILITY = 0.48
+            w.ATTACK_POWER = 0.1
+            w.WEAPON_DPS = 5
+            w.HIT_RATING = 0.3
+            w.CRIT_RATING = 0.24
+            w.HASTE_RATING = 0.25
+            w.DODGE_RATING = 0.3
+            w.PARRY_RATING = 0
             w.BLOCK_RATING = 0
+            w.BLOCK_VALUE = 0
+            w.DEFENSE_SKILL_RATING = 0.9
+            w.INTELLECT = 0.1
+            w.SPIRIT = 0.05
+            w.MANA_REGENERATION = 0.3
         elseif cls == "paladin" then
-            w.STRENGTH = 0.5
-            w.AGILITY = 0.3
-            w.ATTACK_POWER = 0.25
-            w.INTELLECT = 0.05
-            w.SPELL_POWER = 0.38
-            w.SPELL_DAMAGE_DONE = 0.2
-            w.HOLY_DAMAGE_DONE = 0.3
-            w.MANA_REGENERATION = 0.2
-            w.WEAPON_DPS = 2.5
+            w.STRENGTH = 0.4
+            w.AGILITY = 0.6
+            w.ATTACK_POWER = 0.13
+            w.WEAPON_DPS = 5
+            w.HIT_RATING = 0.77
+            w.CRIT_RATING = 0.43
+            w.HASTE_RATING = 0.5
+            w.DODGE_RATING = 0.55
+            w.PARRY_RATING = 0.38
+            w.BLOCK_RATING = 1.1
+            w.BLOCK_VALUE = 0.15
+            w.DEFENSE_SKILL_RATING = 1.05
+            w.INTELLECT = 0.5
+            w.SPIRIT = 0.05
+            w.MANA_REGENERATION = 1
+            w.SPELL_POWER = 0.44
+            w.SPELL_DAMAGE_DONE = 0.44
+            w.HOLY_DAMAGE_DONE = 0.44
         end
     end
     if PURE_PHYS[cls] then
         w.INTELLECT = 0
-        w.SPIRIT = 0
         w.SPELL_POWER = 0
         w.SPELL_DAMAGE_DONE = 0
         w.SPELL_HEALING_DONE = 0
@@ -420,6 +587,12 @@ local function SpecWeights(cls, specId, roleOverride)
     local okSchool = BG.SCHOOL_OK[cls]
     for _, sk in ipairs(BG.SCHOOL_KEYS) do
         if not (okSchool and okSchool[sk]) then w[sk .. "_DAMAGE_DONE"] = 0 end
+    end
+    local skey = BG.wRole or BG.tspec
+    local spw = skey and BG.SPEC_WT and BG.SPEC_WT[cls] or nil
+    spw = spw and spw[skey]
+    if spw and spw.role == role then
+        for k, v in pairs(spw) do if k ~= "role" then w[k] = v end end
     end
     w.PHYSICAL_DAMAGE_DONE = (w.WEAPON_DPS or 0) * 0.385
     return w
@@ -2408,7 +2581,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 21
+BG.AUTO_GEN_REV = 23
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)

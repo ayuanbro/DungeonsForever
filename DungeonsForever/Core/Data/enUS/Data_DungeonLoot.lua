@@ -3273,7 +3273,7 @@ ns.DungeonLoot = {
             { 280028, nil, true },
             { 280029, nil, true },
         } },
-        { "King Op", "奥普国王", "", "261993", {} },
+        { "King Op", "奥普国王", "Rare", "261993", {} },
         { "Snowtalon", "雪爪", "", "262297", {
             { 280027, nil, true },
             { 280026, nil, true },
