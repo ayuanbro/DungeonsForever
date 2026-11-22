@@ -148,7 +148,7 @@ if ns.options.buttonSound == nil then ns.options.buttonSound = true end
 ns.QUICK_VER = 1
 ns.QUICK_GROUPS = { "dungeon", "prof", "explore", "tier" }
 ns.QUICK_EXPLORE = { "books", "bag" }
-ns.QUICK_TIER = { "class", "prep" }
+ns.QUICK_TIER = { "class", "bis", "prep" }
 ns.QUICK_TABS = { "Dungeons", "Raids", "Professions", "Explore", "Collections", "Factions", "Bis", "Tier", "PvP", "Gear", "QuestSearch" }
 
 local QUICK_EXPLORE_SET = {}

@@ -1118,7 +1118,12 @@ function M.BossesFor(id)
            and ((s[4] and s[4] ~= "") or M.PosFor(id, s[1]) or M.GuideFor(id, s[1])) then
             out = out or {}
             local meta = s[3]
-            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {},
+            local lv
+            if type(meta) == "string" then
+                local n = tonumber(meta:match("%s*(%d+)%s*级"))
+                if n then lv = n end
+            end
+            out[#out + 1] = { en = s[1], zh = s[2] or s[1], npc = s[4] or "", items = s[5] or {}, lv = lv,
                 rare = type(meta) == "string" and (meta:find(IN_ZH_RARE, 1, true) ~= nil or meta:find("Rare", 1, true) ~= nil) or false }
         end
     end
@@ -1751,6 +1756,9 @@ local function BuildListRows(host)
         r.fs = MakeFS(r, 14, C_TEXT, "LEFT")
         r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
         r.fs:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+        r.lv = MakeFS(r, 12, C_GREY, "RIGHT")
+        r.lv:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        r.lv:Hide()
         r.npc = MakeFS(r, 12, C_GREY, "LEFT")
         r.npc:Hide()
         if ns.hui and ns.hui.MakeSolidChip and ns.hui.ChipH then
@@ -4756,9 +4764,24 @@ function M.SyncSide(forceFrame)
         n = n + 1
         local r = frame.listRows[n]
         r.__en = bosses[i].en
+        local blv = bosses[i].lv
+        if blv then
+            if blv >= 999 then
+                r.lv:SetText("??")
+            else
+                r.lv:SetText(format(L["等级%d"], blv))
+            end
+            r.lv:Show()
+        else
+            r.lv:Hide()
+        end
         r.fs:SetText(bosses[i].zh or bosses[i].en)
         r.fs:ClearAllPoints()
-        r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        if blv then
+            r.fs:SetPoint("LEFT", r.lv, "RIGHT", 6, 0)
+        else
+            r.fs:SetPoint("LEFT", r.__av, "RIGHT", 6, 0)
+        end
         local npcId = M.SHOW_NPC_ID and bosses[i].npc
         if npcId and npcId ~= "" then
             r.npc:SetText("#" .. npcId)

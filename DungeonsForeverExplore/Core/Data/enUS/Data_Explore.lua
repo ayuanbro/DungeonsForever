@@ -207,6 +207,7 @@ ns.ExploreBookMeta = {
     quest10 = "图书馆之友",
     quest20 = "图书馆的挚友",
     quest25 = "图书馆的挚友",
+    quest35 = "图书馆的挚友",
 }
 
 ns.ExploreBookRewards = {
@@ -214,20 +215,22 @@ ns.ExploreBookRewards = {
             items = { A = 277203, H = 277204 } },
     [2] = { at = 20, req = 20, questID = 79536, quest = "图书馆的挚友",
             items = { A = 281634, H = 281635 } },
-    [3] = { at = 25, req = 30, questID = 82208, quest = "图书馆的挚友",
+    [3] = { at = 25, req = 35, questID = 82208, quest = "图书馆的挚友",
             choices = { 277254, 277258, 277260 } },
+    [4] = { at = 35, req = 50, questID = 84394, quest = "图书馆的挚友",
+            choices = { 281637, 281636, 277202 } },
 }
 
 ns.ExploreHowTo = {
     title = "How to claim the rewards",
-    intro = "这条任务线所有职业都能接，没有等级要求。身上要先带着一本书，图书馆员才会给你任务；三档奖励按累计本数解锁，交满 25 本即可全部领完。",
+    intro = "这条任务线所有职业都能接，没有等级要求。身上要先带着一本书，图书馆员才会给你任务；四档奖励按累计本数解锁，交满 35 本即可全部领完。",
     detail = "One important detail: each book has its own quest — turn in whichever you find, no need to save up 10.",
     steps = {
         { t = "Search books", d = "Books do not drop from mobs: each is looted from a fixed object — bookshelves, scroll piles, books on tables, etc." },
         { t = "Turn in to your librarian",
           d = "Each book turned in yields a Comprehension Sigil; where to hand it in is listed in Turn-in below." },
-        { t = "Claim at 10, 20 and 25 books",
-          d = "交出第十本解锁项链奖励，第二十本解锁戒指奖励，第二十五本解锁三选一奖励（求真者之弓 / 阐明徽记 / 研究员的小夜灯 任选其一）。三档任务的接取等级依次为 1 级、20 级、30 级。" },
+        { t = "Claim at 10, 20, 25 and 35 books",
+          d = "交出第十本解锁项链奖励，第二十本解锁戒指奖励，第二十五本解锁三选一奖励（求真者之弓 / 阐明徽记 / 研究员的小夜灯 任选其一）；第三十五本再解锁三选一奖励（古董壁垒 / 博物馆守护者项链 / 神器搜寻者坠饰 任选其一）。四档任务的接取等级依次为 1 级、20 级、35 级、50 级。" },
     },
 }
 

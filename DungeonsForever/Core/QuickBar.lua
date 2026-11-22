@@ -266,6 +266,9 @@ function QB:Collect()
         if cfg.tier["class"] and HasClassGuide(cls) then
             picked[#picked + 1] = { text = L["本职业"], key = "class" }
         end
+        if cfg.tier.bis and HasClassGuide(cls) then
+            picked[#picked + 1] = { text = L["团本前装备推荐"], key = "bis" }
+        end
         if cfg.tier.prep then picked[#picked + 1] = { text = L["团本前推荐任务"], key = "prep" } end
         if #picked > 0 then
             out[#out + 1] = { grp = L["职业指南"] }
@@ -273,6 +276,8 @@ function QB:Collect()
                 local tip
                 if e.key == "prep" then
                     tip = L["团本前推荐任务"]
+                elseif e.key == "bis" then
+                    tip = cname and (cname .. " · " .. L["BIS配装"]) or L["BIS配装"]
                 elseif cname then
                     tip = cname .. " · " .. L["职业指南"]
                 else
@@ -505,6 +510,15 @@ function QB:Click(spec)
         end
         if spec.key == "prep" then
             if tierDB then tierDB.nav = "prep" end
+            ns.OpenPage("Tier")
+            if ns.TierModule.RequestRender then ns.TierModule.RequestRender() end
+        elseif spec.key == "bis" then
+            local cls = MyClass()
+            if tierDB and HasClassGuide(cls) then
+                tierDB.nav = "spec"
+                tierDB.cls = cls
+                tierDB.mode = "bis"
+            end
             ns.OpenPage("Tier")
             if ns.TierModule.RequestRender then ns.TierModule.RequestRender() end
         else
@@ -884,6 +898,7 @@ function QB:EnsureSettings()
                 key = "tier", label = L["职业指南"],
                 subs = {
                     { key = "class", label = L["本职业"] },
+                    { key = "bis", label = L["团本前装备推荐"] },
                     { key = "prep", label = L["团本前推荐任务"] },
                 },
                 get = function(k) return ns.QuickCfg().tier[k] end,

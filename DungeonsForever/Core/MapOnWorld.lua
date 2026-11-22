@@ -883,7 +883,6 @@ end
 
 local function syncRoute(view, id, floor, cw, ch)
     if ns.PaintJob then ns.PaintJob.Cancel(routeJobKey(view)) end
-    local used = view.routeUsed or 0
     local hv = M.NewSegHover(view.route, function(si, on) paintSegWorld(view, si, on) end)
     if hv.seg then hv:Set(nil) end
     view.routeUsed = 0
@@ -964,7 +963,7 @@ local function syncRoute(view, id, floor, cw, ch)
             end
         end
         if n == 0 then hv:HideAll() end
-        for i = n + 1, used do
+        for i = n + 1, #view.routePool do
             local e = view.routePool[i]
             if e then
                 e.o:Hide()

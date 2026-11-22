@@ -50,6 +50,7 @@ local function CFG()
         c.questTaken = true
     end
     if c.questTaken == nil then c.questTaken = true end
+    if c.questGrey == nil then c.questGrey = true end
     if c.spell == nil then c.spell = true end
     if c.talent == nil then c.talent = true end
     if c.food == nil then c.food = true end
@@ -801,7 +802,8 @@ local function PQuest(ctx)
     if not (DG and all) then return nil end
     local lv = (UnitLevel and UnitLevel("player")) or 60
     local side = DG.PlayerSide and DG.PlayerSide() or nil
-    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side) .. "|" .. tostring(Z.IgnoreRev or 0) .. "|" .. tostring(wantTodo) .. tostring(wantTaken)
+    local hideGrey = (c.questGrey ~= false)
+    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side) .. "|" .. tostring(Z.IgnoreRev or 0) .. "|" .. tostring(wantTodo) .. tostring(wantTaken) .. "|" .. tostring(hideGrey)
     local nowT = (GetTime and GetTime()) or 0
     if questCache.key == ck and (nowT - questCache.t) < 30 then return questCache.res end
     local function QOwn(q)
@@ -814,20 +816,22 @@ local function PQuest(ctx)
     local function QHitPin(q, slug)
         if not QOwn(q) then return false end
         local r = DunLvRange(slug)
-        local gt
-        if type(q[13]) == "table" then
-            for k = 1, #q[13] do
-                local dd = q[13][k]
-                if type(dd) == "table" and dd[2] == 5 and type(dd[1]) == "number" then gt = dd[1] break end
+        if hideGrey then
+            local gt
+            if type(q[13]) == "table" then
+                for k = 1, #q[13] do
+                    local dd = q[13][k]
+                    if type(dd) == "table" and dd[2] == 5 and type(dd[1]) == "number" then gt = dd[1] break end
+                end
             end
-        end
-        if gt then
-            if lv >= gt then return false end
-        else
-            local glv = DG.QuestLevel and DG.QuestLevel(q[1]) or nil
-            if glv == nil then glv = q[4] end
-            if glv == nil then glv = q[3] end
-            if glv and QGreyLv(lv, glv) then return false end
+            if gt then
+                if lv >= gt then return false end
+            else
+                local glv = DG.QuestLevel and DG.QuestLevel(q[1]) or nil
+                if glv == nil then glv = q[4] end
+                if glv == nil then glv = q[3] end
+                if glv and QGreyLv(lv, glv) then return false end
+            end
         end
         if r and lv >= r[1] and lv <= r[2] then return true end
         return q[3] ~= nil and q[3] <= lv

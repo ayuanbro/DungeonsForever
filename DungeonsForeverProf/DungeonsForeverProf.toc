@@ -25,6 +25,7 @@ Core\Data\Data_ProfVendors.lua
 Core\Data\Data_ProfVendorNames.lua
 Core\Data\Data_ProfDropNpcs.lua
 Core\Data\Data_ProfTrainers.lua
+Core\Data\Data_ProfMoonwells.lua
 Core\Data\Data_ProfTeach.lua
 Core\Data\Data_ProfMaterialSupply.lua
 Core\Data\Data_ProfFormulaOffers.lua

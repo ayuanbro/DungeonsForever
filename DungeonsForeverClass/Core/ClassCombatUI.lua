@@ -828,6 +828,7 @@ CB.MAT_CNT_W = 26
 CB.TAG_GAP = 8
 CB.LEFT_W = 420
 CB.PIN_W = 56
+CB.QM_W = 76
 CB.BTN_H = 24
 CB.ICON = 32
 CB.SEL_H = 24
@@ -918,6 +919,21 @@ function CB.GearSrcRaw(id)
         local v2 = gd.items[n]
         if type(v2) == "string" and v2 ~= "" then return v2 end
     end
+    local gm = ns.GearModule
+    local so = gm and gm.srcOf and gm.srcOf[n]
+    if type(so) == "table" and type(so.inst) == "table" then
+        local iname = so.inst.name
+        local lc = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
+        if lc == "enUS" and type(so.inst.nameEn) == "string" and so.inst.nameEn ~= "" then
+            iname = so.inst.nameEn
+        end
+        if type(iname) == "string" and iname ~= "" then
+            if type(so.boss) == "string" and so.boss ~= "" then
+                return so.boss .. "|" .. iname
+            end
+            return T("首领掉落", "首领掉落") .. "|" .. iname
+        end
+    end
     return nil
 end
 
@@ -959,6 +975,59 @@ function CB.GearSrc(id)
     if kind then return kind, detail or "", "" end
     if #segs == 2 then return "b", segs[2], segs[1] end
     return "n", segs[1], ""
+end
+
+local vendFacIdx = nil
+local function FacIdByName(place)
+    local fd = ns.FactionsData
+    if type(fd) ~= "table" or type(place) ~= "string" or place == "" then return nil end
+    if vendFacIdx == nil then
+        vendFacIdx = {}
+        for i = 1, #fd do
+            local f = fd[i]
+            if type(f) == "table" and type(f.name) == "string" then vendFacIdx[f.name] = f.id end
+        end
+    end
+    return vendFacIdx[place]
+end
+
+function CB.VendMark(id, place)
+    local fid = FacIdByName(place)
+    if fid then
+        local q = ns.FactionQM and ns.FactionQM[fid]
+        if type(q) == "table" and type(q[1]) == "number" and type(q[2]) == "number"
+            and type(q[3]) == "number" and type(q[4]) == "number" then
+            return q[1], q[2], q[3], q[4], true
+        end
+        return nil, nil, nil, nil, true
+    end
+    local GV = nil
+    if type(ns.EnsureGearVendors) == "function" then
+        local ok, t = pcall(ns.EnsureGearVendors)
+        if ok and type(t) == "table" then GV = t end
+    end
+    if type(GV) ~= "table" then GV = ns.GearVendors end
+    local rows = GV and GV[id]
+    if type(rows) ~= "table" or #rows == 0 then return nil end
+    local f
+    if UnitFactionGroup then
+        local ok, eng = pcall(UnitFactionGroup, "player")
+        if ok and eng == "Alliance" then f = "a"
+        elseif ok and eng == "Horde" then f = "h" end
+    end
+    local SP = ns.GearVendorSpawns
+    for i = 1, #rows do
+        local r = rows[i]
+        local nid, side = r[1], r[3]
+        if type(nid) == "number" and (not side or not f or side == f) then
+            local sp = SP and SP[nid]
+            if type(sp) == "table" and type(sp[1]) == "table"
+                and type(sp[1][2]) == "number" then
+                return nid, sp[1][2], sp[1][3], sp[1][4], false
+            end
+        end
+    end
+    return nil
 end
 
 local function QColor(q)
@@ -1247,6 +1316,30 @@ local function Ensure()
         end)
         CB.pin[i] = bt
     end
+
+    CB.qmBt = NewButton2(box, T("商人位置", "商人位置"), CB.QM_W, CB.BTN_H, 14)
+    CB.qmBt:Hide()
+    CB.qmBt:SetScript("OnClick", function(self)
+        if self.__mark then self.__mark() end
+    end)
+    CB.qmBt:SetScript("OnEnter", function(self)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(T("点击：在地图上标记商人位置", "点击：在地图上标记商人位置"), 1, 0.82, 0)
+        if self.__map then
+            local zn = ""
+            if C_Map and C_Map.GetMapInfo then
+                local ok, mi = pcall(C_Map.GetMapInfo, self.__map)
+                if ok and type(mi) == "table" then zn = tostring(mi.name or "") end
+            end
+            GameTooltip:AddLine(string.format("%s %.2f, %.2f", zn, self.__vx or 0, self.__vy or 0), 0.75, 0.75, 0.75)
+        end
+        GameTooltip:Show()
+    end)
+    CB.qmBt:SetScript("OnLeave", function(self)
+        if GameTooltip then GameTooltip:Hide() end
+    end)
 
     CB.empty = CreateFrame("Frame", nil, fr, "BackdropTemplate")
     Card(CB.empty, 6, 2)
@@ -2342,6 +2435,7 @@ function CB.PaintSrc(it, zh)
         kv.v:Hide()
     end
     if CB.bossHit then CB.bossHit:Hide() end
+    if CB.qmBt then CB.qmBt:Hide() end
     CB.matLb:Hide()
     for i = 1, #CB.mats do
         CB.mats[i].__id = nil
@@ -2384,6 +2478,30 @@ function CB.PaintSrc(it, zh)
         end
         CB.boxTitle:SetText(ttl)
         FitTitle(nil)
+        if k == "v" then
+            local npc, mapID, vx, vy, isFac = CB.VendMark(it[1], place)
+            if npc or isFac then
+                local bt = CB.qmBt
+                bt.__id = it[1]
+                bt.__place = place
+                bt.__map, bt.__vx, bt.__vy = mapID, vx, vy
+                bt.__mark = function()
+                    local n2, m2, x2, y2, f2 = CB.VendMark(bt.__id, bt.__place)
+                    if n2 then
+                        DG.MarkNPC(n2, { m2, x2, y2 })
+                        if ns.PlaySound then pcall(ns.PlaySound, 1) end
+                    elseif f2 then
+                        if UIErrorsFrame and UIErrorsFrame.AddMessage then
+                            pcall(UIErrorsFrame.AddMessage, UIErrorsFrame,
+                                  T("未收录该阵营的军需官位置", "未收录该阵营的军需官位置"), 1, 0.4, 0.4)
+                        end
+                    end
+                end
+                bt:ClearAllPoints()
+                bt:SetPoint("TOPRIGHT", box, "TOPRIGHT", -10, -5)
+                bt:Show()
+            end
+        end
         if k == "q" then KV(T("地点", "地点"), place) end
         if k == "b" then
             KV(T("首领", "首领"), it[4] ~= "" and it[4] or T("该副本任意首领", "该副本任意首领"))
