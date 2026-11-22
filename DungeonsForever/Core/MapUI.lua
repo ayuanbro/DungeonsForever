@@ -5227,7 +5227,7 @@ local function wpPinAcquire(canvas)
     return p
 end
 
-local WP_DEF = { size = 18, world = false, layer = "below", scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
+local WP_DEF = { size = 18, world = false, layer = "above", scope = { lv = true, reco = true, enter = true, all = false, grey = true, take = true } }
 local WP_LAYER_BELOW = 2019
 
 local function wpCfg()
@@ -5245,6 +5245,10 @@ local function wpCfg()
     end
     if c.size == nil then c.size = WP_DEF.size end
     if c.world == nil then c.world = WP_DEF.world end
+    if c.layerVer ~= 2 then
+        c.layerVer = 2
+        c.layer = "above"
+    end
     if c.layer ~= "above" and c.layer ~= "below" then c.layer = WP_DEF.layer end
     if type(c.scope) ~= "table" then c.scope = {} end
     for k, v in pairs(WP_DEF.scope) do
