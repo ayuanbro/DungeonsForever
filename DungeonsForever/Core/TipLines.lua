@@ -407,9 +407,18 @@ local function DarkmoonNeedRows(id)
 end
 TL.DarkmoonNeedRows = DarkmoonNeedRows
 
+local JOURNAL_USE = L["辛德拉内几乎所有怪物掉落，地上「日记书页」物件也可拾取，共 7 页；带到莫丹特·永影旁的「暮影的日记」（35.1, 46.3）阅读，纯背景读物"]
+
 local USE_TEXT = {
     [276561] = L["阿鲁高书桌上拾取；在银松森林 63.4, 64.3 安波米尔室内最内侧蓝色水晶旁使用，获得召唤达拉然隐藏 BOSS 道具书"],
     [275989] = L["达拉然隐藏 BOSS 激活物品"],
+    [260348] = JOURNAL_USE,
+    [260349] = JOURNAL_USE,
+    [260350] = JOURNAL_USE,
+    [260351] = JOURNAL_USE,
+    [260352] = JOURNAL_USE,
+    [260353] = JOURNAL_USE,
+    [260354] = JOURNAL_USE,
 }
 
 local function UseRows(id)

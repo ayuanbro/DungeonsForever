@@ -855,7 +855,7 @@ function UI:OpenSchemeDialog(mode, idx)
     end
     UI:RefreshDialog()
     UI.dlg.popup:Show()
-    UI.dlg.edit:SetFocus()
+    ns.FocusEdit(UI.dlg.edit)
 end
 
 function UI:RefreshDialog()
