@@ -321,6 +321,7 @@ local function BookTerr(rec)
 end
 
 EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT = 10, 20, 25
+EG.CHOICE2_AT = 35
 EG.SWEEP_AT = { 0.5, 1.5, 3, 5, 8 }
 
 local function CharKey()
@@ -1297,9 +1298,7 @@ local function PaintRewards()
     for ti, tier in ipairs(REWARDS) do
         local card = EG.rwCards and EG.rwCards[ti]
         if card and card.hd then
-            local pat = (tier.at == EG.NECK_AT) and L["%d本 → 项链"]
-                or (tier.at == EG.RING_AT) and L["%d本 → 戒指"] or L["%d本 → 三选一"]
-            card.hd:SetText(format(pat, tier.at))
+            card.hd:SetText(format(L["%d本"], tier.at))
         end
         local done = false
         if C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted and tier.questID then
@@ -1422,7 +1421,7 @@ local function PaintProgress()
     if EG.barFill then
         EG.barFill:SetWidth(math.floor(EG.BAR_W * n / total + 0.5))
     end
-    for _, at in ipairs({ EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT }) do
+    for _, at in ipairs({ EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT, EG.CHOICE2_AT }) do
         local lab = EG.tickLabs and EG.tickLabs[at]
         if lab then lab:SetTextColor(Unpack((n >= at) and C_GOLD or C_DIM)) end
     end
@@ -4103,7 +4102,7 @@ function EG.Build(page)
     fill:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
     fill:SetWidth(0)
     EG.tickLabs = {}
-    for _, at in ipairs({ EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT }) do
+    for _, at in ipairs({ EG.NECK_AT, EG.RING_AT, EG.CHOICE_AT, EG.CHOICE2_AT }) do
         local x = math.floor(EG.BAR_W * at / #B)
         local tick = bar:CreateTexture(nil, "OVERLAY")
         tick:SetColorTexture(1, 1, 1, 0.35)
@@ -4111,8 +4110,7 @@ function EG.Build(page)
         tick:SetPoint("TOPLEFT", bar, "TOPLEFT", x, -4)
         local lab = MakeFS(labelHost, 14, C_DIM, "CENTER")
         lab:SetPoint("TOP", page, "TOPLEFT", EG.X0 + EG.LIST_PAD + x, -EG.TICK_Y)
-        lab:SetText(at == EG.NECK_AT and L["10本 项链"]
-            or at == EG.RING_AT and L["20本 戒指"] or L["25本 三选一"])
+        lab:SetText(format(L["%d本"], at))
         EG.tickLabs[at] = lab
     end
     EG.barFill = fill
@@ -4458,7 +4456,8 @@ function EG.Build(page)
         do
             Y()
             local PADX, GAP, ROW_H = EG.LIST_PAD, 8, 44
-            local CW = math.floor((EG.RIGHT_W - 2 * PADX - 2 * GAP) / 3)
+            local COLS = math.max(1, #REWARDS)
+            local CW = math.floor((EG.RIGHT_W - 2 * PADX - (COLS - 1) * GAP) / COLS)
             local maxN = 2
             for _, tier in ipairs(REWARDS) do
                 local n = tier.choices and #tier.choices or 2

@@ -1934,6 +1934,7 @@ function O.Init()
     ColHead(2, L["副本任务"])
     OptRow(2, L["未接任务提醒"], "quest", L["本图有可接的副本任务时提示"])
     OptRow(2, L["已接任务提醒"], "questTaken", L["在副本里列出已接任务，并显示每条任务的完成进度"])
+    OptRow(2, L["任务难度灰色不显示"], "questGrey", L["任务难度对当前等级呈灰色时，不列入地图待办"])
 
     ColHead(3, L["增益"])
     OptRow(3, L["食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")

@@ -150,7 +150,7 @@ local PHYS_CLS = { warrior = true, paladin = true, hunter = true,
 local PRIM_STAT = {
     warrior = "STRENGTH", paladin = "STRENGTH", hunter = "AGILITY",
     rogue = "AGILITY", priest = "INTELLECT", mage = "INTELLECT",
-    warlock = "INTELLECT", druid = "AGILITY", shaman = "AGILITY",
+    warlock = "INTELLECT", druid = "AGILITY", shaman = "STRENGTH",
 }
 
 local SPEC_DIR = {
@@ -309,8 +309,9 @@ local function SpecWeights(cls, specId, roleOverride)
             w.STAMINA = 0.5
             w.HOLY_DAMAGE_DONE = 0.12
         elseif cls == "shaman" then
-            w.INTELLECT = 0.05
-            w.SPIRIT = 0.05
+            w.AGILITY = 0.4
+            w.INTELLECT = 0.7
+            w.SPIRIT = 0.1
         elseif cls == "druid" then
             w.INTELLECT = 0.3
             w.SPIRIT = 0.16
@@ -1016,7 +1017,7 @@ local USABLE = {
                 shield = true, relic = { 7 } },
     hunter = { armor = { 1, 2, 3 },
                weapon = { 0, 1, 2, 3, 6, 7, 8, 10, 13, 15, 16, 18 } },
-    rogue = { armor = { 1, 2 }, weapon = { 2, 3, 4, 7, 13, 15, 16, 18 } },
+    rogue = { armor = { 1, 2 }, weapon = { 0, 2, 3, 4, 7, 13, 15, 16, 18 } },
     priest = { armor = { 1 }, weapon = { 4, 10, 15, 19 } },
     mage = { armor = { 1 }, weapon = { 7, 10, 15, 19 } },
     warlock = { armor = { 1 }, weapon = { 7, 10, 15, 19 } },
@@ -2415,7 +2416,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 18
+BG.AUTO_GEN_REV = 21
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -3012,6 +3013,17 @@ function BG.UseManualPlan()
     BG.RequestRender()
 end
 
+function BG.UseBlankPlan()
+    BG.autoPlan = nil
+    BG.usingPlan = { blank = true }
+    BG.cur = {}
+    BG.ench = {}
+    BG._sweepFails = 0
+    BG._sweepMiss = nil
+    AutoJobCancel()
+    BG.RequestRender()
+end
+
 function BG.StartManualGen()
     if not SpecRec() then return end
     local ss = {}
@@ -3228,6 +3240,22 @@ local function PaintPlans()
                 r.title:SetJustifyH("LEFT")
                 r.title:SetJustifyV("MIDDLE")
             end
+            local gb = r.guideBtn
+            if pe.fixed then
+                if not gb then
+                    gb = NewButton(r, L["查看详情"], 64, 18, 12)
+                    gb:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -6, 5)
+                    gb:SetFrameLevel((r:GetFrameLevel() or 0) + 3)
+                    SetButtonSelected(gb, false)
+                    gb:SetScript("OnClick", function() BG.OpenPreraidGuide() end)
+                    r.guideBtn = gb
+                end
+                gb:Show()
+                r.dot:ClearAllPoints()
+                r.dot:SetPoint("RIGHT", gb, "LEFT", -6, 0)
+            elseif gb and gb:IsShown() then
+                gb:Hide()
+            end
             local short, full = PresetText(pe)
             r.title:SetText(full or short)
             if full and (r.title:GetStringWidth() or 0) > 168 then
@@ -3296,8 +3324,29 @@ local function PaintPlans()
             y = y + PLAN_H + 2
         end
     end
-    local hasRen = BG.usingPlan ~= nil and BG.usingPlan.manual ~= true and BG.usingPlan.fixed == nil
-    local hasDel = BG.usingPlan ~= nil and BG.usingPlan.fixed == nil
+    local br = rows[N_PRESET + N_USER + 1]
+    br:Show()
+    br.title:SetText(L["添加空白面板"])
+    BG.PaintSrcChips(br, nil)
+    local bact = BG.usingPlan ~= nil and BG.usingPlan.blank == true
+    br.dot:SetShown(bact)
+    br.__sel = bact
+    if br.__huiCard then
+        ns.hui.HuiCardState(br, (bact or br:IsMouseOver()) and "hover" or "norm")
+    end
+    br.title:SetTextColor(Unpack(bact and C_GOLD or C_TEXT))
+    br.__plan = nil
+    br.__vol = nil
+    br.__key = nil
+    br.__blank = true
+    br.__on = true
+    br.__top = y
+    br.__fillH = PLAN_H
+    br:SetPoint("TOPLEFT", BG.planChild, "TOPLEFT", 0, -y)
+    br:SetPoint("RIGHT", BG.planChild, "RIGHT", 0, 0)
+    y = y + PLAN_H + 2
+    local hasRen = BG.usingPlan ~= nil and BG.usingPlan.blank ~= true and BG.usingPlan.manual ~= true and BG.usingPlan.fixed == nil
+    local hasDel = BG.usingPlan ~= nil and BG.usingPlan.blank ~= true and BG.usingPlan.fixed == nil
     BG.renameBtn:SetEnabled(hasRen)
     BG.deleteBtn:SetEnabled(hasDel)
     BG.renameBtn.lbl:SetTextColor(Unpack(hasRen and C_TEXT or C_DIM))
@@ -4825,6 +4874,13 @@ local function MakePlanRow(parent)
             self.edit:SetFocus()
             return
         end
+        if self.__blank then
+            if button == "LeftButton" then
+                BG.UseBlankPlan()
+                ns.PlaySound(1)
+            end
+            return
+        end
         if self.__plan then
             BG.UsePlan(self.__plan)
         elseif self.__fixed then
@@ -4896,7 +4952,7 @@ local function BuildMid(m1, m2)
     end)
     BG.planScroll, BG.planChild = pool, child
     BG.planRows = {}
-    for i = 1, N_PRESET + N_USER do
+    for i = 1, N_PRESET + N_USER + 1 do
         if i % 2 == 0 then coroutine.yield() end
         local r = MakePlanRow(child)
         BG.planRows[i] = r
@@ -6333,4 +6389,26 @@ function BG.UsePreRaid()
     BG.ench = {}
     BG.RequestRender()
     return true
+end
+
+function BG.OpenPreraidGuide()
+    if not (ns.TierModule and ns.ClassDB) then return end
+    local cg = ns.EnsureClassGuide and ns.EnsureClassGuide()
+    if type(cg) ~= "table" or type(cg.specs) ~= "table" then return end
+    local clsUp = string.upper(tostring(BG.cls))
+    local rec = cg.specs[clsUp]
+    if type(rec) ~= "table" then return end
+    local tierDB
+    local ok, t = pcall(ns.ClassDB)
+    if ok and type(t) == "table" then tierDB = t.tier end
+    if type(tierDB) ~= "table" then return end
+    tierDB.nav = "spec"
+    tierDB.cls = clsUp
+    tierDB.mode = "bis"
+    local sp = BG.tspec
+    if sp == "cat" then sp = "feral" end
+    if type(sp) == "string" and rec[sp] then tierDB.spec = sp end
+    ns.OpenPage("Tier")
+    if ns.TierModule.RequestRender then ns.TierModule.RequestRender() end
+    ns.PlaySound(1)
 end

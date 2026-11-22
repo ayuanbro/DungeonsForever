@@ -109,6 +109,32 @@ function W.SetEnabled(spell, on)
     return true
 end
 
+function W.SetSlugEnabled(slug, on)
+    if type(slug) ~= "string" then return 0 end
+    local l = list()
+    local o = offs()
+    on = (on == true)
+    local n = 0
+    for spell, s in pairs(l) do
+        if s == slug and W.Enabled(spell) ~= on then
+            if on then
+                o[spell] = nil
+            else
+                o[spell] = true
+            end
+            n = n + 1
+        end
+    end
+    if n > 0 then
+        local pd = ns.ProfModule
+        if pd and pd.RequestRender then pd.RequestRender() end
+        if ns.ZoneHint and ns.ZoneHint.RefreshSoft then
+            pcall(ns.ZoneHint.RefreshSoft, true)
+        end
+    end
+    return n
+end
+
 W.Store = store
 
 local function hasSurname()

@@ -929,6 +929,7 @@ settingsBtn:SetScript("OnClick", function()
     if show then BuildTipCard() end
     if show then BuildAppearanceCard() end
     if show then BuildEnhCard() end
+    if show then BuildKeybindRow() end
     settingsPop:SetShown(show)
     SyncSettingsGlyph()
 end)
@@ -1310,6 +1311,105 @@ end
 ns.BuildEnhCard = BuildEnhCard
 
 ns.SyncZoneHintCard = SyncEnhCard
+
+local keybindBtn
+local keybindReopen
+local keybindHooked
+
+local function AnchorKeybindRow()
+    if not keybindBtn then return end
+    keybindBtn:ClearAllPoints()
+    local up = enhCard or appearanceCard or tipCard
+    if up then
+        keybindBtn:SetPoint("TOPLEFT", up, "BOTTOMLEFT", 0, -8)
+        keybindBtn:SetPoint("TOPRIGHT", up, "BOTTOMRIGHT", 0, -8)
+    else
+        keybindBtn:SetPoint("TOPLEFT", settingsPop, "TOPLEFT", 6, -38)
+        keybindBtn:SetPoint("TOPRIGHT", settingsPop, "TOPRIGHT", -6, -38)
+    end
+end
+
+local function JumpKeybinds()
+    local cat = BINDING_HEADER_DUNGEONSFOREVER
+    if not (cat and Settings and Settings.KEYBINDINGS_CATEGORY_ID and Settings.OpenToCategory) then
+        if KeyBindingFrame_LoadUI then KeyBindingFrame_LoadUI() end
+        if KeyBindingFrame then ShowUIPanel(KeyBindingFrame) end
+        return
+    end
+    local wasShown = f:IsShown()
+    if wasShown then f:Hide() end
+    local ok = pcall(Settings.OpenToCategory, Settings.KEYBINDINGS_CATEGORY_ID, cat)
+    if not ok then
+        if wasShown then f:Show() end
+        return
+    end
+    local sb = SettingsPanel and SettingsPanel.Container and SettingsPanel.Container.SettingsList
+        and SettingsPanel.Container.SettingsList.ScrollBox
+    if sb then
+        C_Timer.After(0, function()
+            local _, frames = sb:EnumerateFrames()
+            for _, fr in pairs(frames) do
+                if fr.Button and fr.Button.Text and fr.Button.Text:GetText() == cat then
+                    if fr.Controls and fr.Controls[1] and fr.Controls[1].IsShown and not fr.Controls[1]:IsShown() then
+                        fr.Button:Click()
+                        C_Timer.After(0, function() sb:ScrollIncrease(3) end)
+                    end
+                    break
+                end
+            end
+        end)
+    end
+    local win = SettingsPanel or KeyBindingFrame
+    if wasShown and win and win:IsShown() then
+        keybindReopen = true
+        if not keybindHooked then
+            keybindHooked = true
+            win:HookScript("OnHide", function()
+                if keybindReopen and f then ns.Open() end
+                keybindReopen = false
+            end)
+        end
+    elseif wasShown then
+        f:Show()
+    end
+end
+
+ns.OpenKeybindSettings = JumpKeybinds
+
+function BuildKeybindRow()
+    if keybindBtn then
+        AnchorKeybindRow()
+        return
+    end
+    local bt = ns.CreateButton(settingsPop)
+    bt:SetHeight(24)
+    bt.__huiKeepTextColor = true
+    local fs = bt:GetFontString()
+    if fs then
+        fs:ClearAllPoints()
+        fs:SetPoint("LEFT", bt, "LEFT", 10, 0)
+        fs:SetPoint("RIGHT", bt, "RIGHT", -10, 0)
+        fs:SetJustifyH("LEFT")
+        fs:SetTextColor(C_TIP_TXT[1], C_TIP_TXT[2], C_TIP_TXT[3])
+        fs:SetText(L["开关插件快捷键设置"])
+    end
+    bt:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["开关插件快捷键设置"], 1, 1, 1, true)
+        GameTooltip:AddLine(L["打开按键设置并定位到本插件的绑定行，为主界面开关设置快捷键。"], 0.78, 0.80, 0.84, true)
+        GameTooltip:Show()
+    end)
+    bt:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    bt:SetScript("OnClick", function()
+        ns.PlaySound(1)
+        JumpKeybinds()
+    end)
+    keybindBtn = bt
+    AnchorKeybindRow()
+end
 
 local function AnchorTipCard(card)
     local qbCard = ns.QuickBar and ns.QuickBar.cardBg
@@ -2119,6 +2219,10 @@ end)
 SLASH_DUNGEONSFOREVER1 = "/df"
 SLASH_DUNGEONSFOREVER2 = L["/副本手册"]
 SLASH_DUNGEONSFOREVER3 = "/fbsc"
+
+BINDING_HEADER_DUNGEONSFOREVER = L["无限副本手册"]
+BINDING_NAME_DUNGEONSFOREVER_TOGGLE = L["显示/隐藏主界面"]
+DUNGEONSFOREVER_TOGGLE = function() ns.Toggle() end
 
 SLASH_DUNGEONSFOREVERLANG1 = "/dfcn"
 SLASH_DUNGEONSFOREVERLANG2 = L["/df中文"]

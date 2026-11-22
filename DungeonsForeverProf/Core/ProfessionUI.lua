@@ -1531,6 +1531,7 @@ PD.TEXT_W = PD.RIGHT_W - 46
 DG.PROF_SUBTABS = {
     { key = "overview", text = L["总览"] },
     { key = "trainer",  text = L["训练师"] },
+    { key = "moonwell", text = L["月亮井"] },
     { key = "recipe",   text = L["配方"] },
     { key = "gather",   text = L["采集"] },
     { key = "leveling", text = L["升级"] },
@@ -3275,6 +3276,12 @@ function PD.PaintRows(rows)
     elseif PD.trainerBoard then
         PD.trainerCard:Hide()
     end
+    if PD.wantMoonBoard and PD.moonBoard then
+        PD.placeMoonBoard(h1)
+        h1 = h1 + (PD.moonBoardH or 0) + 2 * PD.SEC_PAD + 8
+    elseif PD.moonBoard then
+        PD.moonCard:Hide()
+    end
     local extraH = h1 - math.max(y[1], y[2], y[3], y[4], y[5], y[6])
     if sideFix then
         PD.child:SetHeight(y[1] + extraH + 10)
@@ -3301,8 +3308,19 @@ function PD.PaintRows(rows)
                         -(y0 + 4 + (PD.TEXT_H - PD.SUB_H) / 2))
             bt:SetFrameLevel((PD.child:GetFrameLevel() or 0) + 200)
             bt:Show()
+            if PD.mgrOffBtn then
+                if PD.subTab == "mgr" then
+                    PD.mgrOffBtn:ClearAllPoints()
+                    PD.mgrOffBtn:SetPoint("TOPLEFT", bt, "TOPRIGHT", 6, 0)
+                    PD.mgrOffBtn:SetFrameLevel((PD.child:GetFrameLevel() or 0) + 200)
+                    PD.mgrOffBtn:Show()
+                else
+                    PD.mgrOffBtn:Hide()
+                end
+            end
         else
             PD.mgrBtn:Hide()
+            if PD.mgrOffBtn then PD.mgrOffBtn:Hide() end
         end
     end
     if PD.UpdateVScroll then PD.UpdateVScroll() end
@@ -4978,6 +4996,197 @@ function PD.placeTrainerBoard(y)
     PD.trainerBoard:Show()
 end
 
+local function MwZoneName(z)
+    local cached = TR_ZONE_CACHE[z.map]
+    if cached ~= nil then return cached or nil end
+    local nm
+    if C_Map and C_Map.GetMapInfo then
+        local ok, info = pcall(C_Map.GetMapInfo, z.map)
+        if ok and info then nm = info.name end
+    end
+    TR_ZONE_CACHE[z.map] = nm or false
+    return nm
+end
+
+local function MwPick(t, field)
+    if type(t) ~= "table" then return nil end
+    local loc = DF_Locale()
+    return (loc == "zhTW" and t[field .. "_tw"])
+        or (loc == "enUS" and t[field .. "_en"])
+        or t[field .. "_zh"]
+end
+
+local MW_FAC_COLOR = {
+    A = { 0.40, 0.62, 1.00 },
+    H = { 1.00, 0.36, 0.26 },
+    B = { 0.36, 0.79, 0.65 },
+}
+
+function PD.BuildMoonBoard(parent)
+    local card = CreateFrame("Frame", nil, parent)
+    PD.moonCard = card
+    card:Hide()
+    local root = CreateFrame("Frame", nil, card)
+    PD.moonBoard = root
+    root:SetSize(PD.GRID_W, 10)
+    root.__chips = {}
+    root.__fs = {}
+    root.__bands = {}
+end
+
+function PD.FillMoonBoard()
+    local root = PD.moonBoard
+    if not root then return 0 end
+    local d = ns.EnsureProfMoonwells and ns.EnsureProfMoonwells()[PD.cur] or nil
+    if not (d and d.zones and #d.zones > 0) then
+        for _, c in ipairs(root.__chips) do c:Hide() end
+        for _, f in pairs(root.__fs) do f:Hide() end
+        for _, b in ipairs(root.__bands) do b:Hide() end
+        return 0
+    end
+    local fac = PD.trFac or "A"
+    local zones = {}
+    for _, z in ipairs(d.zones) do
+        if z.fac == "B" or z.fac == fac then zones[#zones + 1] = z end
+    end
+    for _, c in ipairs(root.__chips) do c:Hide() end
+    for _, f in pairs(root.__fs) do f:Hide() end
+    for _, b in ipairs(root.__bands) do b:Hide() end
+    if #zones == 0 then return 0 end
+    local COLS = 3
+    local colH, colZ = {}, {}
+    for ci = 1, COLS do colH[ci] = 0 end
+    for _, z in ipairs(zones) do
+        local pick = 1
+        for ci = 2, COLS do
+            if colH[ci] < colH[pick] then pick = ci end
+        end
+        colZ[pick] = colZ[pick] or {}
+        colZ[pick][#colZ[pick] + 1] = z
+        colH[pick] = colH[pick] + 46 + #(z.list or {}) * (PD.TR_CARD_H + PD.TR_CARD_GAP) + 8
+    end
+    local W = PD.GRID_W
+    local GAP = 8
+    local COL_W = math.floor((W - (COLS - 1) * GAP) / COLS)
+    local chipN, fsN, bandN = 0, 0, 0
+    local maxH = 0
+    for ci = 1, COLS do
+        local groups = colZ[ci]
+        if groups then
+            local x0 = (ci - 1) * (COL_W + GAP)
+            local yCur = 0
+            for _, z in ipairs(groups) do
+                local zn = MwZoneName(z) or MwPick(z, "name") or ""
+                fsN = fsN + 1
+                local h1 = root.__fs[fsN]
+                if not h1 then h1 = MakeFS(root, 14, C_GOLD, "LEFT"); root.__fs[fsN] = h1 end
+                h1:ClearAllPoints()
+                h1:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -yCur)
+                h1:SetText(zn)
+                h1:Show()
+                fsN = fsN + 1
+                local h2 = root.__fs[fsN]
+                if not h2 then h2 = MakeFS(root, 12, C_GREY, "LEFT"); root.__fs[fsN] = h2 end
+                h2:ClearAllPoints()
+                h2:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -(yCur + 20))
+                local zn2 = MwPick(z, "note")
+                if not zn2 or zn2 == "" then zn2 = format(L["月亮井 %d 处"], #(z.list or {})) end
+                h2:SetText(zn2)
+                h2:Show()
+                bandN = bandN + 1
+                local band = root.__bands[bandN]
+                if not band then
+                    band = root:CreateTexture(nil, "ARTWORK")
+                    root.__bands[bandN] = band
+                end
+                local bc = MW_FAC_COLOR[z.fac] or MW_FAC_COLOR.B
+                band:SetHeight(2)
+                band:SetColorTexture(bc[1], bc[2], bc[3], 0.9)
+                band:ClearAllPoints()
+                band:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -(yCur + 40))
+                band:SetPoint("RIGHT", root, "TOPLEFT", x0 + COL_W, -(yCur + 40))
+                band:Show()
+                yCur = yCur + 46
+                for _, w in ipairs(z.list or {}) do
+                    chipN = chipN + 1
+                    local c = root.__chips[chipN]
+                    if not c then
+                        c = CreateFrame("Button", nil, root)
+                        c:EnableMouse(true)
+                        root.__chips[chipN] = c
+                        if ns.hui.HuiCardFX then ns.hui.HuiCardFX(c, 6, 3) end
+                        c.n = MakeFS(c, 14, { 1, 1, 1 }, "LEFT")
+                        c.l = MakeFS(c, 12, C_GREY, "LEFT")
+                        c.xy = MakeFS(c, 12, { 0.71, 0.83, 0.96 }, "RIGHT")
+                    end
+                    if c.__huiCard then ns.hui.HuiCardState(c, "norm") end
+                    c:SetSize(COL_W, PD.TR_CARD_H)
+                    c:ClearAllPoints()
+                    c:SetPoint("TOPLEFT", root, "TOPLEFT", x0, -yCur)
+                    c.n:ClearAllPoints()
+                    c.n:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -3)
+                    local wname = MwPick(w, "loc")
+                    if not wname or wname == "" then wname = L["月亮井"] end
+                    c.n:SetText(wname)
+                    c.n:Show()
+                    c.l:ClearAllPoints()
+                    c.l:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -22)
+                    c.l:SetText(MwPick(w, "note") or "")
+                    c.l:Show()
+                    c.xy:ClearAllPoints()
+                    c.xy:SetPoint("TOPRIGHT", c, "TOPRIGHT", -8, -22)
+                    c.xy:SetText(format("%g, %g", w.x, w.y))
+                    c.xy:Show()
+                    c:SetScript("OnClick", function()
+                        PD.MarkVendorLoc({ nil, z.map, w.x, w.y })
+                    end)
+                    c:SetScript("OnEnter", function(self)
+                        if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
+                        local lines = { { L["月亮井"], 1, 0.82, 0 } }
+                        local plc = MwPick(w, "loc")
+                        if plc and plc ~= "" then
+                            lines[#lines + 1] = { zn .. " · " .. plc }
+                        else
+                            lines[#lines + 1] = { zn }
+                        end
+                        local wn = MwPick(w, "note")
+                        if wn and wn ~= "" then lines[#lines + 1] = { wn, 0.7, 0.7, 0.7 } end
+                        lines[#lines + 1] = { L["点击：在地图上标记该月亮井"], 1, 0.82, 0 }
+                        PD.TipShow(self, lines)
+                    end)
+                    c:SetScript("OnLeave", function(self)
+                        if self.__huiCard then ns.hui.HuiCardState(self, "norm") end
+                        GameTooltip:Hide()
+                    end)
+                    c:Show()
+                    yCur = yCur + PD.TR_CARD_H + PD.TR_CARD_GAP
+                end
+                yCur = yCur + 8
+            end
+            if yCur > maxH then maxH = yCur end
+        end
+    end
+    PD.moonBoardH = maxH
+    return maxH
+end
+
+function PD.placeMoonBoard(y)
+    local h = PD.FillMoonBoard()
+    if h <= 0 then
+        if PD.moonCard then PD.moonCard:Hide() end
+        PD.moonBoardH = 0
+        return
+    end
+    PD.moonCard:ClearAllPoints()
+    PD.moonCard:SetPoint("TOPLEFT", PD.child, "TOPLEFT", PD.GRID_X, -y)
+    PD.moonCard:SetSize(PD.GRID_W, h)
+    PD.moonCard:Show()
+    PD.moonBoard:ClearAllPoints()
+    PD.moonBoard:SetPoint("TOPLEFT", PD.moonCard, "TOPLEFT", 0, 0)
+    PD.moonBoard:SetSize(PD.GRID_W, h)
+    PD.moonBoard:Show()
+end
+
 local function ixCardSub(slug, p)
     if slug == "camping" then
         local n = 0
@@ -5690,6 +5899,15 @@ function PD.Build(page)
         PD.mgrBtn = bt
         PD.mgrMsr = MakeFS(page, 16, C_WHITE, "LEFT")
         PD.mgrMsr:Hide()
+        local off = NewButton(page, L["全部取消追踪"], 124, PD.SUB_H, 14)
+        SetButtonSelected(off, false)
+        off:Hide()
+        off:SetScript("OnClick", function()
+            if ns.ProfCDWatch and ns.ProfCDWatch.SetSlugEnabled then
+                ns.ProfCDWatch.SetSlugEnabled(PD.cur, false)
+            end
+        end)
+        PD.mgrOffBtn = off
     end
     coroutine.yield()
 
@@ -6446,6 +6664,8 @@ function PD.Build(page)
     coroutine.yield()
     PD.BuildTrainerBoard(child)
     coroutine.yield()
+    PD.BuildMoonBoard(child)
+    coroutine.yield()
 
     for i = 1, PD.SETTING_TOG_MAX do
         local tg = CreateFrame("CheckButton", nil, child)
@@ -6649,6 +6869,8 @@ function PD.TabsFor(slug)
     if not p then return out end
     local TRD = ns.EnsureProfTrainers()[slug]
     if TRD and TRD.list and #TRD.list > 0 then out[#out + 1] = "trainer" end
+    local MWD = ns.EnsureProfMoonwells and ns.EnsureProfMoonwells()[slug]
+    if MWD and MWD.zones and #MWD.zones > 0 then out[#out + 1] = "moonwell" end
     local r = RGet(slug)
     if (slug=="first-aid" and LV and LV[slug] and #(LV[slug].steps or {})>0)
         or r and ((r.rows and #r.rows > 0) or (r.enchants and #r.enchants > 0)
@@ -6745,7 +6967,7 @@ function PD.PickTabs()
         end
     end
     if PD.trFacBtns then
-        local ton = (PD.tab == "trainer") and (not PD.setOpen)
+        local ton = ((PD.tab == "trainer") or (PD.tab == "moonwell")) and (not PD.setOpen)
         for _, k in ipairs({ "H", "A" }) do
             local bt = PD.trFacBtns[k]
             local sel = (PD.trFac == k)
@@ -8410,7 +8632,7 @@ function PD.RowsWatchMgr(rows)
         if list[i].todo then todo = todo + 1 end
     end
     PushHead(rows, L["冷却管理"], 1, nil,
-             format(L["共 %d 项 · 追踪 %d 项 · 待办 %d 项 · 点卡片上的按钮切换"], #list, on, todo), 112)
+             format(L["共 %d 项 · 追踪 %d 项 · 待办 %d 项 · 点卡片上的按钮切换"], #list, on, todo), 242)
     local cards = {}
     for i = 1, #list do
         local it = list[i]
@@ -18974,6 +19196,7 @@ function PD.Render()
     PD.gcSpec = nil
     PD.wantBonusTable = false
     PD.wantTrainerBoard = false
+    PD.wantMoonBoard = false
     PD.hasSecs = false
     PD.noSecCard = false
     PD.sideFixed = false
@@ -19034,6 +19257,8 @@ function PD.Render()
         end
     elseif PD.tab == "trainer" then
         PD.wantTrainerBoard = true
+    elseif PD.tab == "moonwell" then
+        PD.wantMoonBoard = true
     elseif PD.tab == "recipe" then
         PD.capNow = PD.RECIPE_CAP
         tool, handler = PD.RecipeTool(RGet(PD.cur))

@@ -207,6 +207,7 @@ ns.ExploreBookMeta = {
     quest10 = "Friend of the Library",
     quest20 = "Greater Friend of the Library",
     quest25 = "Greater Friend of the Library",
+    quest35 = "Greater Friend of the Library",
 }
 
 ns.ExploreBookRewards = {
@@ -214,20 +215,22 @@ ns.ExploreBookRewards = {
             items = { A = 277203, H = 277204 } },
     [2] = { at = 20, req = 20, questID = 79536, quest = "Greater Friend of the Library",
             items = { A = 281634, H = 281635 } },
-    [3] = { at = 25, req = 30, questID = 82208, quest = "Greater Friend of the Library",
+    [3] = { at = 25, req = 35, questID = 82208, quest = "Greater Friend of the Library",
             choices = { 277254, 277258, 277260 } },
+    [4] = { at = 35, req = 50, questID = 84394, quest = "Greater Friend of the Library",
+            choices = { 281637, 281636, 277202 } },
 }
 
 ns.ExploreHowTo = {
     title = "How to claim the rewards",
-    intro = "Any class can take this quest line, with no level requirement. You must carry a book before the librarian offers the quest; the three reward tiers unlock by total books turned in, and turning in 25 claims them all.",
+    intro = "Any class can take this quest line, with no level requirement. You must carry a book before the librarian offers the quest; the four reward tiers unlock by total books turned in, and turning in 35 claims them all.",
     detail = "One important detail: each book has its own quest — turn in whichever you find, no need to save up 10.",
     steps = {
         { t = "Search books", d = "Books do not drop from mobs: each is looted from a fixed object — bookshelves, scroll piles, books on tables, etc." },
         { t = "Turn in to your librarian",
           d = "Each book turned in yields a Comprehension Sigil; where to hand it in is listed in Turn-in below." },
-        { t = "Claim at 10, 20 and 25 books",
-          d = "The 10th book unlocks the neck reward, the 20th the ring reward, and the 25th a pick-one-of-3 reward (Truthseeker's Bow / Sigil of Elucidation / Researcher's Nightlight). The three tier quests require level 1, 20 and 30 respectively." },
+        { t = "Claim at 10, 20, 25 and 35 books",
+          d = "The 10th book unlocks the neck reward, the 20th the ring reward, the 25th a pick-one-of-3 reward (Truthseeker's Bow / Sigil of Elucidation / Researcher's Nightlight), and the 35th another pick-one-of-3 reward (Antique Bulwark / Museum Keeper's Chain / Artifact Seeker's Pendant). The four tier quests require level 1, 20, 35 and 50 respectively." },
     },
 }
 

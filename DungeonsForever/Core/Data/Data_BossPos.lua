@@ -188,6 +188,7 @@ ns.BossPos = {
         ["Glutton"] = { { 38.5, 45.2 } },
         ["Mordresh Fire Eye"] = { { 85.8, 45.7 } },
         ["Ragglesnout"] = { { 52.9, 67.2 } },
+        ["Tuten'kash"] = { { 58.7, 34.8 } },
     },
     ["sm_cathedral"] = {
         ["High Inquisitor Fairbanks"] = { { 55.6, 24.7 }, { 55.4, 26.1, 4 } },

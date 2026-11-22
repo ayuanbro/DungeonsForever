@@ -5,6 +5,14 @@ if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
 -- 英文客户端：副本路线标签/注释英文化（按原文映射，不复制坐标数据）
 -- enUS: English route labels/notes, mapped by source text (coordinates stay in Data_Route.lua)
 local TR = {
+    ["图特卡什"] = "Tuten'kash",
+    ["出土的石头卫士"] = "The Unearthed Stone Watcher",
+    ["同化之柱"] = "Pillar of Assimilation",
+    ["愈合前厅"] = "The Regrowth Vestibule",
+    ["无色水晶"] = "The Achromatic Crystal",
+    ["西部大门"] = "The Western Gates",
+    ["注意！！等其他人都交完任务,再开启护送"] = "Note: wait until everyone has turned in their quests before starting the escort!",
+    ["点击3次铜锣后boss刷新，每次点击会出现小怪"] = "Ring the gong 3 times to spawn the boss; each ring also spawns adds",
     ["15个红色水晶激活"] = "Activate 15 red crystals",
     ["15个绿色水晶激活"] = "Activate 15 green crystals",
     ["15个蓝色水晶激活"] = "Activate 15 blue crystals",
