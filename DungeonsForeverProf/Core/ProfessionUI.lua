@@ -10092,6 +10092,9 @@ function PD.RecipeLearningCard(recipe, frozen)
     if recipe and (recipe.legacyPoisonGuide or recipe.profession=="poisons") then return end
     local view=PD.RecipeLearningView(recipe,frozen)
     if not view then return end
+    if view.status=="learned" and view.allowed~=false then
+        return {kind="auto",text=L["已学会"],lines={{L["已学会，无需再次购买图纸或支付学习费用。"],0.7,0.7,0.7}}}
+    end
     if not view.frozen then
         local origin=PD.LearningOriginCard(recipe,view)
         if origin then
