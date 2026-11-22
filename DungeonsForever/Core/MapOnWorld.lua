@@ -3168,16 +3168,34 @@ local function buildPinPool(view)
                 end
                 return
             end
+            local v = self.__dfView or W.view
+            local MWm = ns.MapWindowModule
+            local hosted = (v and (v.__mapWin or v.__mini) and MWm) and true or false
+            if hosted and MWm.curId == M.curId and MWm.curLayer then
+                M.curLayer = MWm.curLayer
+            end
             W.arrive = nil
             if p and (kind == "prev" or kind == "next" or (kind == "entrance" and p.to)) then
                 W.arrive = { from = M.CurFloorNum(), kind = kind, tox = p.tox, toy = p.toy }
             end
             local was = M.curLayer
             M.PinOnClick(self, true)
-            W.Sync()
+            if hosted then
+                if M.curLayer ~= was then
+                    MWm.curLayer = M.curLayer
+                    MWm.subFollow = false
+                end
+                if v.__mini and MWm.MiniSync then
+                    MWm.MiniSync(true)
+                elseif MWm.Sync then
+                    MWm.Sync()
+                end
+            else
+                W.Sync()
+            end
             local a = W.arrive
             if a and a.from and M.curLayer ~= was then
-                M.ArriveAt(a.from, a.kind, a.tox, a.toy, self.__dfView or W.view)
+                M.ArriveAt(a.from, a.kind, a.tox, a.toy, v)
             end
         end)
         bt:SetScript("OnEnter", function(self)

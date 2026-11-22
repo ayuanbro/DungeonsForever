@@ -1138,7 +1138,7 @@ local function OpenWeightDialog(mode, idx)
         wdlg.edit:SetText("")
         wdlg.picked = W_ICONS[1]
     end
-    if wdlg.edit then wdlg.edit:SetFocus() end
+    if wdlg.edit then ns.FocusEdit(wdlg.edit) end
     for _, ob in ipairs(wdlg.icons) do SetOutline(ob, ob.icon == wdlg.picked) end
     wdlg.popup:Show()
 end
@@ -1454,6 +1454,7 @@ BG.INST_ALIAS = {
     ["熔火之心"] = "mc",
     ["黑翼之巢"] = "bwl",
     ["安其拉神殿"] = "aq40",
+    ["安其拉"] = "aq40",
     ["安其拉废墟"] = "aq20",
     ["祖尔格拉布"] = "zg",
     ["纳克萨玛斯"] = "naxx",
@@ -1476,6 +1477,8 @@ BG.INST_ALIAS = {
     ["希利苏斯·卡苏姆男爵"] = "silithus",
     ["希利苏斯·大元帅维拉希斯"] = "silithus",
     ["奥特兰克山谷·森林之王伊弗斯"] = "av",
+    ["奥特兰克山谷"] = "av",
+    ["奧特蘭克山谷"] = "av",
 }
 
 BG.INST_BOSS = {
@@ -1504,6 +1507,7 @@ BG.INST_EXTRA = {
     { key = "kazzak", name = "卡扎克", nameEn = "Lord Kazzak", nameTw = "卡扎克", group = "world" },
     { key = "silithus", name = "安其拉开门首领", nameEn = "Ahn'Qiraj War Leaders", nameTw = "安其拉開門首領", group = "world" },
     { key = "av", name = "奥特兰克山谷首领", nameEn = "Alterac Valley Bosses", nameTw = "奧特蘭克山谷首領", group = "world" },
+    { key = "unavail", name = "未实装装备", nameEn = "Not Implemented", nameTw = "未實裝裝備", group = "raid" },
 }
 
 BG.INST_FIX = { onyxias_lair = "ony" }
@@ -1631,6 +1635,20 @@ function BG.InstOpen(e)
     return e.open == true
 end
 
+function BG.EraLockOf(id)
+    if type(id) ~= "number" then return nil end
+    local t = ns.GearEraLock
+    if type(t) ~= "table" then return nil end
+    return t[id]
+end
+
+function BG.EraBlocked(id)
+    local k = BG.EraLockOf(id)
+    if not k then return false end
+    if BG.instReady ~= true then return false end
+    return not (BG.instSet and BG.instSet[k] == true)
+end
+
 function BG.InstOf(id)
     if not BG.__instItem then BG.InstBuild() end
     local k = BG.__instItem and BG.__instItem[id]
@@ -1641,7 +1659,7 @@ function BG.InstOf(id)
     if type(iid) == "string" and iid ~= "" then
         return BG.INST_FIX[iid] or iid
     end
-    return nil
+    return BG.EraLockOf(id)
 end
 
 function BG.InstAllowed(set, id)
@@ -1968,9 +1986,16 @@ local function RecItem(sp, slotKey)
     if not sp then return nil end
     local sides = sp.slots[slotKey]
     if type(sides) ~= "table" then return nil end
-    local s = sides[(BG.side or PlayerFac()) == "h" and 2 or 1]
-    if type(s) ~= "table" then return nil end
-    return s[1], s[2], s[3]
+    local i = (BG.side or PlayerFac()) == "h" and 2 or 1
+    while i <= #sides do
+        local s = sides[i]
+        if type(s) == "table" and type(s[1]) == "number"
+            and not BG.EraBlocked(s[1]) then
+            return s[1], s[2], s[3]
+        end
+        i = i + 1
+    end
+    return nil
 end
 
 local function CurSide()
@@ -2589,7 +2614,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 23
+BG.AUTO_GEN_REV = 24
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2874,7 +2899,15 @@ local function AutoRawOK(id, cap)
 end
 
 function BG.AutoInstOK(job, id, kind)
-    if kind ~= "boss" and kind ~= "quest" then return true end
+    if kind ~= "boss" and kind ~= "quest" then
+        local e = BG.EraLockOf(id)
+        if e then
+            local set = job.instSet
+            if not set then return true end
+            return set[e] == true
+        end
+        return true
+    end
     local set = job.instSet
     if not set then return true end
     return BG.InstAllowed(set, id)
@@ -3466,18 +3499,14 @@ local function PaintPlans()
         end
     end
     local shown = 0
-    for i = 1, N_USER do
-        local r0 = rows[N_PRESET + i]
-        r0:Hide()
-        r0.__plan = nil
-    end
     for _, p in ipairs(plans) do
         if shown >= N_USER then break end
         if p.tspec == nil or p.tspec == BG.tspec then
-            local r = rows[N_PRESET + shown + 1]
             shown = shown + 1
-            r:Show()
+            local r = rows[N_PRESET + shown]
+            if not r:IsShown() then r:Show() end
             r.title:SetText(p.name)
+            r.title:SetShown(not r.__renaming)
             BG.PaintSrcChips(r, nil)
             local active = p == BG.usingPlan
             r.dot:SetShown(false)
@@ -3496,6 +3525,12 @@ local function PaintPlans()
             r:SetPoint("RIGHT", BG.planChild, "RIGHT", 0, 0)
             y = y + PLAN_H + 2
         end
+    end
+    for i = shown + 1, N_USER do
+        local r0 = rows[N_PRESET + i]
+        if r0:IsShown() then r0:Hide() end
+        r0.__plan = nil
+        r0.__on = nil
     end
     local br = rows[N_PRESET + N_USER + 1]
     br:Show()
@@ -3916,7 +3951,7 @@ local function PaintBrowser()
         for _, r in ipairs(mainBoth and BG.CatRowsForMain() or CatRowsFor(rkey)) do
             local kind = CatKind(r.id)
             local pass = not (next(BG.srcSet) ~= nil and not BG.srcSet[kind])
-            if pass and (kind == "boss" or kind == "quest") and not BG.InstPass(r.id) then pass = false end
+            if pass and (kind == "boss" or kind == "quest" or BG.EraLockOf(r.id)) and not BG.InstPass(r.id) then pass = false end
             if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
             if pass and BG.search ~= "" then
                 local nm = string.lower(DG.ItemName(r.id) or "")
@@ -5020,7 +5055,11 @@ local function MakePlanRow(parent)
         self:ClearFocus()
         self:Hide()
     end)
-    r.edit:SetScript("OnEditFocusLost", function(self) self:Hide() end)
+    r.edit:SetScript("OnEditFocusLost", function(self)
+        r.__renaming = nil
+        r.title:Show()
+        self:Hide()
+    end)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" and (self.__plan or self.__manual) then
             local p = self.__plan or BG.ManualPlan()
@@ -5043,8 +5082,10 @@ local function MakePlanRow(parent)
                 return
             end
             self.edit:SetText(p.name or "")
+            self.__renaming = true
+            self.title:Hide()
             self.edit:Show()
-            self.edit:SetFocus()
+            ns.FocusEdit(self.edit)
             return
         end
         if self.__blank then
@@ -5085,8 +5126,10 @@ local function BuildMid(m1, m2)
         for _, r in ipairs(BG.planRows) do
             if r.__plan == p then
                 r.edit:SetText(p.name or "")
+                r.__renaming = true
+                r.title:Hide()
                 r.edit:Show()
-                r.edit:SetFocus()
+                ns.FocusEdit(r.edit)
                 return
             end
         end
@@ -6521,7 +6564,7 @@ function BG.PreRaidPlan()
     local items, n, slotOk = {}, 0, true
     for k, v in pairs(raw) do
         local id = (type(v) == "table") and v[1] or v
-        if type(id) == "number" then
+        if type(id) == "number" and not BG.EraBlocked(id) then
             local dk
             if k == "main" then
                 local s = SlotOfAny(id)

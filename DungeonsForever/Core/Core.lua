@@ -896,6 +896,16 @@ function ns.CreateEditBox(parent, size)
     return eb
 end
 
+function ns.FocusEdit(e)
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0, function()
+            if e:IsShown() then e:SetFocus() end
+        end)
+    else
+        e:SetFocus()
+    end
+end
+
 function ns.SkinPopupFont(p)
     if not (p and ns.FONT) then return end
     local function fixFS(fs)

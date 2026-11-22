@@ -2821,6 +2821,7 @@ function TT.Render()
         local CU = ns.ClassCombatUI
         local mode = DB().mode
         local CQUI = ns.ClassQuestUI
+        local cqLive = (CQUI and CQUI.active and CQUI.cls == DB().cls) and true or false
         if CQUI then CQUI.Hide() end
         local TUI = ns.TalentTabUI
         if TUI then TUI.Hide() end
@@ -2847,14 +2848,23 @@ function TT.Render()
             TT.PlaceScroll(TT.MODE_TOP)
             TT.HideSpecContent()
             if CU then CU.HideRows() end
+            CQUI.__keepV = cqLive and (TT.__v or 0) or nil
             CQUI.Render()
         else
             TT.PlaceScroll(TT.SEC_TOP)
             if CU then CU.HideRows() end
             RenderSpec()
         end
-        TT.__v = 0
-        TT.child:SetPoint("TOPLEFT", TT.scroll, "TOPLEFT", 0, 0)
+        local kv = cqLive and (mode == "cq") and CQUI and tonumber(CQUI.__keepV) or nil
+        if CQUI then CQUI.__keepV = nil end
+        if kv then
+            local mx = math.max(0, (tonumber(TT.child:GetHeight()) or 0)
+                - (tonumber(TT.scroll:GetHeight()) or 0))
+            TT.__v = math.min(kv, mx)
+        else
+            TT.__v = 0
+        end
+        TT.child:SetPoint("TOPLEFT", TT.scroll, "TOPLEFT", 0, TT.__v)
         CullScrollContent()
         UpdateScrollUI()
     else
