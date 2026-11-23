@@ -1,10 +1,10 @@
-local gl = (type(DF_Locale) == 'function') and DF_Locale() or 'zhCN'
+local gl = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
 if gl ~= 'zhTW' then return end
 
 local _, ns = ...
 
 ns.ProfData = {
-    runtime=ns.ProfData and ns.ProfData.runtime,
+    runtime={schema=1,revision=1,skillIDs={[171]="alchemy",[164]="blacksmithing",[333]="enchanting",[202]="engineering",[165]="leatherworking",[197]="tailoring",[186]="mining",[182]="herbalism",[393]="skinning",[185]="cooking",[129]="first-aid",[356]="fishing",[40]="poisons"},essenceConversions={[1]={["greaterID"]=10939,["inputCount"]=1,["inputItemID"]=10939,["key"]="10938:10939",["lesserID"]=10938,["manual"]=true,["noSkillGain"]=true,["outputCount"]=3,["outputItemID"]=10938,["status"]="confirmed"},[2]={["greaterID"]=10939,["inputCount"]=3,["inputItemID"]=10938,["key"]="10938:10939",["lesserID"]=10938,["manual"]=true,["noSkillGain"]=true,["outputCount"]=1,["outputItemID"]=10939,["status"]="confirmed"},[3]={["greaterID"]=11082,["inputCount"]=1,["inputItemID"]=11082,["key"]="10998:11082",["lesserID"]=10998,["manual"]=true,["noSkillGain"]=true,["outputCount"]=3,["outputItemID"]=10998,["status"]="confirmed"},[4]={["greaterID"]=11082,["inputCount"]=3,["inputItemID"]=10998,["key"]="10998:11082",["lesserID"]=10998,["manual"]=true,["noSkillGain"]=true,["outputCount"]=1,["outputItemID"]=11082,["status"]="confirmed"},[5]={["greaterID"]=11135,["inputCount"]=1,["inputItemID"]=11135,["key"]="11134:11135",["lesserID"]=11134,["manual"]=true,["noSkillGain"]=true,["outputCount"]=3,["outputItemID"]=11134,["status"]="confirmed"},[6]={["greaterID"]=11135,["inputCount"]=3,["inputItemID"]=11134,["key"]="11134:11135",["lesserID"]=11134,["manual"]=true,["noSkillGain"]=true,["outputCount"]=1,["outputItemID"]=11135,["status"]="confirmed"},[7]={["greaterID"]=11175,["inputCount"]=1,["inputItemID"]=11175,["key"]="11174:11175",["lesserID"]=11174,["manual"]=true,["noSkillGain"]=true,["outputCount"]=3,["outputItemID"]=11174,["status"]="confirmed"},[8]={["greaterID"]=11175,["inputCount"]=3,["inputItemID"]=11174,["key"]="11174:11175",["lesserID"]=11174,["manual"]=true,["noSkillGain"]=true,["outputCount"]=1,["outputItemID"]=11175,["status"]="confirmed"},[9]={["greaterID"]=16203,["inputCount"]=1,["inputItemID"]=16203,["key"]="16202:16203",["lesserID"]=16202,["manual"]=true,["noSkillGain"]=true,["outputCount"]=3,["outputItemID"]=16202,["status"]="confirmed"},[10]={["greaterID"]=16203,["inputCount"]=3,["inputItemID"]=16202,["key"]="16202:16203",["lesserID"]=16202,["manual"]=true,["noSkillGain"]=true,["outputCount"]=1,["outputItemID"]=16203,["status"]="confirmed"}},rankDefaults={ranks={{"初級","初級","Apprentice"}, {"中級","中級","Journeyman"},{"高級","高級","Expert"}, {"專家級","專家級","Artisan"}},reminderSkills={[75]=0,[150]=50,[225]=125,[300]=225},methods={cooking={[3]="book",[4]="quest"},["first-aid"]={[3]="book",[4]="quest"},fishing={[3]="book",[4]="quest"}},routeReminders={cooking={[4]=200},["first-aid"]={[4]=200},fishing={[4]=200}},quests={fishing={[4]={id=6607,name={"釣魚專家納特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}}},cooking={[4]={id=6610,name={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}}},},sources={cooking={[4]={npcID=8125,name={"迪爾格·奎克里弗","迪爾格·奎克里弗","Dirge Quikcleave"},zone={"加基森 · 塔納利斯","加基森 · 塔納利斯","Gadgetzan, Tanaris"},questID=6610,questName={"蚌肉大餐","蚌肉大餐","Clamlette Surprise"}}},fishing={[3]={npcID=2626,name={"老人海明","老人海明","Old Man Heming"},zone={"藏寶海灣 · 荊棘谷","藏寶海灣 · 荊棘谷","Booty Bay, Stranglethorn Vale"},itemID=16083},[4]={npcID=12919,map=1445,x=58.6,y=60.0,name={"納特·帕格","納特·帕格","Nat Pagle"},zone={"塵泥沼澤","塵泥沼澤","Dustwallow Marsh"},questID=6607,questName={"釣魚專家納特·帕格","釣魚專家納特·帕格","Nat Pagle, Angler Extreme"}}}}}},
     build = "1.60.1.70338",
     updated = "2026-10-11",
 
@@ -203,7 +203,7 @@ ns.ProfData = {
             },
             perks = { "legacy-perk-bountiful-harvest", "legacy-perk-working-overtime", "legacy-perk-dedicated-study" },
             tips = { "想獲得稀缺材料就看「豐收」這項特權；「加班」則是有助於技能提升。", "「專精研習」只會提升最低的合格專業技能，使用前請先確認自己的各項技能。", "無限服的礦石表、訓練師與升級路線尚未確認。" },
-            verify = { "無限服的礦石與稀缺材料清單", "礦／草藥點位置、刷新規則與採集閾值", "訓練師、工具、熔煉配方與升級路線", "專業搭配與實際金幣收益" },
+            verify = { "無限服的礦石與稀缺材料清單", "礦／草藥點位置、刷新規則與採集閾值", "訓練師、工具、熔鍊配方與升級路線", "專業搭配與實際金幣收益" },
             unknowns = { "可產出稀缺材料的種類、礦／草藥點位置、掉落表與刷新時間。" },
         },
         ["herbalism"] = {
@@ -295,7 +295,7 @@ ns.ProfData = {
             steps_note = "訓練師與供應商的點位均按無限服實測校準，瓦拉納爾的那位來自內測玩家分享；其餘為客戶端自身的文本。",
             steps = {
                 { "學習釣魚", "向釣魚訓練師學習。每個主城都有一位，浮空城瓦拉納爾的池塘邊也有一位。學習後還能習得「魚餌與釣具」，用於在營地放置釣魚物件。" },
-                { "裝備魚竿", "從訓練師附近的釣魚供應商處購買一根魚竿，並從背包中裝備。它佔用雙手，沒有魚竿就無法釣魚。" },
+                { "裝備魚竿", "從訓練師附近的釣魚供應商處購買一根魚竿，並從揹包中裝備。它佔用雙手，沒有魚竿就無法釣魚。" },
                 { "向水中拋竿", "面向開闊水面，從法術書中施放釣魚。浮標濺起水花時，右鍵點擊即可釣上魚。" },
                 { "從低級水域開始", "技能越高，在高級區域越容易釣上魚。如果魚總是跑掉，就換到更低級的區域，或給魚竿裝上魚餌。" },
             },
@@ -387,7 +387,7 @@ ns.ProfData = {
             steps_title = "營地系統怎麼運作",
             steps_note = "大約 5 級時，任務「戶外生活」會讓你在營火旁坐下，然後指引你去找烹飪訓練師學習「基礎營火」；訓練師出售簡易木柴和燧石與火絨。此後你學會的每個專業都會獲得一個任務，交給對應訓練師即可學會該專業的第一個營地物件。（出自 Wowhead 的營地總覽；客戶端中沒有這些任務。）",
             steps = {
-                { "搭建營火", "廚師用一份普通木料製作初級營火工具包（背包中需有燧石與火絨），然後放置它。它持續燃燒 15 分鐘，且 100 碼範圍內不能存在其他營火。" },
+                { "搭建營火", "廚師用一份普通木料製作初級營火工具包（揹包中需有燧石與火絨），然後放置它。它持續燃燒 15 分鐘，且 100 碼範圍內不能存在其他營火。" },
                 { "放置你的物件", "專業技能達到 20 後，你可以把該專業的物件放到火邊；其他物件由其他玩家提供。你的營地物件共享一小時冷卻。" },
                 { "坐下休息一分鐘", "任何人在火邊坐下或製作滿一分鐘，即可獲得周圍物件的增益。增益持續一小時，所以拿到後就可以離開。" },
             },

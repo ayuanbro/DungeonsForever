@@ -93,6 +93,39 @@ local function QueryFn(kind)
     return DB.QueryQuestSingle
 end
 
+local BOSS_NPC
+
+local function BossNpcTable()
+    if BOSS_NPC ~= nil then return BOSS_NPC end
+    BOSS_NPC = {}
+    local loot = ns.DungeonLoot
+    local dgs = (ns.DungeonData or {}).dungeons
+    if type(loot) == "table" and type(dgs) == "table" then
+        local dgName = {}
+        for i = 1, #dgs do
+            local d = dgs[i]
+            if type(d) == "table" and d.id then dgName[d.id] = d.name or d.nameEn end
+        end
+        for slug, list in pairs(loot) do
+            if type(list) == "table" then
+                for i = 1, #list do
+                    local s = list[i]
+                    local npc = type(s) == "table" and tonumber(s[4]) or nil
+                    if npc and npc > 0 and not BOSS_NPC[npc] then
+                        BOSS_NPC[npc] = {
+                            name = (type(s[2]) == "string" and s[2] ~= "") and s[2] or nil,
+                            nameEn = (type(s[1]) == "string" and s[1] ~= "") and s[1] or nil,
+                            dungeon = dgName[slug],
+                            dungeonId = slug,
+                        }
+                    end
+                end
+            end
+        end
+    end
+    return BOSS_NPC
+end
+
 local function NameOf(id, kind)
     local key = kind .. ":" .. id
     local hit = NCACHE[key]
@@ -105,6 +138,10 @@ local function NameOf(id, kind)
     if type(fn) == "function" then
         local ok, v = pcall(fn, id, "name")
         if ok and type(v) == "string" and v ~= "" then name = v end
+    end
+    if not name and kind == "npc" then
+        local b = BossNpcTable()[id]
+        if b then name = b.name or b.nameEn end
     end
     NCACHE[key] = name or false
     return name
@@ -265,8 +302,12 @@ local function ResetRes()
     COUNT = { quest = 0, npc = 0, object = 0, item = 0 }
 end
 
-local function SortIds(ids, kind)
+local function SortIds(ids, kind, exactId)
     table.sort(ids, function(a, b)
+        if exactId then
+            local ea, eb = a == exactId, b == exactId
+            if ea ~= eb then return ea end
+        end
         if kind == "quest" then
             local la = QuestLevelOf(a)
             local lb = QuestLevelOf(b)
@@ -292,6 +333,7 @@ function QS.DoSearch(text)
     q = strlower(q)
     if q == "" then return true end
     local byId = tonumber(q) ~= nil
+    local exactId = byId and tonumber(q) or nil
     for _, kind in ipairs(KIND_ORDER) do
         local fn = QueryFn(kind)
         local ptr = DB[PTR_KEY[kind]]
@@ -317,9 +359,40 @@ function QS.DoSearch(text)
                 end
             end
         end
-        if #ids > 0 then SortIds(ids, kind) end
+        if #ids > 0 then SortIds(ids, kind, exactId) end
         RES[kind] = ids
         COUNT[kind] = #ids
+    end
+    local bt = BossNpcTable()
+    if next(bt) ~= nil then
+        local seen = {}
+        for _, v in ipairs(RES.npc) do seen[v] = true end
+        local add = {}
+        for npc, b in pairs(bt) do
+            if not seen[npc] then
+                local hit = false
+                if byId then
+                    hit = strfind(tostr(npc), q, 1, true) and true or false
+                else
+                    local ln = strlower(b.name or "")
+                    local le = strlower(b.nameEn or "")
+                    if strict then
+                        hit = (ln == q) or (le == q)
+                    else
+                        hit = strfind(ln, q, 1, true) and true or false
+                        if not hit and le ~= "" then
+                            hit = strfind(le, q, 1, true) and true or false
+                        end
+                    end
+                end
+                if hit then add[#add + 1] = npc end
+            end
+        end
+        if #add > 0 then
+            for i = 1, #add do RES.npc[#RES.npc + 1] = add[i] end
+            SortIds(RES.npc, "npc", exactId)
+            COUNT.npc = #RES.npc
+        end
     end
     return true
 end
@@ -419,6 +492,165 @@ local function DetW()
     return w
 end
 
+local IK_CLASS = {
+    [1] = "container", [3] = "gem", [5] = "material", [6] = "projectile",
+    [7] = "material", [12] = "questitem",
+}
+local IK_TEXT = {
+    gear = L["装备"], recipe = L["配方"], mount = L["坐骑"], pet = L["宠物"],
+    food = L["食物"], potion = L["药水"], elixir = L["药剂"], scroll = L["卷轴"],
+    consumable = L["消耗品"], material = L["材料"], gem = L["宝石"],
+    questitem = L["任务物品"], container = L["容器"], projectile = L["弹药"],
+}
+local IK_INK = {
+    gear = { 0.40, 0.58, 0.88 }, recipe = { 0.78, 0.58, 0.30 },
+    mount = { 0.75, 0.32, 0.30 }, pet = { 0.30, 0.66, 0.55 },
+    food = { 0.45, 0.68, 0.35 }, potion = { 0.58, 0.38, 0.78 },
+    elixir = { 0.48, 0.45, 0.80 }, scroll = { 0.55, 0.58, 0.68 },
+    consumable = { 0.55, 0.58, 0.68 }, material = { 0.62, 0.55, 0.35 },
+    gem = { 0.70, 0.40, 0.80 }, questitem = { 0.55, 0.50, 0.62 },
+    container = { 0.58, 0.60, 0.64 }, projectile = { 0.58, 0.60, 0.64 },
+}
+local IKCACHE = {}
+
+local function ItemKindOf(id)
+    local hit = IKCACHE[id]
+    if hit ~= nil then
+        if hit == false then return nil end
+        return hit
+    end
+    local cls = tonumber(FieldOf(id, "item", "class"))
+    local sub = tonumber(FieldOf(id, "item", "subClass"))
+    local rawType
+    if cls == nil or (cls == 15 and sub == nil) then
+        local ci = C_Item and C_Item.GetItemInfoInstant
+        if type(ci) == "function" then
+            local ok, _, t, _, _, c2, s2 = pcall(ci, id)
+            if ok then
+                if cls == nil and type(c2) == "number" then
+                    cls = c2
+                    if sub == nil then sub = tonumber(s2) end
+                end
+                if cls == nil and type(t) == "string" and t ~= "" then rawType = t end
+            end
+        end
+    end
+    local kind
+    if cls == 0 then
+        if sub == 4 or (tonumber(FieldOf(id, "item", "foodType")) or 0) > 0 then
+            kind = "food"
+        elseif sub == 1 or sub == 5 then kind = "potion"
+        elseif sub == 2 then kind = "elixir"
+        elseif sub == 3 then kind = "scroll"
+        else kind = "consumable" end
+    elseif cls == 2 or cls == 4 then kind = "gear"
+    elseif cls == 9 then kind = "recipe"
+    elseif cls == 15 then
+        if sub == 5 then kind = "mount"
+        elseif sub == 2 then kind = "pet" end
+    else
+        kind = IK_CLASS[cls]
+    end
+    if not kind and rawType == nil and cls ~= nil then
+        local ci = C_Item and C_Item.GetItemInfoInstant
+        if type(ci) == "function" then
+            local ok, _, t = pcall(ci, id)
+            if ok and type(t) == "string" and t ~= "" then rawType = t end
+        end
+    end
+    local res = kind or rawType or false
+    IKCACHE[id] = res
+    if res == false then return nil end
+    return res
+end
+
+local function ItemKindText(id)
+    local k = ItemKindOf(id)
+    if k == nil then return nil, nil end
+    if IK_TEXT[k] then return IK_TEXT[k], IK_INK[k] or INK_NEUTRAL end
+    return k, INK_NEUTRAL
+end
+
+local SRC_TEXT = {
+    quest = L["任务"], prof = L["专业"], dungeon = L["地下城"],
+    vendor = L["商人"], world = L["世界掉落"], object = L["物体"],
+    container = L["容器"],
+}
+local SRC_INK = {
+    quest = { 0.36, 0.62, 0.92 }, prof = { 0.72, 0.52, 0.30 },
+    dungeon = { 0.30, 0.45, 0.62 }, vendor = { 0.80, 0.65, 0.35 },
+    world = { 0.50, 0.55, 0.50 }, object = { 0.55, 0.50, 0.60 },
+    container = { 0.55, 0.58, 0.62 },
+}
+local ISRCACHE = {}
+
+local function SrcIdArray(id, field)
+    local out = {}
+    local v = FieldOf(id, "item", field)
+    if type(v) ~= "table" then return out end
+    for _, x in pairs(v) do
+        local n = tonumber(x)
+        if n and n > 0 then out[#out + 1] = n end
+    end
+    return out
+end
+
+local function ItemSourceOf(id)
+    local hit = ISRCACHE[id]
+    if hit ~= nil then
+        if hit == false then return nil end
+        return hit
+    end
+    local src
+    local sq = tonumber(FieldOf(id, "item", "startQuest")) or 0
+    if sq > 0 or #SrcIdArray(id, "questRewards") > 0 then
+        src = "quest"
+    elseif ItemKindOf(id) == "recipe" then
+        src = "prof"
+    else
+        local zd = ZDB()
+        local drops = SrcIdArray(id, "npcDrops")
+        local inDungeon, inWorld = false, false
+        local n = math.min(#drops, 8)
+        for i = 1, n do
+            local pts = SpawnsOf(drops[i], "npc")
+            local seen = {}
+            for j = 1, math.min(#pts, 6) do
+                local z = pts[j] and pts[j].zone
+                if z and not seen[z] then
+                    seen[z] = true
+                    if zd and type(zd.IsDungeonZone) == "function" then
+                        local ok, r = pcall(zd.IsDungeonZone, z)
+                        if ok and r then inDungeon = true end
+                    end
+                    if not inDungeon then inWorld = true end
+                end
+                if inDungeon then break end
+            end
+            if inDungeon then break end
+        end
+        if inDungeon then
+            src = "dungeon"
+        elseif inWorld then
+            src = "world"
+        elseif #SrcIdArray(id, "vendors") > 0 then
+            src = "vendor"
+        elseif #SrcIdArray(id, "objectDrops") > 0 then
+            src = "object"
+        elseif #SrcIdArray(id, "itemDrops") > 0 then
+            src = "container"
+        end
+    end
+    ISRCACHE[id] = src or false
+    return src
+end
+
+local function ItemSourceText(id)
+    local s = ItemSourceOf(id)
+    if s == nil then return nil, nil end
+    return SRC_TEXT[s], SRC_INK[s]
+end
+
 local function RowSub(rec)
     if rec.kind == "quest" then
         local lv = QuestLevelOf(rec.id)
@@ -430,12 +662,15 @@ local function RowSub(rec)
         return s
     end
     if rec.kind == "item" then
-        local q = tonumber(FieldOf(rec.id, "item", "quality")) or 0
         local il = tonumber(FieldOf(rec.id, "item", "itemLevel")) or 0
-        local s = L["物品"]
-        if il > 0 then s = string.format(L["物品等级 %d"], il) end
-        if q > 0 then s = s .. " · " .. string.format(L["品质 %d"], q) end
+        local kt = ItemKindText(rec.id)
+        local s = kt or L["物品"]
+        if il > 0 then s = s .. " · " .. string.format(L["物品等级 %d"], il) end
         return s
+    end
+    if rec.kind == "npc" then
+        local b = BossNpcTable()[rec.id]
+        if b and b.dungeon then return L["地下城"] .. " · " .. b.dungeon end
     end
     local pts = SpawnsOf(rec.id, rec.kind)
     if #pts > 0 then
@@ -447,6 +682,11 @@ local function RowSub(rec)
 end
 
 local function RowChip(rec)
+    if rec.kind == "item" then
+        local text, ink = ItemKindText(rec.id)
+        if text then return text, ink or INK_KIND end
+        return KindText(rec.kind), INK_KIND
+    end
     if rec.kind ~= "quest" then return KindText(rec.kind), INK_KIND end
     local st = StatusOf(rec.id)
     if st == "done" then return L["已完成"], INK_DONE end
@@ -520,6 +760,12 @@ local function RowPaint(r, rec, selected)
     r.sub:SetText(RowSub(rec))
     local chipText, ink = RowChip(rec)
     local tagText, tagInk = RowTagChip(rec)
+    local srcText, srcInk
+    if rec.kind == "item" then
+        srcText, srcInk = ItemSourceText(rec.id)
+    elseif rec.kind == "npc" and BossNpcTable()[rec.id] then
+        srcText, srcInk = L["地下城"], SRC_INK.dungeon
+    end
     local rw = r:GetWidth() or (LIST_W - 2 * PAD - 10)
     local tw = rw - 20
     local right = 10
@@ -547,6 +793,18 @@ local function RowPaint(r, rec, selected)
         tw = tw - cw2 - 6
     else
         r.tchip:Hide()
+    end
+    if srcText then
+        if hui and hui.PaintSolidChip then
+            pcall(hui.PaintSolidChip, r.schip, srcText, srcInk)
+        end
+        r.schip:ClearAllPoints()
+        r.schip:SetPoint("RIGHT", r, "RIGHT", -right, r.schip.__dy or 1)
+        r.schip:Show()
+        local sw = r.schip:GetWidth() or 40
+        tw = tw - sw - 6
+    else
+        r.schip:Hide()
     end
     if tw < 60 then tw = 60 end
     r.name:SetWidth(tw)
@@ -596,6 +854,9 @@ local function MakeRow(parent)
     r.tchip = MakeSolidChipOn(r, (r:GetFrameLevel() or 1) + 2, cdy)
     r.tchip:SetPoint("RIGHT", r, "RIGHT", -10, cdy)
     r.tchip:Hide()
+    r.schip = MakeSolidChipOn(r, (r:GetFrameLevel() or 1) + 2, cdy)
+    r.schip:SetPoint("RIGHT", r, "RIGHT", -10, cdy)
+    r.schip:Hide()
     r:SetScript("OnClick", function()
         if IsShiftKeyDown() and r.rec then
             if r.rec.kind == "item" and ItemToChat(r.rec.id) then return end
@@ -690,6 +951,10 @@ local function BuildSearchCard(page)
         QS.sel = nil
         QS.PaintList()
         QS.PaintDetail()
+        if QS.listScroll then
+            QS.listScroll:SetVerticalScroll(0)
+            QS.SyncScrollBar()
+        end
     end)
 
     QS.tabNote = MakeFS(card, 12, C_SUB, "LEFT")
@@ -1001,7 +1266,7 @@ local function CardOf(i)
     end)
     r:SetScript("OnClick", function(self)
         if IsShiftKeyDown() and self.qid and QuestToChat(self.qid) then return end
-        if self.qid then QS.GoTo(self.qid, "quest") end
+        if self.qid then QS.GoTo(self.qid, "quest", self.__fromItem) end
     end)
     r.name = MakeFS(r, 14, C_MAIN, "LEFT")
     r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 10, -4)
@@ -1017,13 +1282,14 @@ local function CardOf(i)
     return r
 end
 
-local function QuestCardRow(qid, ind)
+local function QuestCardRow(qid, ind, facPre)
     R.ci = R.ci + 1
     local r = CardOf(R.ci)
     ind = ind or 0
     local w = DetW() - ind
     r:SetSize(w, CARD_H)
     r.qid = qid
+    r.__fromItem = nil
     local st = StatusOf(qid)
     local tag, ink = "", C_MAIN
     if st == "done" then
@@ -1054,12 +1320,204 @@ local function QuestCardRow(qid, ind)
     if sub == "" then sub = ZoneName(FieldOf(qid, "quest", "zoneOrSort")) or L["未知区域"] end
     local needLv = tonumber(FieldOf(qid, "quest", "requiredLevel")) or 0
     if needLv > 0 then sub = sub .. " · " .. string.format(L["%d 级可接"], needLv) end
-    r.sub:SetText(sub)
+    r.sub:SetText((facPre or "") .. sub)
 
     r:ClearAllPoints()
     r:SetPoint("TOPLEFT", DET.child, "TOPLEFT", PAD + ind, R.y)
     r:Show()
     R.y = R.y - CARD_H - CARD_GAP
+    return r
+end
+
+local REWCHIP = {}
+
+local function RewChipAt(i)
+    local r = REWCHIP[i]
+    if r then return r end
+    r = CreateFrame("Button", nil, DET.child, "BackdropTemplate")
+    r:SetSize(160, 44)
+    r:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    if hui and type(hui.HuiCardFX) == "function" and hui.HuiCardFX(r, 6, 2) then
+        r.__fx = true
+    else
+        r:SetBackdropColor(1, 1, 1, (DG and DG.LOOT_CARD_BG) or 0.03)
+        r:SetBackdropBorderColor(1, 1, 1, (DG and DG.LOOT_CARD_EDGE) or 0.05)
+    end
+    r:EnableMouse(true)
+    r:EnableMouseWheel(true)
+    r:SetScript("OnMouseWheel", function(_, delta)
+        local cur = DET.scroll:GetVerticalScroll() or 0
+        if type(cur) ~= "number" then cur = 0 end
+        DET.scroll:SetVerticalScroll(math.max(0, cur - delta * 60))
+    end)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if hui and hui.RoundIcon then hui.RoundIcon(r.icon) end
+    r.icon:SetSize(32, 32)
+    r.icon:SetPoint("LEFT", r, "LEFT", 6, 0)
+    r.name = MakeFS(r, 14, C_MAIN, "LEFT")
+    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -6)
+    r.name:SetWordWrap(false)
+    r.sub = MakeFS(r, 12, C_SUB, "LEFT")
+    r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 46, -26)
+    r.sub:SetWordWrap(false)
+    r.badge = MakeFS(r, 12, C_SUB, "RIGHT")
+    r.badge:SetPoint("TOPRIGHT", r, "TOPRIGHT", -8, -26)
+    r.badge:SetWidth(46)
+    r.badge:SetWordWrap(false)
+    r:SetScript("OnEnter", function(self)
+        if self.__fx and hui and type(hui.HuiCardState) == "function" then
+            hui.HuiCardState(self, "hover")
+        else
+            self:SetBackdropColor(1, 1, 1, (DG and DG.LOOT_CARD_BG_HOVER) or 0.09)
+            self:SetBackdropBorderColor(1, 1, 1, (DG and DG.LOOT_CARD_EDGE_HOVER) or 0.18)
+        end
+        if self.__iid then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            local link
+            if DG and type(DG.ItemLink) == "function" then
+                local ok, v = pcall(DG.ItemLink, self.__iid)
+                if ok and type(v) == "string" and v ~= "" then link = v end
+            end
+            local hl = link or ("item:" .. tostring(self.__iid) .. ":0:0:0:0:0:0:0")
+            GameTooltip:ClearLines()
+            local ok = pcall(GameTooltip.SetHyperlink, GameTooltip, hl)
+            if not ok and GameTooltip.SetItemByID then
+                pcall(GameTooltip.SetItemByID, GameTooltip, self.__iid)
+            end
+            GameTooltip:Show()
+            if DG and type(DG.RequestItem) == "function" then pcall(DG.RequestItem, self.__iid) end
+        end
+    end)
+    r:SetScript("OnLeave", function(self)
+        if self.__fx and hui and type(hui.HuiCardState) == "function" then
+            hui.HuiCardState(self, "norm")
+        else
+            self:SetBackdropColor(1, 1, 1, (DG and DG.LOOT_CARD_BG) or 0.03)
+            self:SetBackdropBorderColor(1, 1, 1, (DG and DG.LOOT_CARD_EDGE) or 0.05)
+        end
+        GameTooltip:Hide()
+    end)
+    r:SetScript("OnClick", function(self, button)
+        if DG and type(DG.ItemShiftClick) == "function" and DG.ItemShiftClick(self, button) then return end
+        if button ~= "LeftButton" then return end
+        if self.__iid then QS.GoTo(self.__iid, "item") end
+    end)
+    REWCHIP[i] = r
+    return r
+end
+
+local CHIP_GLOW_INK = { 1, 0.72, 0.25 }
+
+local function SetChipGlow(r, on)
+    if not (r and hui and type(hui.SkinShadow) == "function") then return end
+    local pieces = r.__huiShadow
+    if on and not pieces then
+        local ok, v = pcall(hui.SkinShadow, r, 8, 0.85)
+        if ok and type(v) == "table" then pieces = v end
+    end
+    if type(pieces) ~= "table" then return end
+    for i = 1, #pieces do
+        local t = pieces[i]
+        if on then
+            pcall(t.SetVertexColor, t, CHIP_GLOW_INK[1], CHIP_GLOW_INK[2], CHIP_GLOW_INK[3])
+            if t.SetAlpha then t:SetAlpha(0.85) end
+            t:Show()
+        else
+            t:Hide()
+        end
+    end
+end
+
+local function PaintRewChips(rew, top)
+    local total = #rew - 1
+    local ncol = 2
+    local colW = math.floor((DetW() - 8) / ncol)
+    local nch = tonumber(rew[1]) or 0
+    for i = 1, total do
+        local iid = rew[i + 1]
+        local r = RewChipAt(i)
+        r:SetSize(colW, 44)
+        local nw = colW - 46 - 8 - 46 - 4
+        r.name:SetWidth(nw)
+        r.sub:SetWidth(nw)
+        r.__iid = iid
+        r.__it = { iid }
+        local icon
+        if DG and type(DG.ItemIcon) == "function" then
+            local ok, v = pcall(DG.ItemIcon, iid)
+            if ok and v ~= nil and v ~= "" then icon = v end
+        end
+        r.icon:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+        local q = 0
+        if DG and type(DG.QualOf) == "function" then
+            local ok, v = pcall(DG.QualOf, iid)
+            if ok then q = tonumber(v) or 0 end
+        end
+        if hui and hui.SetIconRing and hui.QColor then
+            local ok, qr, qg, qb = pcall(hui.QColor, q)
+            if ok and type(qr) == "number" then
+                pcall(hui.SetIconRing, r.icon, { qr, qg, qb })
+            end
+        end
+        local inm, iok = string.format(L["条目 #%d"], iid), false
+        if DG and type(DG.ItemName) == "function" then
+            local ok, v, okv = pcall(DG.ItemName, iid)
+            if ok and type(v) == "string" then inm, iok = v, okv and true or false end
+        end
+        r.__hl = (iid == QS.fromItem)
+        r.name:SetText(inm)
+        local meta = ""
+        if DG and type(DG.ItemMeta) == "function" then
+            local ok, v = pcall(DG.ItemMeta, iid)
+            if ok and type(v) == "string" then meta = v end
+        end
+        r.sub:SetText(meta)
+        if iok then
+            local qr, qg, qb = 1, 1, 1
+            if DG and type(DG.QColor) == "function" then
+                local ok, a, b, c = pcall(DG.QColor, q)
+                if ok and type(a) == "number" then qr, qg, qb = a, b, c end
+            end
+            r.name:SetTextColor(qr, qg, qb)
+        else
+            r.name:SetTextColor(Unpack(C_GREY))
+        end
+        if i <= nch then
+            r.badge:SetText(L["可选"])
+            r.badge:SetTextColor(Unpack(C_GOLD))
+        else
+            r.badge:SetText(L["固定"])
+            r.badge:SetTextColor(Unpack(C_SUB))
+        end
+        r.badge:Show()
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", DET.child, "TOPLEFT",
+            PAD + (i - 1) % ncol * (colW + 8),
+            top - math.floor((i - 1) / ncol) * 52)
+        if r.__fx and hui and type(hui.HuiCardState) == "function" then
+            hui.HuiCardState(r, "norm")
+        end
+        SetChipGlow(r, r.__hl)
+        r:Show()
+    end
+    if DG and type(DG.RequestItem) == "function" then
+        for i = 1, total do
+            local iid = rew[i + 1]
+            local gi = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+            local has = false
+            if type(gi) == "function" then
+                local ok, nm = pcall(gi, iid)
+                has = ok and type(nm) == "string" and nm ~= ""
+            end
+            pcall(DG.RequestItem, iid, not has)
+        end
+    end
+    return math.ceil(total / ncol) * 52 + 2
 end
 
 local QREC_MEMO = {}
@@ -1135,6 +1593,57 @@ local function CollectNext(qid)
         if not seen[heads[i]] then push(heads[i]) end
     end
     return out
+end
+
+local REV_MEMO = nil
+
+local function RewardQuestsOf(iid)
+    if REV_MEMO == nil then
+        REV_MEMO = {}
+        local RW = ns.QuestRewards
+        if type(RW) == "table" then
+            for qid, t in pairs(RW) do
+                if type(t) == "table" then
+                    for i = 2, #t do
+                        local it = tonumber(t[i])
+                        if it and it > 0 then
+                            local list = REV_MEMO[it]
+                            if not list then
+                                list = {}
+                                REV_MEMO[it] = list
+                            end
+                            if list[#list] ~= qid then list[#list + 1] = qid end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return REV_MEMO[iid]
+end
+
+local function ScheduleRewardsRepaint(id, rew)
+    if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then return end
+    local gi = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+    local function missing()
+        for i = 2, #rew do
+            local ok, nm = false, nil
+            if type(gi) == "function" then ok, nm = pcall(gi, rew[i]) end
+            if not (ok and type(nm) == "string" and nm ~= "") then return true end
+        end
+        return false
+    end
+    if not missing() then return end
+    DET.rewWait = (DET.rewWait or 0) + 1
+    local n = DET.rewWait
+    local function check(tries)
+        if n ~= DET.rewWait then return end
+        local s = QS.sel
+        if not (s and s.kind == "quest" and s.id == id) then return end
+        if not missing() then QS.PaintDetail() return end
+        if tries > 0 then C_Timer.After(0.4, function() check(tries - 1) end) end
+    end
+    C_Timer.After(0.4, function() check(12) end)
 end
 
 local function Head(title, onClick)
@@ -1234,6 +1743,23 @@ local function QuestLinkLine(qid, indent)
     })
 end
 
+local function QuestFactionOf(qid)
+    local qrec = QuestRecM(qid) or {}
+    local rmask = tonumber(qrec.requiredRaces) or 0
+    if rmask <= 0 then return L["双阵营共有"], nil end
+    local DBX = QDB()
+    local rk = DBX and type(DBX.raceKeys) == "table" and DBX.raceKeys or nil
+    if rk and rk.ALL_ALLIANCE and rmask == rk.ALL_ALLIANCE then
+        return L["联盟专属"], DG and DG.C_FAC_A or nil
+    end
+    if rk and rk.ALL_HORDE and rmask == rk.ALL_HORDE then
+        return L["部落专属"], DG and DG.C_FAC_H or nil
+    end
+    local rs = RaceStr(rmask)
+    if type(rs) == "string" and rs ~= "" then return rs, nil end
+    return L["双阵营共有"], nil
+end
+
 local ALSO_OPEN = {}
 
 local function AlsoList(id, kind, curId, key, field)
@@ -1266,7 +1792,7 @@ end
 
 local function Begin(top)
     R.y = top or -86
-    R.hi, R.bi, R.ri, R.ci = 0, 0, 0, 0
+    R.hi, R.bi, R.ri, R.ci, R.rw = 0, 0, 0, 0, 0
 end
 
 local function End()
@@ -1274,6 +1800,9 @@ local function End()
     for i = R.bi + 1, #DET.bodies do DET.bodies[i]:Hide() end
     HiddenFrom(DET.npcRows, R.ri + 1)
     for i = R.ci + 1, #(DET.cards or {}) do DET.cards[i]:Hide() end
+    for i = (R.rw or 0) + 1, #REWCHIP do REWCHIP[i]:Hide() end
+    for i = (DET.mapUsed or 0) + 1, #(DET.mapCards or {}) do DET.mapCards[i]:Hide() end
+    for i = (DET.zoneUsed or 0) + 1, #(DET.zoneCards or {}) do DET.zoneCards[i]:Hide() end
     DET.child:SetHeight(math.max(200, -R.y + PAD))
     DET.scroll:SetVerticalScroll(0)
 end
@@ -1369,6 +1898,557 @@ local function ItemSources(id)
     return groups
 end
 
+local PROF_LABELS = {
+    blacksmithing = L["锻造"], leatherworking = L["制皮"], tailoring = L["裁缝"],
+    alchemy = L["炼金"], engineering = L["工程学"], enchanting = L["附魔"],
+    cooking = L["烹饪"], firstaid = L["急救"], fishing = L["钓鱼"],
+    poisons = L["药膏"], comprehension = L["理解"],
+}
+
+local function SpellName(id)
+    if not id then return nil end
+    local nm
+    if C_Spell and C_Spell.GetSpellInfo then
+        local ok, info = pcall(C_Spell.GetSpellInfo, id)
+        if ok and type(info) == "table" then nm = info.name end
+    end
+    if (type(nm) ~= "string" or nm == "") and type(GetSpellInfo) == "function" then
+        local ok, v = pcall(GetSpellInfo, id)
+        if ok and type(v) == "string" then nm = v end
+    end
+    if type(nm) == "string" and nm ~= "" then return nm end
+    return string.format(L["法术 #%d"], id)
+end
+
+local CRAFT_MEMO = nil
+
+local function CraftOfItem(id)
+    if CRAFT_MEMO == nil then
+        CRAFT_MEMO = {}
+        local keys = ns.ProfRecipeKeys
+        local rec = ns.ProfRecipes
+        if type(keys) == "table" and type(rec) == "table" then
+            for i = 1, #keys do
+                local slug = keys[i]
+                local g = rec[slug]
+                if type(g) == "table" then
+                    for _, row in ipairs(g.rows or {}) do
+                        local iid = tonumber(row[2])
+                        if iid and not row.nip then
+                            local list = CRAFT_MEMO[iid]
+                            if not list then list = {}; CRAFT_MEMO[iid] = list end
+                            list[#list + 1] = {
+                                slug = slug, spell = tonumber(row[1]),
+                                count = tonumber(row[3]) or 1,
+                                learn = tonumber(row[7]) or 0, mats = row[12],
+                            }
+                        end
+                    end
+                    for _, row in ipairs(g.crafted or {}) do
+                        local iid = tonumber(row[2])
+                        if iid and not row.nip then
+                            local list = CRAFT_MEMO[iid]
+                            if not list then list = {}; CRAFT_MEMO[iid] = list end
+                            list[#list + 1] = {
+                                slug = slug, spell = tonumber(row[1]),
+                                count = tonumber(row[3]) or 1,
+                                learn = tonumber(row[4]) or 0, mats = row[8],
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return CRAFT_MEMO[id]
+end
+
+local LOOT_MEMO = nil
+
+local function DungeonLootOf(id)
+    if LOOT_MEMO == nil then
+        LOOT_MEMO = {}
+        local DL = ns.DungeonLoot
+        if type(DL) == "table" then
+            local dmap = {}
+            if ns.DungeonData and type(ns.DungeonData.dungeons) == "table" then
+                for _, d in ipairs(ns.DungeonData.dungeons) do dmap[d.id] = d end
+            end
+            for instKey, bosses in pairs(DL) do
+                if type(bosses) == "table" then
+                    local dd = dmap[instKey]
+                    local iname = dd and dd.name or instKey
+                    for bi = 1, #bosses do
+                        local b = bosses[bi]
+                        local nid = tonumber(b[4]) or 0
+                        local items = b[5]
+                        if type(items) == "table" then
+                            for k = 1, #items do
+                                local it = items[k]
+                                local iid = tonumber(it and it[1])
+                                if iid then
+                                    local list = LOOT_MEMO[iid]
+                                    if not list then list = {}; LOOT_MEMO[iid] = list end
+                                    list[#list + 1] = {
+                                        id = nid, kind = "npc", inst = iname, instId = instKey,
+                                        rate = tonumber(it[2]),
+                                        bossEn = b[1], bossZh = b[2],
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return LOOT_MEMO[id]
+end
+
+local function DungeonLootRow(e)
+    local nm = nil
+    if e.id and e.id > 0 then nm = NameOf(e.id, "npc") end
+    if type(nm) ~= "string" or nm == "" then nm = (e.bossZh ~= "" and e.bossZh) or e.bossEn end
+    local p = (e.id and e.id > 0) and SpawnsOf(e.id, "npc")[1] or nil
+    local row = { id = (e.id > 0) and e.id or nil, kind = "npc", name = nm, inst = e.inst, rate = e.rate }
+    if p then row.zone, row.x, row.y = p.zone, p.x, p.y end
+    return row
+end
+
+local EM = {}
+local MAP_EMBED_H, MAP_EMBED_PAD, MAP_EMBED_CAP, ZONE_CAP, ZONE_MAX_PINS = 300, 6, 3, 2, 24
+
+function EM.MapR()
+    local Wm = ns.MapWorldModule
+    return Wm and Wm.Render
+end
+
+function EM.MapM()
+    return ns.MapModule
+end
+
+function EM.EnsureEmbedMap(i)
+    local cards = DET.mapCards
+    if not cards then
+        cards = {}
+        DET.mapCards = cards
+    end
+    local c = cards[i]
+    if c then return c end
+    local Rl = EM.MapR()
+    local M = EM.MapM()
+    if not (Rl and M) then return nil end
+    c = CreateFrame("Frame", nil, DET.child, "BackdropTemplate")
+    c:SetFrameLevel((DET.child:GetFrameLevel() or 1) + 2)
+    if hui and hui.SkinPopup and hui.layer then
+        pcall(hui.SkinPopup, c, 6, nil, hui.layer.L1)
+    else
+        c:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        c:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
+        c:SetBackdropBorderColor(1, 1, 1, 0.10)
+    end
+    c:EnableMouse(false)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function(_, delta)
+        local cur = DET.scroll:GetVerticalScroll() or 0
+        if type(cur) ~= "number" then cur = 0 end
+        DET.scroll:SetVerticalScroll(math.max(0, cur - delta * 60))
+    end)
+    local stage = CreateFrame("Frame", nil, c)
+    stage:SetClipsChildren(true)
+    stage:SetFrameLevel(c:GetFrameLevel() + 1)
+    stage:Show()
+    c.stage = stage
+    local canvas = CreateFrame("Frame", nil, stage)
+    canvas:SetFrameLevel(stage:GetFrameLevel() + 1)
+    c.canvas = canvas
+    local tiles = {}
+    for n = 1, M.N do
+        local t = canvas:CreateTexture(nil, "ARTWORK")
+        t:SetTexCoord(0, 1, 0, 1)
+        t:Hide()
+        tiles[n] = t
+    end
+    c.tiles = tiles
+    local custom = canvas:CreateTexture(nil, "ARTWORK")
+    custom:SetTexCoord(0, 1, 0, 1)
+    custom:Hide()
+    c.custom = custom
+    local pins = CreateFrame("Frame", nil, stage)
+    pins:SetFrameLevel(stage:GetFrameLevel() + 3)
+    c.pins = pins
+    Rl.buildPinPool(c)
+    for n = 1, #(c.pinBtns or {}) do
+        local bt = c.pinBtns[n]
+        bt:SetScript("OnClick", function(self)
+            local p = self.__p
+            local cid = c.__instId
+            local Mm = EM.MapM()
+            if not (Mm and cid and p and self.__kind == "boss" and p.en) then return end
+            if ns.PlaySound then pcall(ns.PlaySound, 1) end
+            pcall(Mm.GotoDungeon, cid)
+            if Mm.curId == cid then pcall(Mm.Select, p.en) end
+        end)
+        bt:SetScript("OnEnter", function(self)
+            local p = self.__p
+            local Mm = EM.MapM()
+            if not (Mm and p and self.__kind == "boss") then return end
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:ClearLines()
+            local cr, cg, cb = Mm.BossColor(c.__instId, p.en)
+            GameTooltip:AddLine(p.zh or p.en or "", cr, cg, cb, true)
+            GameTooltip:AddLine(L["点击查看首领详情"], 0.7, 0.7, 0.7, true)
+            GameTooltip:Show()
+        end)
+        bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+    c:Hide()
+    cards[i] = c
+    return c
+end
+
+function EM.PaintEmbedMap(c, id, layer, bossSet, pulse, wide)
+    local M = EM.MapM()
+    local Rl = EM.MapR()
+    if not (M and Rl) then return false end
+    c.__instId = id
+    local aw = wide and (DETAIL_W - 2 * PAD) or DetW()
+    local iw = aw - 2 * MAP_EMBED_PAD
+    local cw, ch, cx = M.FitBox(iw, MAP_EMBED_H)
+    if type(cw) ~= "number" or cw < 40 or type(ch) ~= "number" or ch < 40 then return false end
+    c:SetSize(aw, ch + 2 * MAP_EMBED_PAD)
+    c.stage:ClearAllPoints()
+    c.stage:SetPoint("TOPLEFT", c, "TOPLEFT", MAP_EMBED_PAD + cx, -MAP_EMBED_PAD)
+    c.stage:SetSize(cw, ch)
+    c.canvas:ClearAllPoints()
+    c.canvas:SetAllPoints(c.stage)
+    c.pins:ClearAllPoints()
+    c.pins:SetAllPoints(c.stage)
+    c.cw, c.ch = cw, ch
+    c.__uiK = cw / 642
+    local fn = Rl.floorNumAt(id, layer)
+    Rl.paintArt(c, id, layer, cw, ch)
+    Rl.paintArea(c, id, fn, cw, ch)
+    Rl.syncPins(c, id, fn, cw, ch)
+    local ps = M.PinScale() * (c.__uiK or 1)
+    for n = 1, #(c.pinBtns or {}) do
+        local bt = c.pinBtns[n]
+        if bt:IsShown() and bt.__kind == "boss" and bt.__p and bt.__p.en
+            and bossSet[bt.__p.en] then
+            local cr, cg, cb = M.BossColor(id, bt.__p.en)
+            local asz = M.PIN_SIZE * ps
+            if bt.__av then
+                M.PaintBossPin(bt.__av, M.BossPinDisplay(id, bt.__p.en), cr, cg, cb, asz)
+                if M.PaintBossDim then pcall(M.PaintBossDim, bt.__av, 1) end
+            end
+            bt.nm:SetText(bt.__p.zh or bt.__p.en or "")
+            local fpath = bt.nm:GetFont()
+            if type(fpath) ~= "string" then fpath = ns.FONT or "Fonts\\FRIZQT__.TTF" end
+            bt.nm:SetFont(fpath, math.floor(14 * ps + 0.5), "OUTLINE")
+            bt.nm:SetTextColor(cr, cg, cb)
+            if bt.__glow then
+                local g = M.PIN_GLOW_GAIN or 0.85
+                bt.__glow:SetVertexColor(cr * g, cg * g, cb * g)
+                bt.__glow:Show()
+            end
+            if pulse and bt.__ring then
+                pcall(M.HighlightPin, bt, 8)
+                pulse = false
+            end
+            local bsz = (M.PIN_SIZE + 8) * ps
+            bt:SetSize(bsz, bsz)
+        end
+    end
+    c:Show()
+    return true
+end
+
+function EM.EmbedPlans(list)
+    local M = EM.MapM()
+    local Rl = EM.MapR()
+    if not (M and Rl) then return nil end
+    local byKey, order, seen = {}, {}, {}
+    for i = 1, #list do
+        local it = list[i]
+        local id, en = it.id, it.en
+        if id and en and not seen[id .. "#" .. en] and Rl.hasArt(id) then
+            seen[id .. "#" .. en] = true
+            local pts = M.PosFor(id, en)
+            if pts then
+                for j = 1, #pts do
+                    local idx = M.LayerOf(id, pts[j][3] or 1) or 1
+                    local key = id .. "|" .. idx
+                    local plan = byKey[key]
+                    if not plan then
+                        plan = { id = id, layer = idx, bosses = {} }
+                        byKey[key] = plan
+                        order[#order + 1] = plan
+                    end
+                    plan.bosses[en] = true
+                end
+            end
+        end
+    end
+    if #order == 0 then return nil end
+    return order
+end
+
+function EM.PaintEmbedMaps(plans, wide)
+    if type(plans) ~= "table" then return end
+    local M = EM.MapM()
+    local Rl = EM.MapR()
+    if not (M and Rl) then return end
+    local n = math.min(#plans, MAP_EMBED_CAP)
+    for i = 1, n do
+        local plan = plans[i]
+        local id, layer = plan.id, plan.layer or 1
+        local d = Rl.detailOf(id)
+        local title = (d and d.name) or id
+        local layers = M.LayersFor(id)
+        if layers and #layers > 1 then
+            local ftxt = Rl.floorText(id, layer)
+            if type(ftxt) == "string" and ftxt ~= "" then title = title .. " · " .. ftxt end
+        end
+        Head(L["副本地图"] .. " · " .. title)
+        local c = EM.EnsureEmbedMap(i)
+        if c then
+            c:ClearAllPoints()
+            c:SetPoint("TOPLEFT", DET.child, "TOPLEFT", PAD, R.y)
+            if EM.PaintEmbedMap(c, id, layer, plan.bosses, i == 1, wide) then
+                R.y = R.y - (c:GetHeight() or MAP_EMBED_H) - 6
+                DET.mapUsed = i
+            else
+                c:Hide()
+            end
+        end
+    end
+end
+
+
+function EM.EnsureZoneCard(i)
+    local cards = DET.zoneCards
+    if not cards then
+        cards = {}
+        DET.zoneCards = cards
+    end
+    local c = cards[i]
+    if c then return c end
+    c = CreateFrame("Frame", nil, DET.child, "BackdropTemplate")
+    c:SetFrameLevel((DET.child:GetFrameLevel() or 1) + 2)
+    if hui and hui.SkinPopup and hui.layer then
+        pcall(hui.SkinPopup, c, 6, nil, hui.layer.L1)
+    else
+        c:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            edgeSize = 1,
+        })
+        c:SetBackdropColor(0x10 / 255, 0x13 / 255, 0x1A / 255, 1)
+        c:SetBackdropBorderColor(1, 1, 1, 0.10)
+    end
+    c:EnableMouse(false)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function(_, delta)
+        local cur = DET.scroll:GetVerticalScroll() or 0
+        if type(cur) ~= "number" then cur = 0 end
+        DET.scroll:SetVerticalScroll(math.max(0, cur - delta * 60))
+    end)
+    local canvas = CreateFrame("Frame", nil, c)
+    canvas:SetFrameLevel(c:GetFrameLevel() + 1)
+    c.canvas = canvas
+    c.tiles = {}
+    c.detTiles = {}
+    c.spotBtns = {}
+    c:Hide()
+    cards[i] = c
+    return c
+end
+
+function EM.PaintZoneCard(c, zid, mapID, art, list, rec)
+    local texs, lw, lh, tw, th = art[1], art[2], art[3], art[4], art[5]
+    local aw = DETAIL_W - 2 * PAD
+    local iw = aw - 2 * MAP_EMBED_PAD
+    local S = math.min(iw / lw, MAP_EMBED_H / lh)
+    local dw, dh = math.floor(lw * S + 0.5), math.floor(lh * S + 0.5)
+    if dw < 40 or dh < 40 then return false end
+    c:SetSize(aw, dh + 2 * MAP_EMBED_PAD)
+    local canvas = c.canvas
+    canvas:ClearAllPoints()
+    canvas:SetPoint("TOPLEFT", c, "TOPLEFT", MAP_EMBED_PAD + math.floor((iw - dw) / 2), -MAP_EMBED_PAD)
+    canvas:SetSize(dw, dh)
+    local cols = math.ceil(lw / tw)
+    local rows = math.ceil(lh / th)
+    local n = 0
+    for r = 0, rows - 1 do
+        for cc = 0, cols - 1 do
+            local f = texs[r * cols + cc + 1]
+            if f then
+                n = n + 1
+                local t = c.tiles[n]
+                if not t then
+                    t = canvas:CreateTexture(nil, "ARTWORK")
+                    c.tiles[n] = t
+                end
+                local w = math.min(tw, lw - cc * tw)
+                local h = math.min(th, lh - r * th)
+                t:ClearAllPoints()
+                t:SetPoint("TOPLEFT", canvas, "TOPLEFT", cc * tw * S, -r * th * S)
+                t:SetSize(w * S, h * S)
+                t:SetTexture(f)
+                t:SetTexCoord(0, w / tw, 0, h / th)
+                t:Show()
+            end
+        end
+    end
+    for k = n + 1, #c.tiles do c.tiles[k]:Hide() end
+    local det = ns.MapDetail and ns.MapDetail[mapID] or nil
+    local dn = 0
+    if type(det) == "table" then
+        for i = 1, #det, 9 do
+            local tex = det[i]
+            if tex then
+                dn = dn + 1
+                local t = c.detTiles[dn]
+                if not t then
+                    t = canvas:CreateTexture(nil, "OVERLAY")
+                    t:SetDrawLayer("OVERLAY", 0)
+                    c.detTiles[dn] = t
+                end
+                local dx, dy = det[i + 1], det[i + 2]
+                local sw, sh = det[i + 3], det[i + 4]
+                local u0, v0, u1, v1 = det[i + 5], det[i + 6], det[i + 7], det[i + 8]
+                t:ClearAllPoints()
+                t:SetPoint("TOPLEFT", canvas, "TOPLEFT", dx * S, dy * S)
+                t:SetSize(sw * S, sh * S)
+                t:SetTexture(tex)
+                if u0 then
+                    t:SetTexCoord(u0, u1, v0, v1)
+                else
+                    t:SetTexCoord(0, 1, 0, 1)
+                end
+                t:Show()
+            end
+        end
+    end
+    for k = dn + 1, #c.detTiles do c.detTiles[k]:Hide() end
+    for k = 1, #list do
+        local p = list[k]
+        local bt = c.spotBtns[k]
+        if not bt then
+            bt = CreateFrame("Button", nil, canvas)
+            bt:SetFrameLevel(canvas:GetFrameLevel() + 2)
+            bt:SetSize(22, 22)
+            local tex = bt:CreateTexture(nil, "OVERLAY")
+            tex:SetAllPoints(bt)
+            pcall(tex.SetAtlas, tex, "Waypoint-MapPin-Tracked")
+            if not tex:GetTexture() then
+                tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Common\\CheckDisc")
+                tex:SetVertexColor(1, 0.82, 0)
+            end
+            bt:SetScript("OnClick", function(self)
+                local sp = self.__spot
+                if sp then MapJump(sp.id, sp.kind, sp.zone, sp.x, sp.y) end
+            end)
+            bt:SetScript("OnEnter", function(self)
+                local sp = self.__spot
+                if not sp then return end
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(ZoneName(sp.zone) or "", 1, 0.82, 0, true)
+                GameTooltip:AddLine(string.format("%.1f, %.1f", sp.x, sp.y), 0.72, 0.76, 0.85, true)
+                GameTooltip:Show()
+            end)
+            bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            c.spotBtns[k] = bt
+        end
+        bt.__spot = { id = rec.id, kind = rec.kind, zone = zid, x = p.x, y = p.y }
+        bt:ClearAllPoints()
+        bt:SetPoint("CENTER", canvas, "TOPLEFT", dw * (p.x / 100), -dh * (p.y / 100))
+        bt:Show()
+    end
+    for k = #list + 1, #c.spotBtns do c.spotBtns[k]:Hide() end
+    c:Show()
+    return true
+end
+
+function EM.PaintZoneMaps(rec, pts)
+    if type(pts) ~= "table" or #pts == 0 then return end
+
+    local function UiMapOfZone(zid)
+        local Z = ZDB()
+        if Z and type(Z.GetUiMapIdByAreaId) == "function" then
+            local ok, v = pcall(Z.GetUiMapIdByAreaId, Z, zid)
+            if ok and type(v) == "number" and v > 0 then return v end
+        end
+        return nil
+    end
+
+    local function ZoneArt(mapID)
+        if not (mapID and C_Map and C_Map.GetMapArtLayerTextures and C_Map.GetMapArtLayers) then return nil end
+        local layer, texs
+        local ok, l = pcall(C_Map.GetMapArtLayers, mapID)
+        if ok and type(l) == "table" and type(l[1]) == "table" then layer = l[1] end
+        local ok2, r = pcall(C_Map.GetMapArtLayerTextures, mapID, 1)
+        if ok2 and type(r) == "table" then texs = r end
+        local lw = layer and tonumber(layer.layerWidth) or 0
+        local lh = layer and tonumber(layer.layerHeight) or 0
+        local tw = layer and tonumber(layer.tileWidth) or 256
+        local th = layer and tonumber(layer.tileHeight) or 256
+        if not (texs and #texs > 0 and lw > 0 and lh > 0 and tw > 0 and th > 0) then return nil end
+        return texs, lw, lh, tw, th
+    end
+
+    local byZone, zorder = {}, {}
+    for i = 1, #pts do
+        local p = pts[i]
+        local arr = byZone[p.zone]
+        if not arr then
+            arr = {}
+            byZone[p.zone] = arr
+            zorder[#zorder + 1] = p.zone
+        end
+        arr[#arr + 1] = p
+    end
+    if #zorder == 0 then return end
+    table.sort(zorder, function(a, b)
+        local ca, cb = #byZone[a], #byZone[b]
+        if ca ~= cb then return ca > cb end
+        return a < b
+    end)
+    local wide = (DET.reserve or 0) > 0
+    local shown = 0
+    for i = 1, #zorder do
+        if shown >= ZONE_CAP then break end
+        local zid = zorder[i]
+        local mapID = UiMapOfZone(zid)
+        local art = mapID and { ZoneArt(mapID) } or nil
+        if art and art[1] then
+            local arr = byZone[zid]
+            local list = {}
+            for k = 1, math.min(#arr, ZONE_MAX_PINS) do list[k] = arr[k] end
+            if wide and R.y > -192 then R.y = -192 end
+            Head(L["区域地图"] .. " · " .. (ZoneName(zid) or tostring(zid))
+                .. string.format(L[" · %d 处刷新"], #arr))
+            local c = EM.EnsureZoneCard(shown + 1)
+            if c then
+                c:ClearAllPoints()
+                c:SetPoint("TOPLEFT", DET.child, "TOPLEFT", PAD, R.y)
+                if EM.PaintZoneCard(c, zid, mapID, art, list, rec) then
+                    R.y = R.y - (c:GetHeight() or MAP_EMBED_H) - 6
+                    DET.zoneUsed = shown + 1
+                    shown = shown + 1
+                else
+                    c:Hide()
+                end
+            end
+        end
+    end
+end
+
 local TITLE_CHIP_TOP = -12
 
 local function PaintTitleTag(rec)
@@ -1441,8 +2521,13 @@ local function NpcModelProbe(m)
     return (ok and type(v) == "number" and v ~= 0) or false
 end
 
-local function NpcModelApply(m, id)
-    pcall(m.SetCreature, m, id)
+local function NpcModelApply(m, id, disp)
+    if m.ClearModel then pcall(m.ClearModel, m) end
+    if disp and type(m.SetDisplayInfo) == "function" then
+        pcall(m.SetDisplayInfo, m, disp)
+    else
+        pcall(m.SetCreature, m, id)
+    end
     pcall(m.SetRotation, m, math.rad(-15))
 end
 
@@ -1453,39 +2538,48 @@ local function NpcModelFail(c, id)
     if QS.PaintDetail then QS.PaintDetail() end
 end
 
-local function NpcModelLateCheck(c, id)
+local function NpcModelLateCheck(c, id, disp)
     if type(C_Timer) ~= "table" or type(C_Timer.After) ~= "function" then return end
     local m = c and c.model
     if not m then return end
     for i = 1, #MODEL_LATE do
         C_Timer.After(MODEL_LATE[i], function()
-            if not (c:IsShown() and c.__npc == id) then return end
+            if not (c:IsShown() and c.__npc == id and c.__disp == disp) then return end
             if NpcModelProbe(m) then return end
             if i < #MODEL_LATE then
-                NpcModelApply(m, id)
+                NpcModelApply(m, id, disp)
             else
-                c.__npc = nil
+                c.__npc, c.__disp = nil, nil
                 NpcModelFail(c, id)
             end
         end)
     end
 end
 
+local function BossModelDisp(id)
+    local b = BossNpcTable()[id]
+    if not (b and b.dungeonId and b.nameEn) then return nil end
+    local row = ns.BossModelDisplay and ns.BossModelDisplay[b.dungeonId]
+    local disp = row and tonumber(row[b.nameEn]) or nil
+    return disp
+end
+
 local function PaintNpcModel(id, kind)
     local c = EnsureNpcModelCard()
     if not c or not c.model then return end
     if kind ~= "npc" or DET.modelFail == id then
-        c.__npc = nil
+        c.__npc, c.__disp = nil, nil
         c:Hide()
         return
     end
+    local disp = BossModelDisp(id)
     c:Show()
     local m = c.model
     m:Show()
-    if c.__npc ~= id then
-        c.__npc = id
-        NpcModelApply(m, id)
-        NpcModelLateCheck(c, id)
+    if c.__npc ~= id or c.__disp ~= disp then
+        c.__npc, c.__disp = id, disp
+        NpcModelApply(m, id, disp)
+        NpcModelLateCheck(c, id, disp)
     end
 end
 
@@ -1493,7 +2587,7 @@ local function HideNpcModel()
     DET.reserve = 0
     local c = DET.modelCard
     if c then
-        c.__npc = nil
+        c.__npc, c.__disp = nil, nil
         c:Hide()
     end
 end
@@ -1522,6 +2616,11 @@ local function ResetDetail()
     if DET.questBtn then DET.questBtn:Hide() end
     HiddenFrom(DET.npcRows, 1)
     for i = 1, #(DET.cards or {}) do DET.cards[i]:Hide() end
+    for i = 1, #(DET.mapCards or {}) do DET.mapCards[i]:Hide() end
+    for i = 1, #(DET.zoneCards or {}) do DET.zoneCards[i]:Hide() end
+    DET.mapUsed = 0
+    DET.zoneUsed = 0
+    for i = 1, #REWCHIP do REWCHIP[i]:Hide() end
     DET.note:SetText(L["左侧输入关键词，点任意一条结果查看详情与位置"])
     DET.note:Show()
     DET.child:SetHeight(160)
@@ -1655,9 +2754,6 @@ local function PaintQuestDetail(rec)
         })
     end
 
-    if #sNpc + #sObj + #sItem + #fNpc + #fObj == 0 then
-        Body(HEX_GREY .. L["起始："] .. "|r" .. L["客户端未收录"], C_MAIN, 4)
-    end
     for i = 1, math.min(#sNpc, 4) do
         PlaceRow(L["起始："], sNpc[i], "npc")
         AlsoList(sNpc[i], "npc", id, "此 NPC 还可以开启以下任务", "questStarts")
@@ -1699,6 +2795,14 @@ local function PaintQuestDetail(rec)
     if #fol > 0 then
         Head(L["后续任务"])
         for i = 1, #fol do QuestCardRow(fol[i], 0) end
+    end
+
+    local rew = ns.QuestRewards and ns.QuestRewards[id] or nil
+    if type(rew) == "table" and #rew >= 2 then
+        Head(L["任务奖励"] .. string.format(L[" · %d 个"], #rew - 1))
+        R.rw = #rew - 1
+        R.y = R.y - PaintRewChips(rew, R.y)
+        ScheduleRewardsRepaint(id, rew)
     end
 
     if descText ~= "" then
@@ -1751,15 +2855,22 @@ end
 local function PaintPlaceDetail(rec)
     local id, kind = rec.id, rec.kind
     local pts = SpawnsOf(id, kind)
+    local boss = kind == "npc" and BossNpcTable()[id] or nil
 
     local zoneTxt = L["未知区域"]
+    if boss and boss.dungeon then zoneTxt = boss.dungeon end
     if #pts > 0 then zoneTxt = ZoneName(pts[1].zone) or zoneTxt end
     local meta = KindText(kind) .. " · " .. zoneTxt
+    if boss then meta = meta .. " · " .. L["地下城"] end
     if #pts > 0 then meta = meta .. string.format(L[" · %d 处刷新"], #pts) end
     meta = meta .. " · " .. string.format(L["编号 %d"], id)
     DET.meta:SetText(meta)
 
-    DetChip(1, nil, nil)
+    if boss then
+        DetChip(1, L["地下城"], SRC_INK.dungeon)
+    else
+        DetChip(1, nil, nil)
+    end
     LayoutChips()
 
     PaintNpcModel(id, kind)
@@ -1770,7 +2881,8 @@ local function PaintPlaceDetail(rec)
     if infoTxt ~= "" then Body(infoTxt, C_SUB) end
 
     if #pts == 0 then
-        Head(L["刷新位置"] .. "：" .. L["没有收录刷新位置"])
+        Head(L["刷新位置"] .. "：" ..
+            ((boss and boss.dungeon) or L["没有收录刷新位置"]))
     else
         Head(L["刷新位置"])
     end
@@ -1784,19 +2896,35 @@ local function PaintPlaceDetail(rec)
         })
     end
 
+    if boss and boss.dungeonId then
+        local plans = EM.EmbedPlans({ { id = boss.dungeonId, en = boss.nameEn } })
+        if not plans then
+            local Mm = EM.MapM()
+            local Rl = EM.MapR()
+            if Mm and Rl and Rl.hasArt(boss.dungeonId) then
+                plans = { { id = boss.dungeonId, layer = Mm.EntryLayer(boss.dungeonId) or 1, bosses = {} } }
+            end
+        end
+        if plans then
+            local wide = (DET.reserve or 0) > 0
+            if wide and R.y > -192 then R.y = -192 end
+            EM.PaintEmbedMaps(plans, wide)
+        end
+    end
+
+    if not boss then
+        EM.PaintZoneMaps(rec, pts)
+    end
+
     local starts = QuestIdList(id, kind, "questStarts")
     local ends = QuestIdList(id, kind, "questEnds")
     if #starts > 0 then
         Head(L["起始的任务"] .. string.format(L[" · %d 个"], #starts))
         for i = 1, math.min(#starts, 8) do QuestLinkLine(starts[i], 0) end
-    else
-        Head(L["起始的任务"] .. " · " .. L["客户端未收录"])
     end
     if #ends > 0 then
         Head(L["可交付的任务"] .. string.format(L[" · %d 个"], #ends))
         for i = 1, math.min(#ends, 8) do QuestLinkLine(ends[i], 0) end
-    else
-        Head(L["可交付的任务"] .. " · " .. L["客户端未收录"])
     end
 
     End()
@@ -1868,14 +2996,17 @@ local function PaintItemDetail(rec)
     local icon = ItemIcon(id)
     if not icon then icon = "Interface\\Icons\\INV_Misc_QuestionMark" end
 
-    local meta = L["物品"]
-    if il > 0 then meta = string.format(L["物品等级 %d"], il) end
+    local kt, ktInk = ItemKindText(id)
+    local meta = kt or L["物品"]
+    local st = ItemSourceText(id)
+    if st then meta = meta .. " · " .. st end
+    if il > 0 then meta = meta .. " · " .. string.format(L["物品等级 %d"], il) end
     if q > 0 then meta = meta .. " · " .. string.format(L["品质 %d"], q) end
     if rl > 0 then meta = meta .. string.format(L[" · 需 %d 级"], rl) end
     meta = meta .. " · " .. string.format(L["编号 %d"], id)
     DET.meta:SetText(meta)
 
-    DetChip(1, nil, nil)
+    DetChip(1, kt, kt and ktInk or nil)
     LayoutChips()
 
     local link
@@ -1925,7 +3056,16 @@ local function PaintItemDetail(rec)
         text = string.format(L["条目 #%d"], id)
     end
     DET.itemName:SetText(text)
-    DET.itemName:SetTextColor(Unpack(C_MAIN))
+    if q > 0 and type(GetItemQualityColor) == "function" then
+        local okQ, qr, qg, qb = pcall(GetItemQualityColor, q)
+        if okQ and qr then
+            DET.itemName:SetTextColor(qr, qg, qb)
+        else
+            DET.itemName:SetTextColor(Unpack(C_MAIN))
+        end
+    else
+        DET.itemName:SetTextColor(Unpack(C_MAIN))
+    end
     DET.itemName:Show()
 
     local tw = DET.itemName:GetStringWidth()
@@ -1942,34 +3082,128 @@ local function PaintItemDetail(rec)
 
     Begin()
     R.y = -86 - ICON_SZ - 14
-    local groups = ItemSources(id)
-    for i = 1, #groups do
-        local g = groups[i]
-        if #g.rows == 0 then
-            Head(g.title .. " · " .. L["客户端未收录"])
-        else
-            local tag = "src:" .. id .. ":" .. g.title
-            local open = ALSO_OPEN[tag] == true
-            local foldable = #g.rows > 2
-            local shown = #g.rows
-            if foldable and not open then shown = 2 end
-            if foldable then
-                local hint = open and L["点击收起"] or L["点击展开"]
-                Head(g.title .. string.format(L[" · %d 个"], #g.rows) .. " · " .. hint, function()
-                    ALSO_OPEN[tag] = not open
-                    QS.PaintDetail()
-                end)
-            else
-                Head(g.title .. string.format(L[" · %d 个"], #g.rows))
+    local crafts = CraftOfItem(id)
+    if crafts then
+        for ci = 1, #crafts do
+            local c = crafts[ci]
+            Head(L["来源：专业制作"] .. " · " .. (PROF_LABELS[c.slug] or c.slug))
+            local rTxt = SpellName(c.spell)
+            local rSub = ""
+            if c.learn > 0 then rSub = string.format(L["等级 %d"], c.learn) end
+            if c.count > 1 then
+                rSub = (rSub ~= "" and (rSub .. " · ") or "") .. "×" .. c.count
             end
-            for j = 1, shown do
-                local src = g.rows[j]
-                local sub = string.format("%s %.1f, %.1f · ", ZoneName(src.zone) or "", src.x, src.y)
-                    .. string.format(L["编号 %d"], src.id)
-                Line({
-                    id = src.id, kind = src.kind, text = src.name, sub = sub, ink = C_MAIN,
-                    zone = src.zone, x = src.x, y = src.y, map = true,
-                })
+            Line({ text = rTxt, sub = rSub, ink = C_MAIN, plain = true })
+            if type(c.mats) == "table" then
+                for mi = 1, #c.mats do
+                    local m = c.mats[mi]
+                    local mid = tonumber(m and m[1])
+                    local cnt = tonumber(m and m[2]) or 1
+                    if mid then
+                        local inm = NameOf(mid, "item")
+                        if type(inm) ~= "string" or inm == "" then
+                            if DG and type(DG.ItemName) == "function" then
+                                local ok, v = pcall(DG.ItemName, mid)
+                                if ok and type(v) == "string" and v ~= "" then inm = v end
+                            end
+                        end
+                        if type(inm) ~= "string" or inm == "" then
+                            inm = string.format(L["条目 #%d"], mid)
+                        end
+                        Line({
+                            id = mid, kind = "item", ink = C_MAIN, indent = 16,
+                            text = inm, sub = "×" .. cnt,
+                        })
+                    end
+                end
+            end
+        end
+    end
+    local rqs = RewardQuestsOf(id)
+    local hasRqs = type(rqs) == "table" and #rqs > 0
+    if hasRqs then
+        Head(L["来源：任务奖励"] .. string.format(L[" · %d 个"], #rqs))
+        for i = 1, math.min(#rqs, 8) do
+            local qid = rqs[i]
+            local fac, facInk = QuestFactionOf(qid)
+            local r = QuestCardRow(qid, 0, InkHex(facInk or C_SUB) .. fac .. "|r · ")
+            if r then r.__fromItem = id end
+        end
+        if #rqs > 8 then
+            Line({ text = string.format(L["另有 %d 个任务"], #rqs - 8), ink = C_SUB, indent = 16 })
+        end
+    end
+    local groups = ItemSources(id)
+    local extra = DungeonLootOf(id)
+    if type(extra) == "table" and #extra > 0 and groups[1] then
+        local seen = {}
+        for i = 1, #groups[1].rows do
+            local rr = groups[1].rows[i]
+            if rr.id then seen[rr.id] = true end
+        end
+        for i = 1, #extra do
+            local e = extra[i]
+            local key = (e.id > 0) and e.id or ((e.bossZh ~= "" and e.bossZh) or e.bossEn)
+            if not seen[key] then
+                seen[key] = true
+                groups[1].rows[#groups[1].rows + 1] = DungeonLootRow(e)
+            end
+        end
+        table.sort(groups[1].rows, function(a, b) return (a.name or "") < (b.name or "") end)
+    end
+    local hasRows = false
+    for i = 1, #groups do
+        if #groups[i].rows > 0 then hasRows = true break end
+    end
+    if hasRows then
+        for i = 1, #groups do
+            local g = groups[i]
+            if #g.rows > 0 then
+                local tag = "src:" .. id .. ":" .. g.title
+                local open = ALSO_OPEN[tag] == true
+                local foldable = #g.rows > 2
+                local shown = #g.rows
+                if foldable and not open then shown = 2 end
+                if foldable then
+                    local hint = open and L["点击收起"] or L["点击展开"]
+                    Head(g.title .. string.format(L[" · %d 个"], #g.rows) .. " · " .. hint, function()
+                        ALSO_OPEN[tag] = not open
+                        QS.PaintDetail()
+                    end)
+                else
+                    Head(g.title .. string.format(L[" · %d 个"], #g.rows))
+                end
+                for j = 1, shown do
+                    local src = g.rows[j]
+                    local sub
+                    if src.inst then
+                        sub = src.inst
+                        if src.rate then sub = sub .. " · " .. src.rate .. "%" end
+                        if src.zone then
+                            sub = sub .. string.format(" · %.1f, %.1f", src.x, src.y)
+                        end
+                        if src.id then sub = sub .. " · " .. string.format(L["编号 %d"], src.id) end
+                    elseif src.zone then
+                        sub = string.format("%s %.1f, %.1f · ", ZoneName(src.zone) or "", src.x, src.y)
+                            .. string.format(L["编号 %d"], src.id)
+                    else
+                        sub = ""
+                    end
+                    Line({
+                        id = src.id, kind = src.kind, text = src.name, sub = sub, ink = C_MAIN,
+                        zone = src.zone, x = src.x, y = src.y, map = src.zone ~= nil,
+                    })
+                end
+                if i == 1 and type(extra) == "table" and #extra > 0 then
+                    local plist = {}
+                    for k = 1, #extra do
+                        local e = extra[k]
+                        if e.instId and e.bossEn and e.bossEn ~= "" then
+                            plist[#plist + 1] = { id = e.instId, en = e.bossEn }
+                        end
+                    end
+                    EM.PaintEmbedMaps(EM.EmbedPlans(plist))
+                end
             end
         end
     end
@@ -2041,6 +3275,10 @@ function QS.PaintDetail()
     if DET.itemBtn then DET.itemBtn:Hide() end
     if DET.itemName then DET.itemName:Hide() end
     for i = 1, #(DET.cards or {}) do DET.cards[i]:Hide() end
+    for i = 1, #(DET.mapCards or {}) do DET.mapCards[i]:Hide() end
+    for i = 1, #(DET.zoneCards or {}) do DET.zoneCards[i]:Hide() end
+    DET.mapUsed = 0
+    DET.zoneUsed = 0
     if rec.kind == "quest" then
         if DG and type(DG.QuestDataSig) == "function" then
             local ok, sig = pcall(DG.QuestDataSig, rec.id)
@@ -2057,10 +3295,11 @@ function QS.PaintDetail()
     end
 end
 
-function QS.GoTo(id, kind)
+function QS.GoTo(id, kind, fromItem)
     if not id or not kind then return end
     if DET.modelFail and DET.modelFail ~= id then DET.modelFail = nil end
     QS.sel = { id = id, kind = kind }
+    QS.fromItem = tonumber(fromItem) or nil
     if ns.PlaySound then pcall(ns.PlaySound, 1) end
     QS.PaintList()
     QS.PaintDetail()
@@ -2207,6 +3446,10 @@ function QS.Commit(text)
     QS.Apply()
     QS.PaintList()
     if QS.PaintDetail then QS.PaintDetail() end
+    if QS.listScroll then
+        QS.listScroll:SetVerticalScroll(0)
+        QS.SyncScrollBar()
+    end
 end
 
 function QS.Apply()

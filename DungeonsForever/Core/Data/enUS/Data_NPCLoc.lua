@@ -2,7 +2,6 @@ local _, ns = ...
 
 if (type(DF_Locale) ~= "function") or DF_Locale() ~= "enUS" then return end
 local AddonName, ns = ...
-if not ns.IsTitan then return end
 
 ns.NPCLoc = {
     [234] = { 1436, 56.2, 47.4, "Westfall" },

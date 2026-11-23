@@ -2997,9 +2997,7 @@ function DG.PaintQuestOverview(d)
                 if self.__q then
                     DG.OpenQuest(self.__q[1])
                 elseif self.__ext then
-                    U.dungeonQDetExt = self.__ext
-                    U:RenderDungeonQuests()
-                    ns.PlaySound(1)
+                    DG.OpenQuest(self.__ext)
                 end
             end)
             pool.node[nNode] = n
@@ -5959,6 +5957,7 @@ function U:ShowDungeonDetail(d)
     U.dungeonQFlow = nil
     U.dungeonQDetKey = nil
     U.dungeonQListKey = nil
+    if U.dungeonTab == "quest" then DG.QuestPageDefault(d) end
     if U.dungeonBack then U.dungeonBack:SetText(d.raid and L["团本"] or L["副本"]) end
     DG.PrewarmLoot(d)
 
@@ -6606,6 +6605,7 @@ function DG.LootModelApply(m, npc, disp)
     if disp and type(m.SetDisplayInfo) == "function" then
         pcall(m.SetDisplayInfo, m, disp)
     elseif npc then
+        if m.ClearModel then pcall(m.ClearModel, m) end
         pcall(m.SetCreature, m, npc)
     end
 end
@@ -6932,6 +6932,7 @@ if type(SlashCmdList) == "table" then
         end
         local n = out and #out or 0
         if ns.ShowDungeonDetail then ns.ShowDungeonDetail(d.id) end
+        U.dungeonQFlow = nil
         U.dungeonQView = "overview"
         if U.dungeonBuilt then U:RenderDungeonQuests() end
         local sub = (b == "done" or b == "ready" or b == "active" or b == "none") and ("全部 " .. DG.QUEST_SIM_TEXT[b]) or "四态轮转"
@@ -9232,6 +9233,18 @@ function DG.CurQuestFlow(d)
     return f
 end
 
+function DG.QuestPageDefault(d)
+    local ps = DG.PlayerSide()
+    U.dungeonQSide = (ps == "A" or ps == "H") and ps or "A"
+    U.dungeonQView = "list"
+    U.dungeonQuestSel = nil
+    U.dungeonQDetExt = nil
+    U.dungeonQFlow = nil
+    if d and DG.CurQuestFlow(d) then
+        U.dungeonQFlow = true
+    end
+end
+
 function DG.FlowQuestRow(id)
     if not id then return nil end
     DG.EnsureRowByID()
@@ -11097,6 +11110,7 @@ function U:SetDungeonTab(tab)
     DB().dungeonTab = t
     U.dungeonQDetKey = nil
     U.dungeonQListKey = nil
+    if t == "quest" then DG.QuestPageDefault(U.dungeonDetailCur) end
     U:RenderDungeonTab()
     ns.PlaySound(1)
 end

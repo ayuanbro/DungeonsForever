@@ -2606,7 +2606,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 24
+BG.AUTO_GEN_REV = 29
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2859,6 +2859,20 @@ function BG.WarnEmpty()
         h.fs:SetTextColor(Unpack(C_GOLD))
         BG.PaintAutoProg(nil)
     end)
+end
+
+function BG.JumpSearch(id, kind)
+    if not (id and kind) then return end
+    if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+        local msg = L["搜索模块未启用，暂时无法跳转"]
+        if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, "|cffff7a66" .. msg .. "|r")
+        end
+        return
+    end
+    ns.OpenPage("QuestSearch")
+    local QS = ns.QuestSearchModule
+    if QS and QS.OpenAt then QS.OpenAt(id, kind, tostring(id)) end
 end
 
 local function AutoJobCancel()
@@ -3798,8 +3812,8 @@ function FillBwRow(r)
         r.chip2:Hide()
         r.chip3:Hide()
         r.wishBt:Hide()
-        r.pinBt:Hide()
-        r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+        r.detBt:Hide()
+        r.__detQid = nil
         r.__nmMiss = nil
         r.__painted = true
         return
@@ -3816,7 +3830,7 @@ function FillBwRow(r)
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
-    r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+    r.__detQid = nil
     local qid = nil
     if row.src and row.src.t == "quest" and row.src.q then
         qid = tonumber(row.src.q)
@@ -3827,38 +3841,9 @@ function FillBwRow(r)
         local qn, qok = DG.QuestName(qid)
         if not qok then BG.needNames = true; r.__nmMiss = true end
         if row.cat and qok then st = L["任务奖励"] .. " · " .. qn end
-        local sn = DG.QuestStartNpc and DG.QuestStartNpc(qid) or nil
-        local npc = sn and sn[1] or nil
-        local sl = ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[qid] or nil
-        local loc = nil
-        if sl and (not npc or tonumber(sl[1]) == tonumber(npc)) then
-            npc = sl[1]
-            if sl[3] and sl[4] and sl[5] then loc = { sl[3], sl[4], sl[5] } end
-        end
-        if not loc then
-            local gs = ns.GearQuestStart and ns.GearQuestStart[qid] or nil
-            if gs then
-                npc = gs[1]
-                loc = { gs[2], gs[3], gs[4] }
-            elseif sn and sn[3] and sn[4] and sn[5] then
-                loc = { sn[3], sn[4], sn[5] }
-            end
-        end
-        if npc and (loc or (ns.NPCLoc and ns.NPCLoc[npc])) then
-            r.__pinNpc, r.__pinLoc = npc, loc
-        end
-        r.__pinQid = qid
+        r.__detQid = qid
     end
-    local showPin = r.__pinNpc ~= nil
-    if not showPin and r.__pinQid then
-        if ns.GearChainIndexOf and ns.GearChainIndexOf(r.__pinQid) then
-            showPin = true
-        else
-            local qloc = ns.GearQuestLocOf and ns.GearQuestLocOf(r.__pinQid) or nil
-            showPin = type(qloc) == "table" and qloc[1] ~= nil
-        end
-    end
-    r.pinBt:SetShown(showPin)
+    r.detBt:Show()
     r.src:SetText(st)
     r.src:SetTextColor(Unpack(C_GREY))
     r.eqTag:SetShown(BG.bwEquipped == row.item)
@@ -5312,49 +5297,23 @@ local function BuildBrowser(parent)
             GameTooltip:Show()
         end)
         r.wishBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        r.pinBt = CreateFrame("Button", nil, r)
-        r.pinBt:SetSize(13.75, 13.75)
-        r.pinBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", 2, 4.75)
-        r.pinBt:EnableMouse(true)
-        r.pinBt.tex = r.pinBt:CreateTexture(nil, "ARTWORK")
-        r.pinBt.tex:SetAllPoints()
-        r.pinBt.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
-        r.pinBt:Hide()
-        r.pinBt:SetScript("OnClick", function(self)
+        r.detBt = NewButton(r, L["查看详情"], 64, 18, 12)
+        r.detBt:SetPushedTextOffset(0, 0)
+        r.detBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", -2, 2)
+        r.detBt:SetFrameLevel((r:GetFrameLevel() or 0) + 3)
+        SetButtonSelected(r.detBt, false)
+        r.detBt:SetScript("OnClick", function(self)
             local row = self:GetParent()
             if not row then return end
-            local qid = row.__pinQid
-            if qid and ns.GearMarkQuestSmart then
-                local hasChain = ns.GearChainIndexOf and ns.GearChainIndexOf(qid)
-                if hasChain or not row.__pinNpc then
-                    ns.PlaySound(1)
-                    ns.GearMarkQuestSmart(qid)
-                    return
-                end
-            end
-            if row.__pinNpc then
-                DG.MarkNPC(row.__pinNpc, row.__pinLoc)
+            local item = row.__row and row.__row.item
+            if row.__detQid then
                 ns.PlaySound(1)
+                BG.JumpSearch(row.__detQid, "quest")
+            elseif item then
+                ns.PlaySound(1)
+                BG.JumpSearch(item, "item")
             end
         end)
-        r.pinBt:SetScript("OnEnter", function(self)
-            local row = self:GetParent()
-            if row and row.__pinNpc and DG.ShowNpcTip then
-                DG.ShowNpcTip(self, row.__pinNpc, row.__pinLoc)
-                return
-            end
-            local qid = row and row.__pinQid
-            if not (qid and ns.GearChainIndexOf) then return end
-            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:ClearLines()
-            if ns.GearChainIndexOf(qid) then
-                GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
-            else
-                GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
-            end
-            GameTooltip:Show()
-        end)
-        r.pinBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetScript("OnEnter", function(self)
             if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
             local row = self.__row

@@ -389,7 +389,9 @@ local function NamePass(r)
     local s = G.search
     if s == "" then return true end
     if not r.done then return false end
-    return r.name:lower():find(s, 1, true) ~= nil
+    if r.name:lower():find(s, 1, true) ~= nil then return true end
+    if tonumber(s) ~= nil and tostring(r[1]) == s then return true end
+    return false
 end
 
 local function IlvlInRange(r)
@@ -2584,115 +2586,28 @@ local function BuildRow(parent)
     r.srcZone:SetHeight(30)
     r.srcZone:SetScript("OnEnter", function()
         local e = r.entry
-        if not e then return end
-        local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        local loc = qid and QuestLocOf(qid)
+        if not e or not e.id then return end
         GameTooltip:SetOwner(r.srcZone, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
-        if qid and ChainIndexOf(qid) then
-            GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
-            if type(loc) == "table" and loc[1] and loc[2] then
-                local mname = ""
-                if C_Map and C_Map.GetMapInfo then
-                    local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
-                    if ok and mi and mi.name then mname = mi.name end
-                end
-                GameTooltip:AddLine(mname .. format(" (%.1f, %.1f)", loc[2], loc[3]), 1, 1, 1, true)
-            end
-        elseif type(loc) == "table" and loc[1] and loc[2] then
-            GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
-            local mname = ""
-            if C_Map and C_Map.GetMapInfo then
-                local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
-                if ok and mi and mi.name then mname = mi.name end
-            end
-            GameTooltip:AddLine(mname .. format(" (%.1f, %.1f)", loc[2], loc[3]), 1, 1, 1, true)
-        elseif e.inst and e.inst.id and ns.ShowDungeonDetail then
-            GameTooltip:AddLine(L["点击：打开该副本掉落详情"], 1, 0.82, 0, true)
-            if e.instName and e.instName ~= "" then
-                GameTooltip:AddLine(e.instName, 1, 1, 1, true)
-            end
-        else
-            local rents = e.id and GearRareEnts(e.id) or nil
-            if rents and #rents > 0 then
-                GameTooltip:AddLine(format(L["点击：查看稀有怪位置（%d 处刷新）"],
-                                           #rents), 1, 0.82, 0, true)
-            else
-                local vents = e.id and GearVendorEnts(e.id) or nil
-                if vents and #vents > 0 then
-                GameTooltip:AddLine(format(L["点击：查看商人位置（%d 位商人）"], #vents), 1, 0.82, 0, true)
-            else
-                local src = e.id and GD_SRC and GD_SRC[e.id]
-                local place = type(src) == "string" and select(2, src:match("^(.-)|(.*)$")) or nil
-                local mid = place and PlaceMapID(place)
-                local zname
-                if not mid and place then
-                    zname = place:match("^(.-)·") or place
-                    mid = PlaceZoneID(place)
-                end
-                if mid then
-                    GameTooltip:AddLine(format(L["点击：打开%s的地图"], zname or place), 1, 0.82, 0, true)
-                else
-                    return
-                end
-            end
-            end
-        end
+        GameTooltip:AddLine(L["点击：在搜索模块中查看来源"], 1, 0.82, 0, true)
         GameTooltip:Show()
     end)
     r.srcZone:SetScript("OnLeave", TipOff)
     r.srcZone:SetScript("OnClick", function()
         local e = r.entry
-        if not e then return end
-        local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        if qid and ChainIndexOf(qid) then
-            ns.PlaySound(1)
-            ChainPopup(qid)
-            return
-        end
-        local loc = qid and QuestLocOf(qid)
-        if type(loc) == "table" and loc[1] then
-            ns.PlaySound(1)
-            EnsureGD()
-            MarkQuest(qid, loc)
-            return
-        end
-        if e.inst and e.inst.id and ns.ShowDungeonDetail then
-            ns.PlaySound(1)
-            ns.ShowDungeonDetail(e.inst.id)
-            return
-        end
-        local rents = e.id and GearRareEnts(e.id) or nil
-        if rents and #rents > 0 then
-            ns.PlaySound(1)
-            if #rents == 1 and rents[1].loc then
-                GearMarkVendor(rents[1].loc)
-            else
-                G.VendorPickShow(r.srcZone, rents, L["选择要标记的稀有怪刷新点"])
+        if not e or not e.id then return end
+        if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+            local cf = DEFAULT_CHAT_FRAME
+            if cf and cf.AddMessage then
+                pcall(cf.AddMessage, cf, "|cffff7a66" .. L["搜索模块未启用，暂时无法跳转"] .. "|r")
             end
             return
         end
-        local vents = e.id and GearVendorEnts(e.id) or nil
-        if vents and #vents > 0 then
-            ns.PlaySound(1)
-            if #vents == 1 and vents[1].loc then
-                GearMarkVendor(vents[1].loc)
-            else
-                G.VendorPickShow(r.srcZone, vents)
-            end
-            return
-        end
-        local src = e.id and GD_SRC and GD_SRC[e.id]
-        local place = type(src) == "string" and select(2, src:match("^(.-)|(.*)$")) or nil
-        local mid = place and PlaceMapID(place)
-        if not mid and place then mid = PlaceZoneID(place) end
-        if mid then
-            ns.PlaySound(1)
-            if C_Map and C_Map.OpenWorldMap then
-                pcall(C_Map.OpenWorldMap, mid)
-            elseif OpenWorldMap then
-                pcall(OpenWorldMap, mid)
-            end
+        ns.PlaySound(1)
+        ns.OpenPage("QuestSearch")
+        local QS = ns.QuestSearchModule
+        if QS and QS.OpenAt then
+            QS.OpenAt(e.id, "item", e.name or tostring(e.id))
         end
     end)
     return r

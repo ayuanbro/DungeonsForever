@@ -4352,6 +4352,7 @@ local function ApplyModel(m, npc, disp)
     if disp and type(m.SetDisplayInfo) == "function" then
         pcall(m.SetDisplayInfo, m, disp)
     elseif npc then
+        if m.ClearModel then pcall(m.ClearModel, m) end
         m:SetCreature(npc)
     end
 end

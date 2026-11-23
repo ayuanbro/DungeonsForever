@@ -2395,7 +2395,7 @@ ns.DungeonLoot = {
             { 18314, 19, false },
             { 18315, 19, false },
         } },
-        { "Isalien", "Isalien", "Rare", "16097", {
+        { "Isalien", "伊萨莉恩", "Rare", "16097", {
             { 22314, nil, true },
             { 22472, nil, true },
             { 22315, nil, true },
@@ -2439,64 +2439,64 @@ ns.DungeonLoot = {
         } },
     },
     ["blackmaw_hold"] = {
-        { "Withermaw", "Withermaw", "", "247195", {
+        { "Withermaw", "枯颌", "", "247195", {
             { 249697, nil, true },
             { 280062, nil, true },
             { 280063, nil, true },
             { 280064, nil, true },
         } },
-        { "Impaan the Imprisoner", "Impaan the Imprisoner", "", "247206", {
+        { "Impaan the Imprisoner", "狱牢头鬼", "", "247206", {
             { 280056, nil, true },
             { 280057, nil, true },
             { 280058, nil, true },
         } },
-        { "Elder Shaman Bloodmane", "Elder Shaman Bloodmane", "", "247209", {
+        { "Elder Shaman Bloodmane", "长者萨满血鬃", "", "247209", {
             { 276893, nil, true },
             { 286415, nil, true },
             { 280068, nil, true },
             { 280069, nil, true },
             { 280070, nil, true },
         } },
-        { "Bonesnout the Unbroken", "Bonesnout the Unbroken", "", "247198", {
+        { "Bonesnout the Unbroken", "不屈的白骨之吻", "", "247198", {
             { 249696, nil, true },
             { 280059, nil, true },
             { 280060, nil, true },
             { 280061, nil, true },
         } },
-        { "Varrox Bleakhoof", "Varrox Bleakhoof", "", "247234", {
+        { "Varrox Bleakhoof", "瓦罗克斯·暗蹄", "", "247234", {
             { 272027, nil, true },
             { 249692, nil, true },
             { 280074, nil, true },
             { 280075, nil, true },
             { 280076, nil, true },
         } },
-        { "Blackmaw Behemoth", "Blackmaw Behemoth", "", "247207", {
+        { "Blackmaw Behemoth", "克劳伯特", "", "247207", {
             { 280065, nil, true },
             { 280066, nil, true },
             { 280067, nil, true },
         } },
-        { "Unbound Spirit", "Unbound Spirit", "", "247231", {
+        { "Unbound Spirit", "不羁之魂", "", "247231", {
             { 280071, nil, true },
             { 280072, nil, true },
             { 280073, nil, true },
         } },
-        { "Moontouched Wanderer", "Moontouched Wanderer", "Rare", "269104", {
+        { "Moontouched Wanderer", "月光漫步者", "Rare", "269104", {
             { 280080, nil, true },
             { 280079, nil, true },
         } },
-        { "Gortek the Apprentice", "Gortek the Apprentice", "Rare", "269111", {
+        { "Gortek the Apprentice", "学徒戈泰克", "Rare", "269111", {
             { 280077, nil, true },
             { 280078, nil, true },
         } },
-        { "Mopes", "Mopes", "Rare", "247412", {
+        { "Mopes", "莫普斯", "Rare", "247412", {
             { 280081, nil, true },
             { 280082, nil, true },
         } },
-        { "Tunnelweb Matriarch", "Tunnelweb Matriarch", "Rare", "250034", {
+        { "Tunnelweb Matriarch", "洞网蜘蛛母", "Rare", "250034", {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
-        { "Sabella No-Eyes", "Sabella No-Eyes", "Rare", "269151", {
+        { "Sabella No-Eyes", "无眼萨贝拉", "Rare", "269151", {
             { 280084, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
@@ -2622,7 +2622,7 @@ ns.DungeonLoot = {
             { 12337, 41, false },
             { 12780, 27, false },
         } },
-        { "Mor Grayhoof", "Mor Grayhoof", "Lv 60", "16080", {
+        { "Mor Grayhoof", "莫尔·灰蹄", "Lv 60", "16080", {
             { 22306, nil, true },
             { 22319, nil, true },
             { 22322, nil, true },
@@ -2940,7 +2940,7 @@ ns.DungeonLoot = {
             { 18880, nil, true },
             { 18749, nil, true },
         } },
-        { "Kormok", "Kormok", "", "", {
+        { "Kormok", "库尔莫克", "", "", {
             { 22332, nil, false },
             { 22303, nil, false },
             { 22326, nil, false },
@@ -3363,7 +3363,7 @@ ns.DungeonLoot = {
         { "Crimson Hammersmith", "Crimson Hammerer", "Lv 60", "", {
             { 18781, 63, false },
         } },
-        { "Ezra Grimm", "Ezra Grimm", "Lv 61", "", {
+        { "Ezra Grimm", "艾兹拉·格里姆", "Lv 61", "", {
             { 276396, nil, true },
             { 276395, nil, true },
             { 276394, nil, true },
@@ -3411,7 +3411,7 @@ ns.DungeonLoot = {
             { 13520, 4.8, false },
             { 13250, 12, false },
         } },
-        { "Jarien and Sothos", "Jarien and Sothos", "Lv 60", "16101", {
+        { "Jarien and Sothos", "亚雷恩与索托斯", "Lv 60", "16101", {
             { 22301, nil, true },
             { 22327, nil, true },
             { 22328, nil, true },

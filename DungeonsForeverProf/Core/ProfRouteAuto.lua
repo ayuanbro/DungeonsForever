@@ -447,6 +447,9 @@ end
 local ICON_G = "|TInterface\\MoneyFrame\\UI-GoldIcon:0|t"
 local ICON_S = "|TInterface\\MoneyFrame\\UI-SilverIcon:0|t"
 local ICON_C = "|TInterface\\MoneyFrame\\UI-CopperIcon:0|t"
+local ICON_GS = "|TInterface\\MoneyFrame\\UI-GoldIcon:11|t"
+local ICON_SS = "|TInterface\\MoneyFrame\\UI-SilverIcon:11|t"
+local ICON_CS = "|TInterface\\MoneyFrame\\UI-CopperIcon:11|t"
 
 function RA.StepConsumeCost(st)
     if type(st) ~= "table" then return nil end
@@ -495,6 +498,23 @@ function RA.MoneyStr(copper, opt)
         return format("%d%s%02d%s", s, ICON_S, c, ICON_C)
     end
     return format("%d%s", c, ICON_C)
+end
+
+function RA.MoneyStrS(copper)
+    copper = tonumber(copper)
+    if not copper or copper <= 0 then return "0" .. ICON_CS end
+    local g = math.floor(copper / 10000)
+    local s = math.floor(copper / 100) % 100
+    local c = copper % 100
+    if g > 0 then
+        if s > 0 then return format("%d%s%02d%s", g, ICON_GS, s, ICON_SS) end
+        return format("%d%s", g, ICON_GS)
+    end
+    if s > 0 then
+        if c > 0 then return format("%d%s%02d%s", s, ICON_SS, c, ICON_CS) end
+        return format("%d%s", s, ICON_SS)
+    end
+    return format("%d%s", c, ICON_CS)
 end
 
 function RA.MoneyStrTip(copper)
