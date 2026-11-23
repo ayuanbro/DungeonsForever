@@ -230,6 +230,8 @@ ns.BossPos = {
         ["Razorlash"] = { { 16.2, 34 } },
         ["Rotgrip"] = { { 40.3, 81.5, 2 } },
         ["Tinkerer Gizlock"] = { { 49.1, 67.7, 2 } },
+        ["Maraudos"] = { { 49.1, 77.9 } },
+        ["Veng"] = { { 54.8, 23 } },
     },
     ["sunken_temple"] = {
         ["Hazzas"] = { { 43.5, 90.7 } },

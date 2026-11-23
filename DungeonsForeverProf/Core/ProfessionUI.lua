@@ -252,10 +252,6 @@ function PD.ScanHeadline()
     if status=="expired" then return L["完整扫描数据已超过 2 天"] end
     if status=="mismatch" then return L["已保存的完整扫描与当前规则集或阵营不匹配"] end
     if status=="invalid" then return L["已保存的完整扫描数据无效"] end
-    local scan=bridge and bridge.FullScanStatus and bridge.FullScanStatus()
-    if scan and (status==nil or status=="missing") and scan.status=="noresponse" then
-        return L["这次完整扫描没有得到拍卖行的回应"]
-    end
     return PD.ScanSnapshotText()
 end
 
@@ -275,11 +271,6 @@ function PD.ScanFixLines()
     local partial=snapshot and snapshot.status=="expired" and snapshot.staleIncomplete
     local out={}
     local eb=ns.EasyBridge
-    if capture=="noresponse" then
-        out[#out+1]=L["拍卖行没有返回扫描数据：距上次完整扫描不足 15 分钟时，服务器会忽略请求。"]
-        out[#out+1]=L["请等 15 分钟后到拍卖行再点一次「完整扫描」，扫描期间不要关闭拍卖行。"]
-        return out
-    end
     if eb and eb.Available and eb.Available() and snapshot and snapshot.source=="easyauction" then
         out[#out+1]=L["EasyAuction 行情已超过 2 天，请打开拍卖行让它重新扫描。"]
         return out
@@ -399,7 +390,6 @@ function PD.ScanCaptureText()
         local pct=(done and total and total>0) and math.floor(done/total*100) or 0
         return format(L["扫描捕获：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
     end
-    if status=="noresponse" then return L["扫描捕获：拍卖行没有回应"],"bad" end
     if status=="complete" then return L["扫描捕获：已完整捕获"],"ok" end
     if status=="failed" or status=="incomplete" or status=="unverified" then return L["扫描捕获：本次失败"],"bad" end
     if status=="mode-changed" then return L["扫描捕获：模式刚切换，请重扫"],"warn" end
@@ -440,9 +430,6 @@ function PD.ScanSnapshotAgeText()
         local done,total=tonumber(scan.done),tonumber(scan.total)
         local pct=(done and total and total>0) and math.floor(done/total*100) or 0
         return format(L["上次完整扫描：正在整理数据 %d%%"],math.max(0,math.min(100,pct))),"warn"
-    end
-    if snapshot.status=="missing" and capture=="noresponse" then
-        return L["上次完整扫描：这次扫描没有得到回应"],"bad"
     end
     if snapshot.status=="expired" then
         local stamp=tonumber(snapshot.observedAt)
@@ -1666,6 +1653,16 @@ function PD.EnsureTipNameRefresh()
         if itemID == nil or success == false then return end
         _nmNeg[itemID] = nil
         _icNeg[itemID] = nil
+        if PD.__qualWant[itemID] then
+            PD.__qualWant[itemID] = nil
+            PD.__itemQual[itemID] = nil
+            if PD.built and C_Timer and C_Timer.NewTimer and not PD.__qualRT then
+                PD.__qualRT = C_Timer.NewTimer(0.25, function()
+                    PD.__qualRT = nil
+                    if PD.built then PD.RequestRender() end
+                end)
+            end
+        end
         local r = PD.hoverRow
         if not (r and r.__spell and r.__tipExtra and r:IsMouseOver()) then return end
         if PD.__nmT then return end
@@ -12657,6 +12654,7 @@ function PD.RowCurHit(r)
 end
 
 PD.__itemQual = {}
+PD.__qualWant = {}
 
 function PD.ItemQual(id)
     id = tonumber(id)
@@ -12671,6 +12669,13 @@ function PD.ItemQual(id)
     if not q and type(GetItemInfo) == "function" then
         local ok, _, _, qual = pcall(GetItemInfo, id)
         if ok and type(qual) == "number" then q = qual end
+    end
+    if not q then
+        PD.EnsureTipNameRefresh()
+        if C_Item and C_Item.RequestLoadItemDataByID then
+            pcall(C_Item.RequestLoadItemDataByID, id)
+        end
+        PD.__qualWant[id] = true
     end
     PD.__itemQual[id] = q or false
     return q

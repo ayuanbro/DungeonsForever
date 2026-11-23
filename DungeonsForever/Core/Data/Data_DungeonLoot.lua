@@ -1603,10 +1603,6 @@ ns.DungeonLoot = {
         } },
         { "Obsidian Sentinel", "黑曜石哨兵", "42 级", "7023", {
             { 8053, nil, false },
-            { 274430, nil, true },
-            { 274428, nil, true },
-            { 274425, nil, true },
-            { 274485, nil, true },
             { 251400, nil, true },
         } },
         { "Ancient Stone Keeper", "古代的石头看守者", "44 级", "7206", {
@@ -2497,6 +2493,9 @@ ns.DungeonLoot = {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
+        { "Sabella No-Eyes", "无眼萨贝拉", "稀有", "269151", {
+            { 280084, nil, true },
+        } },
         { "Trash mobs", "小怪", "副本内任意敌人", "", {
             { 287032, nil, true },
             { 251453, nil, true },
@@ -2506,6 +2505,8 @@ ns.DungeonLoot = {
             { 287029, nil, true },
             { 287030, nil, true },
             { 287033, nil, true },
+            { 287031, nil, true },
+            { 287035, nil, true },
         } },
         { "Plans", "图纸", "宝箱或物件", "", {
             { 252893, nil, true },

@@ -1606,10 +1606,6 @@ ns.DungeonLoot = {
         } },
         { "Obsidian Sentinel", "Obsidian Sentinel", "Lv 42", "7023", {
             { 8053, nil, false },
-            { 274430, nil, true },
-            { 274428, nil, true },
-            { 274425, nil, true },
-            { 274485, nil, true },
             { 251400, nil, true },
         } },
         { "Ancient Stone Keeper", "Ancient Stone Keeper", "Lv 44", "7206", {
@@ -2500,6 +2496,9 @@ ns.DungeonLoot = {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
+        { "Sabella No-Eyes", "Sabella No-Eyes", "Rare", "269151", {
+            { 280084, nil, true },
+        } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 287032, nil, true },
             { 251453, nil, true },
@@ -2509,6 +2508,8 @@ ns.DungeonLoot = {
             { 287029, nil, true },
             { 287030, nil, true },
             { 287033, nil, true },
+            { 287031, nil, true },
+            { 287035, nil, true },
         } },
         { "Plans", "Pattern", "Chest or object", "", {
             { 252893, nil, true },
