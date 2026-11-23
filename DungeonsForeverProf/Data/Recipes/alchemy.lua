@@ -1,0 +1,78 @@
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+
+ns.Data._recipeLoaders["alchemy"] = function()
+  return {
+    catalogEntries = {},
+    recipes = {
+      [4508] = {
+        availability = "live",
+        categoryKey = "",
+        green = 185,
+        grey = 205,
+        isNew = false,
+        learnedAt = 140,
+        orange = 140,
+        outputCountMax = 1,
+        outputCountMin = 1,
+        outputItemID = 3371,
+        outputKind = "item",
+        profession = "alchemy",
+        reagents = {
+          { count = 1, itemID = 2447 },
+        },
+        recommendedSpecs = {},
+        requiredTools = {},
+        skillLineID = 171,
+        spellID = 4508,
+        yellow = 165,
+      },
+      [11459] = {
+        availability = "live",
+        categoryKey = "transmutes",
+        cooldownGroup = "cat_86400s",
+        cooldownSeconds = 86400,
+        green = 255,
+        grey = 260,
+        isNew = false,
+        learnedAt = 225,
+        orange = 225,
+        outputCountMax = 1,
+        outputCountMin = 1,
+        outputItemID = 9149,
+        outputKind = "item",
+        profession = "alchemy",
+        reagents = {
+          { count = 1, itemID = 7078 },
+        },
+        recommendedSpecs = {},
+        requiredTools = { "philosophers_stone" },
+        skillLineID = 171,
+        spellID = 11459,
+        stationKey = "alchemy_lab",
+        yellow = 240,
+      },
+      [1244645] = {
+        availability = "live",
+        categoryKey = "",
+        green = 295,
+        grey = 300,
+        isNew = false,
+        learnedAt = 275,
+        orange = 275,
+        outputCountMax = 1,
+        outputCountMin = 1,
+        outputKind = "effect",
+        profession = "alchemy",
+        reagents = {
+          { count = 1, itemID = 7078 },
+        },
+        recommendedSpecs = {},
+        requiredTools = {},
+        skillLineID = 171,
+        spellID = 1244645,
+        yellow = 285,
+      },
+    },
+  }
+end

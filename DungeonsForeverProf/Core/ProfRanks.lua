@@ -1,375 +1,456 @@
-local ns = _G.DF_NS or {}
-ns.ProfSourceQuestRankSchema=1
-ns.ProfSourceAccessRankSchema=1
-if not ns.LoadForeverPages then return end
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+local gns = _G.DF_NS
+
 local R = {}
 ns.ProfRanks = R
-ns.ProfRanksDataSchema=2
+if type(gns) == "table" and gns ~= ns then
+    gns.ProfRanks = R
+end
 
-local function rankDefaults()
-    local source=ns.ProfData and ns.ProfData.runtime
-    return source and source.rankDefaults or {}
+local function getDS()
+    return ns.ProfDataStore or (type(gns) == "table" and gns.ProfDataStore) or nil
 end
-local function skillSlug(id)
-    local source=ns.ProfData and ns.ProfData.runtime
-    if source and source.schema==1 then return source.skillIDs and source.skillIDs[id] end
+
+local function getCond()
+    return ns.ProfConditions or (type(gns) == "table" and gns.ProfConditions) or nil
 end
-local function locale()
-    return DF_Locale and DF_Locale() or "zhCN"
+
+local function getAPI()
+    return ns.ProfAPI or (type(gns) == "table" and gns.ProfAPI) or nil
 end
+
+local function getSolverCfg()
+    return ns.SolverConfig or (type(gns) == "table" and gns.SolverConfig) or nil
+end
+
+local function getLocale()
+    local DS = getDS()
+    if DS and type(DS.GetLocale) == "function" then return DS.GetLocale() end
+    if type(_G.DF_Locale) == "function" then
+        local ok, loc = pcall(_G.DF_Locale)
+        if ok and type(loc) == "string" and loc ~= "" then return loc end
+    end
+    if type(_G.GetLocale) == "function" then
+        local ok, loc = pcall(_G.GetLocale)
+        if ok and type(loc) == "string" and loc ~= "" then return loc end
+    end
+    return "enUS"
+end
+
 local function tr(zh, tw, en)
-    local loc=locale()
-    return loc=="enUS" and en or (loc=="zhTW" and tw or zh)
-end
-local function label(value)
-    if type(value)~="table" then return value end
-    return value[locale()] or value.zhCN or value.enUS or value[locale()=="enUS" and 3 or (locale()=="zhTW" and 2 or 1)]
-end
-local function number(value, minimum)
-    value=tonumber(value)
-    if value and value==value and value<math.huge and value>=(minimum or 0) then return value end
-end
-local function safe(fn,...)
-    if type(fn)~="function" then return false end
-    return pcall(fn,...)
-end
-local function copy(value)
-    if type(value)~="table" then return value end
-    local out={}
-    for key,item in pairs(value) do out[key]=copy(item) end
-    return out
+    local loc = getLocale()
+    if loc == "zhCN" then return zh end
+    if loc == "zhTW" then return tw end
+    return en
 end
 
-local function trainerData(slug)
-    if ns.EnsureProfTrainers then ns.EnsureProfTrainers() end
-    return ns.ProfTrainers and ns.ProfTrainers[slug]
+local function number(value, minimum)
+    value = tonumber(value)
+    if value and value == value and value < math.huge and value >= (minimum or 0) then return value end
+    return nil
 end
-local function professionData(slug)
-    local data=trainerData(slug)
-    if not data then return end
-    local info=ns.ProfData and ns.ProfData.pro and ns.ProfData.pro[slug]
-    local out={name=info and info.name,ranks={}}
-    if data.schema==2 then
-        for index,raw in ipairs(data.ranks or {}) do
-            local entry=copy(raw)
-            entry.rank=raw.rank or index
-            entry.skillRequired=raw.skillRequired or raw.sk
-            entry.levelRequired=raw.levelRequired or raw.lv
-            entry.name=raw.name or {zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en}
-            entry.method=raw.method or "unknown"
-            entry.sourceSchema=2
-            entry.status=raw.status or "unknown"
-            entry.conditionsKnown=raw.conditionsKnown==true
-            out.ranks[#out.ranks+1]=entry
-        end
-        return out
-    end
-    local prior=1
-    local rawRanks=data.ranks or {}
-    if #rawRanks==0 then
-        local caps,seen={},{}
-        for _,trainer in ipairs(data.list or {}) do
-            local cap=tonumber(tostring(trainer.rng):match('%-(%d+)$'))
-            if cap and not seen[cap] then caps[#caps+1]=cap;seen[cap]=true end
-        end
-        table.sort(caps)
-        rawRanks={}
-        local defaults=rankDefaults()
-        local reminders=defaults.reminderSkills or {}
-        for index,cap in ipairs(caps) do
-            local name=defaults.ranks and defaults.ranks[index] or {}
-            rawRanks[#rawRanks+1]={cap=cap,zh=name[1],tw=name[2],en=name[3],reminderSkill=reminders[cap]}
-        end
-    end
-    for index, raw in ipairs(rawRanks) do
-        local methods=rankDefaults().methods
-        local method=methods and methods[slug] and methods[slug][index] or "trainer"
-        local note,book
-        for _,row in ipairs(info and info.ranks or {}) do
-            if tonumber(row[2])==raw.cap and type(row[3])=="string" then note=row[3];book=row[4];break end
-        end
-        out.ranks[#out.ranks+1]={rank=index,cap=raw.cap,skillRequired=raw.sk,levelRequired=raw.lv,
-            method=method,name={zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en},trainerRange=prior.."-"..tostring(raw.cap),
-            reminderSkill=raw.reminderSkill,
-            status="reference",conditionsKnown=raw.sk~=nil and raw.lv~=nil,note=note,bookItemID=book,
-            referenceNote=tr("晋级门槛和获取方式为现有资料参考；缺失条件保持未知，实际开放以游戏为准。",
-                "晉級門檻和取得方式為現有資料參考；缺失條件保持未知，實際開放以遊戲為準。",
-                "Rank thresholds and acquisition are references; missing requirements stay unknown. Verify availability in game.")}
-        prior=raw.cap
-    end
-    return out
+
+local function safe(fn, ...)
+    if type(fn) ~= "function" then return false end
+    return pcall(fn, ...)
 end
-local function rangeSpan(text)
-    local lo,hi=string.match(tostring(text or ""),"^(%d+)%-(%d+)$")
-    return tonumber(lo),tonumber(hi)
+
+local function normalizeFaction(raw)
+    if raw == "A" or raw == "Alliance" then return "A" end
+    if raw == "H" or raw == "Horde" then return "H" end
+    if raw == "N" or raw == "Neutral" or raw == "B" or raw == "Both" then return "N" end
+    return nil
 end
-local function rangeCovers(outer,inner)
-    local olo,ohi=rangeSpan(outer)
-    local ilo,ihi=rangeSpan(inner)
-    if not (olo and ilo) then return outer==inner end
-    return olo<=ilo and ohi>=ihi
-end
-local function questOf(slug,rank)
-    local quests=rankDefaults().quests or {}
-    local row=quests[slug] and quests[slug][rank]
-    if not row then return end
-    return row.id,row.name
-end
-local function sourcesFor(slug,entry,state)
-    local out={}
-    if entry.sourceSchema==2 then
-        for _,source in ipairs(entry.sources or {}) do
-            local faction=source.faction
-            if not state.faction or not faction or faction=="N" or faction=="B" or faction=="Both" or faction==state.faction then
-                out[#out+1]=copy(source)
-            end
-        end
-        return out
-    end
-    local data=trainerData(slug)
-    for _,raw in ipairs(data and data.list or {}) do
-        if rangeCovers(raw.rng,entry.trainerRange) and (not state.faction or not raw.fac or raw.fac=="N" or raw.fac=="B" or raw.fac==state.faction) then
-            local kind=entry.method=="book" and "vendor" or entry.method
-            local questID,questName
-            if kind=="quest" then questID,questName=questOf(slug,entry.rank) end
-            out[#out+1]={kind=kind,
-                name={zhCN=raw.zh,zhTW=raw.tw,enUS=raw.en},
-                zone={zhCN=raw.loc_zh,zhTW=raw.loc_tw,enUS=raw.loc_en},
-                faction=raw.fac,map=raw.map,x=raw.x,y=raw.y,npcID=raw.npcID,itemID=entry.bookItemID,
-                questID=questID,questName=questName}
-        end
-    end
-    if #out==0 then
-        local sources=rankDefaults().sources
-        local raw=sources and sources[slug] and sources[slug][entry.rank]
-        if raw then
-            local loc=ns.ProfVendors and ns.ProfVendors[raw.npcID]
-            local locations=ns.EnsureProfNPCLocs and ns.EnsureProfNPCLocs()
-            loc=loc or locations and locations[raw.npcID] and locations[raw.npcID][1]
-            out[1]={kind=entry.method=="book" and "vendor" or entry.method,name=raw.name,zone=raw.zone,
-                faction="N",npcID=raw.npcID,itemID=entry.bookItemID or raw.itemID,
-                map=loc and loc[2] or raw.map,x=loc and loc[3] or raw.x,y=loc and loc[4] or raw.y,
-                questID=raw.questID,questName=raw.questName}
-        end
-    end
-    return out
+
+local RANK_LABELS = {
+    apprentice = { zhCN = "初级", zhTW = "初級", enUS = "Apprentice" },
+    journeyman = { zhCN = "中级", zhTW = "中級", enUS = "Journeyman" },
+    expert = { zhCN = "高级", zhTW = "高級", enUS = "Expert" },
+    artisan = { zhCN = "大师级", zhTW = "大師級", enUS = "Artisan" },
+}
+
+local function rankLabel(rankKey)
+    local row = type(rankKey) == "string" and RANK_LABELS[rankKey] or nil
+    if not row then return nil end
+    return tr(row.zhCN, row.zhTW, row.enUS)
 end
 
 function R.Status(slug, opts)
-    opts=opts or {}
-    local state={known=false}
-    local loginOK, loggedIn=safe(IsLoggedIn)
-    if not loginOK or loggedIn~=false then
-        local ok,a,b,c,d,e,f=safe(GetProfessions)
-        if ok and type(GetProfessionInfo)=="function" then
-            local slots, valid, found={a,b,c,d,e,f},true,false
-            for i=1,6 do
+    opts = opts or {}
+    local state = { known = false }
+    local API = getAPI()
+    local loginOK, loggedIn = safe(_G.IsLoggedIn)
+    if not loginOK or loggedIn ~= false then
+        local ok, a, b, c, d, e, f = safe(_G.GetProfessions)
+        if ok and type(_G.GetProfessionInfo) == "function" then
+            local slots, valid, found = { a, b, c, d, e, f }, true, false
+            local bestCur, bestMax
+            for i = 1, 6 do
                 if slots[i] then
-                    local success,name,_,cur,cap,_,_,skillID=safe(GetProfessionInfo,slots[i])
-                    if not success or not name or not skillSlug(skillID) then valid=false end
-                    if success and skillSlug(skillID)==slug then
-                        found=true
-                        state.skill, state.maxSkill=number(cur),number(cap,1)
-                        state.learned=true
-                        state.known=state.skill~=nil and state.maxSkill~=nil
+                    local success, name, _, cur, cap, _, _, skillID = safe(_G.GetProfessionInfo, slots[i])
+                    local slotSlug = success and API and type(API.SkillLineToSlug) == "function" and API.SkillLineToSlug(skillID) or nil
+                    if not success or not name or not slotSlug then valid = false end
+                    if success and slotSlug == slug then
+                        found = true
+                        local cVal = number(cur)
+                        local mVal = number(cap, 1)
+                        if cVal ~= nil and (bestCur == nil or cVal > bestCur) then bestCur = cVal end
+                        if mVal ~= nil and (bestMax == nil or mVal > bestMax) then bestMax = mVal end
                     end
                 end
             end
-            if valid and not found then
-                state.known,state.learned,state.skill,state.maxSkill=true,false,0,0
+            if found then
+                state.skill = bestCur
+                state.maxSkill = bestMax
+                state.learned = true
+                state.known = state.skill ~= nil and state.maxSkill ~= nil
+            elseif valid then
+                state.known = true
+                state.learned = false
+                state.skill = 0
+                state.maxSkill = 0
+            end
+        elseif API and type(API.PlayerProfSet) == "function" then
+            local set = API.PlayerProfSet()
+            if type(set) == "table" and not set.__unknown then
+                if set[slug] ~= nil then
+                    state.learned = true
+                    state.skill = number(API.ProfLevel and API.ProfLevel(slug) or set[slug])
+                    if type(API.ProfLearned) == "function" then
+                        local learned = API.ProfLearned()
+                        state.maxSkill = type(learned[slug]) == "table" and number(learned[slug].max, 1) or nil
+                    end
+                    state.known = state.skill ~= nil and state.maxSkill ~= nil
+                else
+                    state.known = true
+                    state.learned = false
+                    state.skill = 0
+                    state.maxSkill = 0
+                end
             end
         end
     end
-    local ok,level=safe(UnitLevel,"player")
-    if ok then state.level=number(level,1) end
-    local factionOK,faction=safe(UnitFactionGroup,"player")
-    if factionOK then state.faction=faction=="Alliance" and "A" or (faction=="Horde" and "H" or nil) end
-    if opts.skill~=nil then state.skill=number(opts.skill) end
-    if opts.maxSkill~=nil then state.maxSkill=number(opts.maxSkill) end
-    if opts.skill~=nil or opts.maxSkill~=nil then
-        state.known=state.skill~=nil and state.maxSkill~=nil
-        state.learned=state.maxSkill and state.maxSkill>0 or false
+    local okLvl, level = safe(_G.UnitLevel, "player")
+    if okLvl then state.level = number(level, 1) end
+    local okFac, faction = safe(_G.UnitFactionGroup, "player")
+    if okFac then state.faction = normalizeFaction(faction) end
+    if opts.skill ~= nil then state.skill = number(opts.skill) end
+    if opts.maxSkill ~= nil then state.maxSkill = number(opts.maxSkill) end
+    if opts.skill ~= nil or opts.maxSkill ~= nil then
+        state.known = state.skill ~= nil and state.maxSkill ~= nil
+        state.learned = state.maxSkill and state.maxSkill > 0 or false
     end
-    if opts.level~=nil then state.level=number(opts.level,1) end
-    if opts.faction~=nil then
-        state.faction=opts.faction=="Alliance" and "A" or (opts.faction=="Horde" and "H" or opts.faction)
+    if opts.level ~= nil then state.level = number(opts.level, 1) end
+    if opts.faction ~= nil then
+        state.faction = normalizeFaction(opts.faction) or opts.faction
     end
     return state
 end
 
-local function rankChoices(profession)
-    local groups,order={},{}
-    for _,entry in ipairs(profession.ranks or {}) do
-        local key=entry.rank or ("spell:"..tostring(entry.spell))
-        if not groups[key] then groups[key]={};order[#order+1]=key end
-        groups[key][#groups[key]+1]=entry
+local function buildCondContext(slug, state, opts)
+    local Cond = getCond()
+    local ctx = (Cond and type(Cond.LiveContext) == "function" and Cond.LiveContext()) or {}
+    if state.level ~= nil then ctx.level = state.level end
+    if state.faction ~= nil then ctx.faction = state.faction end
+    if state.known and state.skill ~= nil then
+        ctx.skills = ctx.skills or {}
+        ctx.skills[slug] = state.skill
     end
-    local function score(entry)
-        local observed=ns.ProfEconomy and ns.ProfEconomy.observedRankRequirements
-            and entry.spell and ns.ProfEconomy.observedRankRequirements[entry.spell]
-        return (observed and observed.available==true and 1000000 or 0)
-            +(type(entry.cap)=="number" and 100000 or 0)
-            +(entry.status=="confirmed" and 10000 or 0)
-            +(entry.conditionsKnown==true and 1000 or 0)
-            +math.min(99,#(entry.conditions or {}))*10+math.min(9,#(entry.sources or {}))
+    if type(opts) == "table" then
+        if type(opts.quests) == "table" or type(opts.completedQuests) == "table" then
+            ctx.quests = opts.quests or opts.completedQuests
+        end
+        if type(opts.items) == "table" or type(opts.ownedSourceItems) == "table" then
+            ctx.items = opts.items or opts.ownedSourceItems
+        end
+        if type(opts.reputations) == "table" then ctx.reputations = opts.reputations end
+        if type(opts.abilities) == "table" then ctx.abilities = opts.abilities end
+        if opts.classID ~= nil then ctx.classID = opts.classID end
+        if opts.raceID ~= nil then ctx.raceID = opts.raceID end
+        if opts.strict ~= nil then ctx.strict = opts.strict == true end
     end
-    local out={}
-    for _,key in ipairs(order) do
-        local candidates=groups[key]
-        table.sort(candidates,function(a,b)
-            local sa,sb=score(a),score(b)
-            if sa~=sb then return sa>sb end
-            return (tonumber(a.spell) or 0)<(tonumber(b.spell) or 0)
-        end)
-        local selected=copy(candidates[1])
-        if #candidates>1 then selected.candidates=copy(candidates) end
-        out[#out+1]=selected
-    end
-    table.sort(out,function(a,b)return (a.rank or 0)<(b.rank or 0) end)
+    return ctx
+end
+
+local function copyConditions(list)
+    if type(list) ~= "table" then return nil end
+    local out = {}
+    for i = 1, #list do out[i] = list[i] end
     return out
 end
 
-function R.RouteSteps(slug, target, opts)
-    local profession=professionData(slug)
-    local out={}
-    if not profession then return out end
-    local state=R.Status(slug,opts)
-    target=number(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300
-    local priorCap=0
-    for _,entry in ipairs(rankChoices(profession)) do
-        entry=copy(entry)
-        local observed=ns.ProfEconomy and ns.ProfEconomy.observedRankRequirements
-            and entry.spell and ns.ProfEconomy.observedRankRequirements[entry.spell]
-        if observed and type(observed.level)=="number" and type(observed.skill)=="number" then
-            if observed.available==true then
-                entry.levelRequired,entry.skillRequired=observed.level,observed.skill
-                entry.conditionsKnown,entry.status,entry.method=true,"confirmed","trainer"
-            else
-                entry.levelRequired=entry.levelRequired or observed.level
-                entry.skillRequired=entry.skillRequired or observed.skill
-            end
+local function resolveSources(raw, state, condCtx)
+    local DS = getDS()
+    local Cond = getCond()
+    local out = {}
+    local candidates = {}
+    local hadCandidates = false
+    if type(raw.trainers) == "table" and #raw.trainers > 0 then
+        hadCandidates = true
+        for i = 1, #raw.trainers do
+            candidates[#candidates + 1] = raw.trainers[i]
         end
-        local defaults=rankDefaults()
-        local preferences={rankReminders=defaults.routeReminders,rankReminderWindow=25}
-        local reminders=preferences.rankReminders or {}
-        reminders=reminders[slug] or {}
-        local reminder=reminders[entry.spell] or reminders[tostring(entry.spell)] or reminders[entry.rank]
-            or entry.reminderSkill or entry.skillRequired or math.max(0,priorCap-(preferences.rankReminderWindow or 25))
-        if entry.sourceSchema==2 then reminder=entry.reminderSkill or entry.skillRequired or priorCap end
-        if reminder<=target then
-            local step={}
-            for key,value in pairs(entry) do step[key]=value end
-            step.id="rank:"..slug..":"..tostring(entry.rank)
-            step.profession,step.reminderSkill=slug,reminder
-            step.name=label(entry.name) or (entry.sourceSchema~=2 and label(defaults.ranks and defaults.ranks[entry.rank])) or tostring(entry.rank)
-            step.professionName=label(profession.name) or slug
-            step.state=state
-            step.sources=sourcesFor(slug,entry,state)
-            local factsKnown=entry.conditionsKnown==true
-                and type(entry.cap)=="number" and type(entry.skillRequired)=="number" and type(entry.levelRequired)=="number"
-            local qualificationAllowed=true
-            if entry.conditions and ns.ProfEconomy and ns.ProfEconomy.LearningEligibility then
-                local snapshot={known={},level=state.level,faction=state.faction,professions={[slug]={cur=state.skill}},specializationAbilities={}}
-                if type(UnitClass)=="function" then local ok,_,_,id=pcall(UnitClass,"player");if ok then snapshot.classID=id end end
-                if type(UnitRace)=="function" then local ok,_,_,id=pcall(UnitRace,"player");if ok then snapshot.raceID=id end end
-                local _,_,detail
-                qualificationAllowed,_,detail=ns.ProfEconomy.LearningEligibility({spell=entry.spell,profession=slug,_conditionsCheck=entry.conditions},snapshot)
-                if detail and detail.status=="unknown" then factsKnown=false end
-            end
-            step.complete=state.known and type(entry.cap)=="number" and state.maxSkill>=entry.cap or false
-            step.available=not step.complete and factsKnown and qualificationAllowed and state.known and state.skill>=entry.skillRequired
-                and (entry.levelRequired==0 or state.level~=nil and state.level>=entry.levelRequired) or false
-            if observed and observed.available==true and not step.complete then step.available=true end
-            if ns.VendorPriceDB and #step.sources>0 and not step.complete then
-                local available,unknown=false,false
-                for _,source in ipairs(step.sources) do
-                    local kind=source.kind
-                    local npc=source.npcID or source.npc
-                    local target=kind=="vendor" and (source.itemID or entry.bookItemID) or (source.spellID or entry.spell)
-                    local context=opts and opts.completedQuests and {completedQuests=opts.completedQuests,ownedSourceItems=opts.ownedSourceItems} or nil
-                    local met=ns.VendorPriceDB.SourceAccessState(kind,npc,target,context,source.conditions)
-                    source.questRequired=ns.VendorPriceDB.SourceRequiresQuest(kind,npc,target) or nil
-                    if source.questRequired then source.questUnlocked=met end
-                    if met==true then available=true elseif met==nil then unknown=true end
+    elseif raw.method == "book" and type(raw.bookItemID) == "number" and DS and type(DS.VendorOffers) == "function" then
+        local vo = DS.VendorOffers(raw.bookItemID)
+        if type(vo) == "table" and type(vo.offers) == "table" and #vo.offers > 0 then
+            for i = 1, #vo.offers do
+                local offer = vo.offers[i]
+                if type(offer) == "table" then
+                    hadCandidates = true
+                    if offer.maxStock ~= 0 then
+                        candidates[#candidates + 1] = { npcID = offer.npcID, conditions = offer.conditions }
+                    end
                 end
-                if not available then step.available=false;qualificationAllowed=false;if unknown then factsKnown=false end end
             end
-            step.due=not step.complete and state.skill~=nil and state.skill>=reminder
-            if step.complete then step.status="complete"
-            elseif step.available then step.status="available"
-            elseif not state.known then step.status="unknown"
-            elseif type(entry.levelRequired)=="number" and state.level and state.level<entry.levelRequired then step.status="level_locked"
-            elseif type(entry.skillRequired)=="number" and state.skill<entry.skillRequired then step.status="skill_locked"
-            elseif not qualificationAllowed and entry.conditions and #entry.conditions>0 and factsKnown then step.status="requirements_locked"
-            elseif not factsKnown or ((entry.levelRequired or 0)>0 and not state.level) then step.status="unknown"
-            elseif not qualificationAllowed then step.status="requirements_locked"
-            else step.status="available" end
-            out[#out+1]=step
         end
-        if type(entry.cap)=="number" then priorCap=entry.cap end
+    end
+    local kind = (raw.method == "book" and "vendor") or raw.method or "trainer"
+    for i = 1, #candidates do
+        local t = candidates[i]
+        local npcID = type(t) == "table" and t.npcID or nil
+        if type(npcID) == "number" and npcID > 0 then
+            local npc = DS and type(DS.Npc) == "function" and DS.Npc(npcID) or nil
+            local npcFaction = npc and normalizeFaction(npc.faction) or nil
+            local factionOK = not state.faction or not npcFaction or npcFaction == "N" or npcFaction == state.faction
+            local edgeState = true
+            if Cond and type(Cond.EvaluateAll) == "function" and type(t.conditions) == "table" and #t.conditions > 0 then
+                edgeState = Cond.EvaluateAll(t.conditions, condCtx)
+            end
+            if factionOK and edgeState ~= false then
+                local spawn = type(npc) == "table" and type(npc.spawns) == "table" and npc.spawns[1] or nil
+                local areaID = type(spawn) == "table" and spawn.areaID or nil
+                local zone = areaID and DS and type(DS.Zone) == "function" and DS.Zone(areaID) or nil
+                local uiMapID = (type(spawn) == "table" and spawn.uiMapID) or (type(zone) == "table" and zone.uiMapID) or nil
+                out[#out + 1] = {
+                    kind = kind,
+                    npcID = npcID,
+                    name = DS and type(DS.RawText) == "function" and DS.RawText("npc", npcID) or nil,
+                    faction = npcFaction,
+                    areaID = areaID,
+                    map = uiMapID,
+                    uiMapID = uiMapID,
+                    zone = areaID and DS and type(DS.RawText) == "function" and DS.RawText("zone", areaID) or nil,
+                    x = type(spawn) == "table" and spawn.x or nil,
+                    y = type(spawn) == "table" and spawn.y or nil,
+                    itemID = raw.bookItemID,
+                    itemName = raw.bookItemID and DS and type(DS.RawText) == "function" and DS.RawText("item", raw.bookItemID) or nil,
+                    questID = raw.questID,
+                    questName = raw.questID and DS and type(DS.RawText) == "function" and DS.RawText("quest", raw.questID) or nil,
+                    conditions = copyConditions(t.conditions),
+                    edgeState = edgeState,
+                }
+            end
+        end
+    end
+    return out, hadCandidates
+end
+
+function R.RouteSteps(slug, target, opts)
+    local DS = getDS()
+    local Cond = getCond()
+    local rawRanks = DS and type(DS.Ranks) == "function" and DS.Ranks(slug) or nil
+    if type(rawRanks) ~= "table" or #rawRanks == 0 then return {} end
+
+    local sorted = {}
+    for i = 1, #rawRanks do
+        if type(rawRanks[i]) == "table" then
+            sorted[#sorted + 1] = rawRanks[i]
+        end
+    end
+    table.sort(sorted, function(a, b)
+        return (a.rankIndex or 0) < (b.rankIndex or 0)
+    end)
+
+    local state = R.Status(slug, opts)
+    local condCtx = buildCondContext(slug, state, opts)
+    local solverCfg = getSolverCfg()
+    target = number(target) or (type(solverCfg) == "table" and solverCfg.DEFAULT_TARGET) or 300
+
+    local out = {}
+    local priorCap = 0
+    for i = 1, #sorted do
+        local raw = sorted[i]
+        local cap = number(raw.skillCap, 1)
+        local reqSkill = number(raw.reqSkill) or 0
+        local reqLevel = number(raw.reqLevel) or 0
+        local reminder = number(raw.routeReminderSkill) or reqSkill or priorCap
+        if reminder <= target then
+            local sources, hadCandidates = resolveSources(raw, state, condCtx)
+            local condState = true
+            if Cond and type(Cond.EvaluateAll) == "function" then
+                condState = Cond.EvaluateAll(raw.conditions, condCtx)
+            end
+            local factsKnown = (type(cap) == "number") and (type(reqSkill) == "number") and (type(reqLevel) == "number") and (condState ~= nil)
+            local qualificationAllowed = condState ~= false
+            local complete = state.known and type(cap) == "number" and state.maxSkill >= cap or false
+
+            if #sources > 0 and not complete then
+                local anyAvailable, anyUnknown = false, false
+                for j = 1, #sources do
+                    local src = sources[j]
+                    local npcState = true
+                    if src.npcID and Cond and type(Cond.NpcAccessState) == "function" then
+                        npcState = Cond.NpcAccessState(src.npcID, condCtx)
+                    end
+                    local edgeState = src.edgeState
+                    if npcState == false or edgeState == false then
+                        src.accessible = false
+                    elseif npcState == true and edgeState == true then
+                        src.accessible = true
+                        anyAvailable = true
+                    else
+                        anyUnknown = true
+                    end
+                    src.edgeState = nil
+                end
+                if not anyAvailable then
+                    qualificationAllowed = false
+                    if anyUnknown then factsKnown = false end
+                end
+            else
+                if not complete and hadCandidates then
+                    qualificationAllowed = false
+                end
+                for j = 1, #sources do
+                    sources[j].edgeState = nil
+                end
+            end
+
+            local available = not complete and factsKnown and qualificationAllowed and state.known
+                and type(state.skill) == "number" and state.skill >= reqSkill
+                and (reqLevel == 0 or (type(state.level) == "number" and state.level >= reqLevel)) or false
+            local due = not complete and type(state.skill) == "number" and state.skill >= reminder or false
+
+            local status
+            if complete then
+                status = "complete"
+            elseif available then
+                status = "available"
+            elseif not state.known then
+                status = "unknown"
+            elseif type(reqLevel) == "number" and type(state.level) == "number" and state.level < reqLevel then
+                status = "level_locked"
+            elseif type(reqSkill) == "number" and type(state.skill) == "number" and state.skill < reqSkill then
+                status = "skill_locked"
+            elseif not qualificationAllowed and factsKnown then
+                status = "requirements_locked"
+            elseif not factsKnown or (reqLevel > 0 and state.level == nil) then
+                status = "unknown"
+            elseif not qualificationAllowed then
+                status = "requirements_locked"
+            else
+                status = "available"
+            end
+
+            out[#out + 1] = {
+                id = "rank:" .. slug .. ":" .. tostring(raw.rankIndex or i),
+                rank = raw.rankIndex or i,
+                rankIndex = raw.rankIndex or i,
+                rankKey = raw.rankKey,
+                cap = cap,
+                skillCap = cap,
+                skillRequired = reqSkill,
+                reqSkill = reqSkill,
+                levelRequired = reqLevel,
+                reqLevel = reqLevel,
+                method = raw.method or "unknown",
+                bookItemID = raw.bookItemID,
+                questID = raw.questID,
+                profession = slug,
+                professionName = DS and type(DS.ProfessionName) == "function" and DS.ProfessionName(slug) or slug,
+                name = rankLabel(raw.rankKey) or tostring(raw.rankIndex or i),
+                reminderSkill = reminder,
+                state = state,
+                sources = sources,
+                complete = complete,
+                available = available,
+                due = due,
+                status = status,
+            }
+        end
+        if type(cap) == "number" then priorCap = cap end
     end
     return out
 end
 
 function R.NextStep(slug, target, opts)
-    local steps=R.RouteSteps(slug,target,opts)
-    local state=steps[1] and steps[1].state
-    if state and state.known and (number(target) or (ns.ProfModule and ns.ProfModule.LV_DEF) or 300)<=state.maxSkill then return nil end
-    for _,step in ipairs(steps) do if not step.complete then return step end end
+    local steps = R.RouteSteps(slug, target, opts)
+    local state = steps[1] and steps[1].state
+    local solverCfg = getSolverCfg()
+    local target0 = number(target) or (type(solverCfg) == "table" and solverCfg.DEFAULT_TARGET) or 300
+    if state and state.known and type(state.maxSkill) == "number" and target0 <= state.maxSkill then
+        return nil
+    end
+    for _, step in ipairs(steps) do
+        if not step.complete then return step end
+    end
+    return nil
 end
 
 function R.Title(step)
-    return string.format(tr("%s · %s（上限 %s）","%s · %s（上限 %s）","%s · %s (cap %s)"),
-        step.professionName,step.name,tostring(step.cap or "?"))
+    return string.format(tr("%s · %s（上限 %s）", "%s · %s（上限 %s）", "%s · %s (cap %s)"),
+        tostring(step.professionName or step.profession or ""),
+        tostring(step.name or step.rank or ""),
+        tostring(step.cap or "?"))
 end
 
 function R.Lines(step, maxSources)
-    local out={}
+    local DS = getDS()
+    local out = {}
     if step.complete then
-        out[#out+1]=tr("已学习：当前技能上限已达到此阶。","已學習：目前技能上限已達到此階。","Learned: the current skill cap confirms this rank.")
-    elseif step.status=="unknown" then
-        out[#out+1]=tr("晋级资料或角色资格尚未确认；请在游戏中核对。","晉級資料或角色資格尚未確認；請在遊戲中核對。","Rank facts or character eligibility are unknown; check in game.")
+        out[#out + 1] = tr("已学习：当前技能上限已达到此阶。", "已學習：目前技能上限已達到此階。", "Learned: the current skill cap confirms this rank.")
+    elseif step.status == "unknown" then
+        out[#out + 1] = tr("晋级资料或角色资格尚未确认；请在游戏中核对。", "晉級資料或角色資格尚未確認；請在遊戲中核對。", "Rank facts or character eligibility are unknown; check in game.")
     elseif step.available then
-        out[#out+1]=tr("已达到参考条件；提升技能上限后继续路线。","已達到參考條件；提升技能上限後繼續路線。","Reference requirements met; raise the skill cap to continue.")
+        out[#out + 1] = tr("已达到参考条件；提升技能上限后继续路线。", "已達到參考條件；提升技能上限後繼續路線。", "Reference requirements met; raise the skill cap to continue.")
     else
-        out[#out+1]=tr("尚未达到学习条件。","尚未達到學習條件。","Learning requirements are not yet met.")
+        out[#out + 1] = tr("尚未达到学习条件。", "尚未達到學習條件。", "Learning requirements are not yet met.")
     end
-    if type(step.levelRequired)=="number" and step.levelRequired>0 then
-        out[#out+1]=string.format(tr("需要技能 %d · 角色等级 %d","需要技能 %d · 角色等級 %d","Requires skill %d · character level %d"),
-            step.skillRequired or 0,step.levelRequired)
-    elseif step.skillRequired~=nil then
-        out[#out+1]=string.format(tr("需要技能 %d","需要技能 %d","Requires skill %d"),step.skillRequired or 0)
+    if type(step.levelRequired) == "number" and step.levelRequired > 0 then
+        out[#out + 1] = string.format(tr("需要技能 %d · 角色等级 %d", "需要技能 %d · 角色等級 %d", "Requires skill %d · character level %d"),
+            step.skillRequired or 0, step.levelRequired)
+    elseif step.skillRequired ~= nil then
+        out[#out + 1] = string.format(tr("需要技能 %d", "需要技能 %d", "Requires skill %d"), step.skillRequired or 0)
     end
-    if step.reminderSkill<(step.skillRequired or 0) then
-        out[#out+1]=string.format(tr("%d 点开始准备；达到 %d 点后办理任务晋级。","%d 點開始準備；達到 %d 點後辦理任務晉級。","Prepare at skill %d; complete the rank quest at skill %d."),
-            step.reminderSkill,step.skillRequired)
+    if type(step.reminderSkill) == "number" and step.reminderSkill < (step.skillRequired or 0) then
+        out[#out + 1] = string.format(tr("%d 点开始准备；达到 %d 点后办理任务晋级。", "%d 點開始準備；達到 %d 點後辦理任務晉級。", "Prepare at skill %d; complete the rank quest at skill %d."),
+            step.reminderSkill, step.skillRequired or 0)
     end
-    local methods={
-        trainer={"向对应阶级的专业训练师学习。","向對應階級的專業訓練師學習。","Learn from a trainer for this rank."},
-        book={"购买并阅读教材。","購買並閱讀教材。","Buy and read the skill book."},
-        quest={"完成专业晋级任务。","完成專業晉級任務。","Complete the profession rank quest."},
-    }
-    if methods[step.method] then out[#out+1]=label(methods[step.method]) end
-    local function add(value) value=label(value); if value and value~="" then out[#out+1]=value end end
-    add(step.note)
-    if step.bookItemID then out[#out+1]=tr("教材：#","教材：#","Book: #")..step.bookItemID end
-    for index,source in ipairs(step.sources or {}) do
-        if maxSources and index>maxSources then break end
-        local prefix=source.faction=="A" and tr("联盟 · ","聯盟 · ","Alliance · ")
-            or (source.faction=="H" and tr("部落 · ","部落 · ","Horde · ") or "")
-        local text=prefix..(label(source.name) or (source.npcID and ("NPC "..source.npcID)) or "")
-        local zone=label(source.zone)
-        if zone then text=text.." · "..zone end
-        if number(source.x) and number(source.y) then text=text..string.format(" (%.1f, %.1f)",source.x,source.y) end
-        if text~="" then out[#out+1]=text end
+    if step.method == "trainer" then
+        out[#out + 1] = tr("向对应阶级的专业训练师学习。", "向對應階級的專業訓練師學習。", "Learn from a trainer for this rank.")
+    elseif step.method == "book" then
+        out[#out + 1] = tr("购买并阅读教材。", "購買並閱讀教材。", "Buy and read the skill book.")
+    elseif step.method == "quest" then
+        out[#out + 1] = tr("完成专业晋级任务。", "完成專業晉級任務。", "Complete the profession rank quest.")
+    end
+    if type(step.note) == "string" and step.note ~= "" then out[#out + 1] = step.note end
+    if step.bookItemID then
+        local bookName = DS and type(DS.ItemName) == "function" and DS.ItemName(step.bookItemID) or ("#" .. tostring(step.bookItemID))
+        out[#out + 1] = tr("教材：", "教材：", "Book: ") .. bookName
+    end
+    for index, source in ipairs(step.sources or {}) do
+        if maxSources and index > maxSources then break end
+        local prefix = source.faction == "A" and tr("联盟 · ", "聯盟 · ", "Alliance · ")
+            or (source.faction == "H" and tr("部落 · ", "部落 · ", "Horde · ") or "")
+        local npcText = source.name or (source.npcID and DS and type(DS.NpcName) == "function" and DS.NpcName(source.npcID)) or (source.npcID and ("NPC " .. source.npcID)) or ""
+        local text = prefix .. npcText
+        local zoneText = source.zone or (source.areaID and DS and type(DS.ZoneName) == "function" and DS.ZoneName(source.areaID))
+        if type(zoneText) == "string" and zoneText ~= "" then
+            text = text .. " · " .. zoneText
+        end
+        if number(source.x) and number(source.y) then
+            text = text .. string.format(" (%.1f, %.1f)", source.x, source.y)
+        end
+        if text ~= "" then out[#out + 1] = text end
         if source.itemName or source.itemID then
-            out[#out+1]=tr("教材：","教材：","Book: ")..(label(source.itemName) or ("#"..source.itemID))
+            local iName = source.itemName or (DS and type(DS.ItemName) == "function" and DS.ItemName(source.itemID)) or ("#" .. tostring(source.itemID))
+            out[#out + 1] = tr("教材：", "教材：", "Book: ") .. iName
         end
         if source.questName or source.questID then
-            out[#out+1]=tr("任务：","任務：","Quest: ")..(label(source.questName) or ("#"..source.questID))
+            local qName = source.questName or (DS and type(DS.QuestName) == "function" and DS.QuestName(source.questID)) or ("#" .. tostring(source.questID))
+            out[#out + 1] = tr("任务：", "任務：", "Quest: ") .. qName
         end
-        add(source.note)
     end
-    add(step.referenceNote)
     return out
 end

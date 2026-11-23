@@ -1390,9 +1390,9 @@ end
 local function PProfCD(ctx)
     local c = CFG()
     if c.profcd == false then return nil end
-    local W = ns.ProfCDWatch
-    if not (type(W) == "table" and type(W.TodoList) == "function") then return nil end
-    local ok, list = pcall(W.TodoList)
+    local api = (type(ns.EnsureProfAPI) == "function" and ns.EnsureProfAPI()) or (type(ns.ProfAPI) == "table" and ns.ProfAPI) or nil
+    if not (type(api) == "table" and type(api.ActiveCooldownAlerts) == "function") then return nil end
+    local ok, list = pcall(api.ActiveCooldownAlerts)
     if not ok or type(list) ~= "table" or #list == 0 then return nil end
     local items, names = {}, {}
     for i = 1, #list do
@@ -1427,8 +1427,8 @@ local function PProfCD(ctx)
                 desc = L["专业冷却"],
                 jump = function()
                     if ns.OpenPage then pcall(ns.OpenPage, "Professions") end
-                    local pd = ns.ProfModule
-                    if pd and slug and pd.Show then pcall(pd.Show, slug) end
+                    local a = (type(ns.EnsureProfAPI) == "function" and ns.EnsureProfAPI()) or ns.ProfAPI
+                    if a and slug and a.Show then pcall(a.Show, slug) end
                     return true
                 end,
                 jumpTip = L["点击打开专业页"],

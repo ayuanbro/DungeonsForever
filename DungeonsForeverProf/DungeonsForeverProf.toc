@@ -16,42 +16,34 @@
 ## LoadOnDemand: 1
 ## SavedVariables: DungeonsForeverProfDB
 
+Data\Meta.lua
+Data\Recipes\Index.lua
+Data\Locales\enUS.lua
+Data\Locales\zhCN.lua [AllowLoadTextLocale zhCN]
+Data\Locales\zhTW.lua [AllowLoadTextLocale zhTW]
+Data\Entities.lua
+Data\Systems.lua
+Data\Commerce.lua
+Data\Sources.lua
+Data\Guides.lua
+Data\Recipes\alchemy.lua
+Data\Recipes\comprehension.lua
+Data\Recipes\cooking.lua
+Data\Recipes\enchanting.lua
+Data\Recipes\engineering.lua
+Data\Recipes\leatherworking.lua
+Data\Recipes\mining.lua
+Data\Recipes\poisons.lua
+Config\ProfessionsConfig.lua
+Config\PricingConfig.lua
+Config\SolverConfig.lua
+Config\UIConfig.lua
 Core\ProfDB.lua
 Core\ProfPaint.lua
-Core\Data\Data_ProfRecipes.lua
-Core\Data\Data_ProfLeveling.lua
-Core\Data\Data_ProfGathering.lua
-Core\Data\Data_ProfVendors.lua
-Core\Data\Data_ProfVendorNames.lua
-Core\Data\Data_ProfDropNpcs.lua
-Core\Data\Data_ProfTrainers.lua
-Core\Data\Data_ProfTeach.lua
-Core\Data\Data_ProfMaterialSupply.lua
-Core\Data\Data_ProfFormulaOffers.lua
-Core\Data\Data_ProfTools.lua
-Core\Data\Data_ProfSpecializations.lua
-Core\Data\Data_ProfSpecializationQuests.lua
-Core\Data\Data_ProfFormulaQuests.lua
-Core\Data\Data_ProfLearningSources.lua
-Core\Data\zhTW\Data_ProfRecipes.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_ProfLeveling.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_ProfVendorNames.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_ProfDropNpcs.lua [AllowLoadTextLocale zhTW]
-Core\Data\zhTW\Data_ProfTrainers.lua [AllowLoadTextLocale zhTW]
-Core\Data\enUS\Data_ProfTrainers.lua [AllowLoadTextLocale enUS]
-Core\Data\enUS\Data_ProfRecipes.lua [AllowLoadTextLocale enUS]
-Core\Data\enUS\Data_ProfLeveling.lua [AllowLoadTextLocale enUS]
-Core\Data\Data_ProfMining.lua
-Core\Data\Data_ProfFishingRoutes.lua
-Core\Data\Data_ProfSources.lua
-Core\Data\Data_ProfNPCLocs.lua
-Core\Data\Data_ProfItemNames.lua
-Core\Data\zhTW\Data_ProfItemNames.lua [AllowLoadTextLocale zhTW]
-Core\Data\Data_ProfMakeSrc.lua
-Core\Data\Data_ProfVendorSide.lua
-Core\Data\Data_ProfDropNames.lua
+Core\ProfDataStore.lua
+Core\ProfConditions.lua
+Core\ProfAPI.lua
 Core\ProfPolicies.lua
-Core\ProfMigrate.lua
 Core\ProfRouteAuto.lua
 Core\ProfCDWatch.lua
 Core\ProfessionUI.lua
@@ -65,9 +57,7 @@ Core\ProfSolverCapture.lua
 Core\ProfLearning.lua
 Core\ProfClientScan.lua
 Core\ProfRanks.lua
-Core\ProfRisk.lua
 Core\ProfRouteSolver.lua
-Core\ProfReserve.lua
 Core\ProfFishing.lua
 Core\ProfGathering.lua
 Core\ProfExecution.lua

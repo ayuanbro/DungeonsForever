@@ -101,20 +101,25 @@ local function BuildSrc()
     return srcIdx
 end
 
+local function getProfAPI()
+    if type(ns.EnsureProfAPI) == "function" then return ns.EnsureProfAPI() end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
 local craftIdx
-local craftDone = false
+local craftApiRef
 local function BuildCraft()
-    if craftDone then return craftIdx end
-    craftDone = true
     if not ns.IsForever then return nil end
-    local pro = ns.ProfData and ns.ProfData.pro
-    if type(pro) ~= "table" or type(ns.ProfCraftSlugOf) ~= "function" then return nil end
+    local api = getProfAPI()
+    if not api or type(api.CraftProfessionOf) ~= "function" then return nil end
+    if craftIdx and craftApiRef == api then return craftIdx end
+    craftApiRef = api
     craftIdx = setmetatable({}, {
         __index = function(t, id)
-            local slug = ns.ProfCraftSlugOf(id)
+            local slug = api.CraftProfessionOf(id)
             if not slug then return nil end
-            local pd = pro[slug]
-            local nm = type(pd) == "table" and pd.name or nil
+            local info = type(api.ProfessionInfo) == "function" and api.ProfessionInfo(slug) or nil
+            local nm = type(info) == "table" and info.name or nil
             if not nm then return nil end
             rawset(t, id, nm)
             return nm
@@ -327,20 +332,20 @@ local function IlvlOf(id)
 end
 
 local function PriceRows(id)
-    local PM = ns.ProfModule
-    if not PM then return nil end
-    local rows = PM.CrateTipLines and PM.CrateTipLines(id) or nil
-    if not rows and PM.WritTipLines then rows = PM.WritTipLines(id) end
+    local api = getProfAPI()
+    if not api then return nil end
+    local rows = api.CrateTipLines and api.CrateTipLines(id) or nil
+    if not rows and api.WritTipLines then rows = api.WritTipLines(id) end
     return rows
 end
 
 local C_VENDOR_REC = { 1, 0.82, 0 }
 
 local function VendorRecRows(id)
-    local RA = ns.ProfRouteAuto
-    if not RA or not RA.AHPriceOf or not RA.NPCSellPriceOf then return nil end
-    local ah = RA.AHPriceOf(id)
-    local sell = RA.NPCSellPriceOf(id)
+    local api = getProfAPI()
+    if not api or not api.AHPriceOf or not api.NPCSellPriceOf then return nil end
+    local ah = api.AHPriceOf(id)
+    local sell = api.NPCSellPriceOf(id)
     if type(ah) ~= "number" or type(sell) ~= "number" then return nil end
     if ah <= 0 or sell <= 0 then return nil end
     local net = math.floor(ah * 0.95) - math.floor(sell * 0.05)
@@ -349,28 +354,28 @@ local function VendorRecRows(id)
 end
 
 local function PatternRows(id, title)
-    local PM = ns.ProfModule
-    if not PM or not PM.PatternTipLines then return nil end
-    return PM.PatternTipLines(id, title)
+    local api = getProfAPI()
+    if not api or not api.PatternTipLines then return nil end
+    return api.PatternTipLines(id, title)
 end
 
 local function ProductRows(id, title)
-    local PM = ns.ProfModule
-    if not PM or not PM.ProductTipLines then return nil end
-    if Cfg().prodOwnOnly and PM.ProfKnows and not PM.ProfKnows(id) then return nil end
-    return PM.ProductTipLines(id, title)
+    local api = getProfAPI()
+    if not api or not api.ProductTipLines then return nil end
+    if Cfg().prodOwnOnly and api.ProfKnows and not api.ProfKnows(id) then return nil end
+    return api.ProductTipLines(id, title)
 end
 
 local function WritNeedRows(id, title)
-    local PM = ns.ProfModule
-    if not PM or not PM.WritNeedLines then return nil end
-    return PM.WritNeedLines(id, title)
+    local api = getProfAPI()
+    if not api or not api.WritNeedLines then return nil end
+    return api.WritNeedLines(id, title)
 end
 
 local function CrateNeedRows(id, title)
-    local PM = ns.ProfModule
-    if not PM or not PM.CrateNeedLines then return nil end
-    return PM.CrateNeedLines(id, title)
+    local api = getProfAPI()
+    if not api or not api.CrateNeedLines then return nil end
+    return api.CrateNeedLines(id, title)
 end
 
 local dmTierIdx
@@ -554,8 +559,8 @@ function TL.Lines(id, link, title)
         else
             local cn = BuildCraft()
             local nm = cn and cn[id]
-            local PM = ns.ProfModule
-            local ttl = PM and PM.ProductCraftTitle and PM.ProductCraftTitle(id) or nil
+            local api = getProfAPI()
+            local ttl = api and api.ProductCraftTitle and api.ProductCraftTitle(id) or nil
             if ttl then
                 add(ttl, C_SRC)
             elseif nm then
@@ -879,7 +884,7 @@ function TL.SampleItem()
     if sampCacheId and sampCacheKey == key then return sampCacheId end
     local GM = ns.GearModule
     local BG = ns.BisModule
-    local PM = ns.ProfModule
+    local api = getProfAPI()
     local srcIdx = BuildSrc()
     local curSet
     if BG and type(BG.cur) == "table" then
@@ -929,20 +934,20 @@ function TL.SampleItem()
     for i = 1, math.min(#sks, SAMPLE_CAP_SRC) do
         pools[#pools + 1] = sks[i]
     end
-    if cfg.price and PM then
-        local cd = ns.CratesData
-        local cr = cd and cd.crates
+    if cfg.price and api then
+        local cr = api.CratesList and api.CratesList() or nil
         if type(cr) == "table" then
             for i = 1, math.min(#cr, 6) do
                 local c = cr[i]
-                if type(c) == "table" and type(c.id) == "number" then pools[#pools + 1] = c.id end
+                local cid = type(c) == "table" and (c.itemID or c.id) or nil
+                if type(cid) == "number" then pools[#pools + 1] = cid end
             end
         end
-        local wr = cd and cd.writs
+        local wr = api.WritsList and api.WritsList() or nil
         if type(wr) == "table" then
             for i = 1, math.min(#wr, 4) do
                 local w = wr[i]
-                local wid = type(w) == "table" and (w.item or w.target) or nil
+                local wid = type(w) == "table" and (w.writItemID or w.targetItemID or w.item or w.target) or nil
                 if type(wid) == "number" then pools[#pools + 1] = wid end
             end
         end
@@ -955,7 +960,7 @@ function TL.SampleItem()
         if cfg.src then
             if srcIdx[id] then sc = sc + 1 end
         end
-        if cfg.price and PM and ((PM.CrateOf and PM.CrateOf(id)) or (PM.WritOf and PM.WritOf(id))) then
+        if cfg.price and api and ((api.CrateOf and api.CrateOf(id)) or (api.WritOf and api.WritOf(id))) then
             sc = sc + 1
         end
         if cfg.src and not srcIdx[id] then

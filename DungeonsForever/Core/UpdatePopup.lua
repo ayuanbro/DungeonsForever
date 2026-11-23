@@ -412,36 +412,43 @@ local function RowsHaveGap(rows)
     return false
 end
 
+local function getProfAPI()
+    if type(ns.EnsureProfAPI) == "function" then return ns.EnsureProfAPI() end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
 local function ItemNameOK(id)
-    local PM = ns.ProfModule
-    if not (PM and PM.ItemName) then return true end
-    local ok, got = PM.ItemName(id)
+    local api = getProfAPI()
+    if not (api and api.ItemName) then return true end
+    local ok, got = api.ItemName(id)
     if ok and got then return true end
     if type(id) == "number" then pendingIds[#pendingIds + 1] = id end
     return false
 end
 
 local function PickNeed()
-    local PM = ns.ProfModule
-    if not (PM and PM.WritNeedLines and PM.CrateNeedLines) then return nil end
-    local wr = (ns.CratesData and ns.CratesData.writs) or {}
+    local api = getProfAPI()
+    if not (api and api.WritNeedLines and api.CrateNeedLines) then return nil end
+    local wr = api.WritsList and api.WritsList() or {}
     local fallback
     for i = 1, #wr do
         local w = wr[i]
-        if type(w) == "table" and type(w.target) == "number" then
-            local okw, wrows = pcall(PM.WritNeedLines, w.target)
+        local target = type(w) == "table" and (w.targetItemID or w.target) or nil
+        if type(target) == "number" then
+            local okw, wrows = pcall(api.WritNeedLines, target)
             if okw and type(wrows) == "table" and #wrows > 0 then
                 local rows = {}
-                local okc, crows = pcall(PM.CrateNeedLines, w.target)
+                local okc, crows = pcall(api.CrateNeedLines, target)
                 if okc and type(crows) == "table" then
                     for k = 1, #crows do rows[#rows + 1] = crows[k] end
                 end
                 for k = 1, #wrows do rows[#rows + 1] = wrows[k] end
-                local oz, zone = pcall(PM.WritZoneOf, w.target)
-                if oz and type(zone) == "number" and ItemNameOK(w.target) then
-                    return w.target, rows
+                local zfn = api.WritTurnInZone or api.WritZoneOf
+                local oz, zone = zfn and pcall(zfn, target) or false, nil
+                if oz and type(zone) == "number" and ItemNameOK(target) then
+                    return target, rows
                 end
-                if not fallback then fallback = { w.target, rows } end
+                if not fallback then fallback = { target, rows } end
             end
         end
     end
@@ -489,23 +496,22 @@ end
 
 local function PickRecipe()
     if recipeCache then return recipeCache[1], recipeCache[2] end
-    local PM = ns.ProfModule
-    local RA = ns.ProfRouteAuto
-    if not (PM and PM.PatternIndex and PM.PatternTipLines) then return nil end
-    if ns.EnsureProfRecipes then pcall(ns.EnsureProfRecipes) end
-    local ok, idx = pcall(PM.PatternIndex)
+    local api = getProfAPI()
+    if not (api and api.PatternIndex and api.PatternTipLines) then return nil end
+    if api.EnsureRecipes then pcall(api.EnsureRecipes) end
+    local ok, idx = pcall(api.PatternIndex)
     if not ok or type(idx) ~= "table" then return nil end
     local cand = {}
     for id, e in pairs(idx) do
         if type(e) == "table" and e.pid == id and type(e.r) == "table" then
             local mats = e.r[12]
             local cnt = type(mats) == "table" and #mats or 0
-            local ah = RA and RA.AHPriceOf and RA.AHPriceOf(e.r[2]) or nil
+            local ah = api.AHPriceOf and api.AHPriceOf(e.r[2]) or nil
             if cnt >= 2 and cnt <= 3 and ah then
                 local all, cost = true, 0
                 for k = 1, cnt do
                     local mid = mats[k][1]
-                    local mp = RA.MatPriceOf and RA.MatPriceOf(mid) or nil
+                    local mp = api.MatPriceOf and api.MatPriceOf(mid) or nil
                     if not mp then
                         all = false
                         break
@@ -531,14 +537,14 @@ local function PickRecipe()
                 if not ItemNameOK(mats[k][1]) then named = false end
             end
             if named then
-                local okr, rows = pcall(PM.PatternTipLines, id, nil)
+                local okr, rows = pcall(api.PatternTipLines, id, nil)
                 if okr and type(rows) == "table" and #rows > 0 then
                     recipeCache = { id, rows }
                     return id, rows
                 end
             end
             if not fallback then
-                local okr, rows = pcall(PM.PatternTipLines, id, nil)
+                local okr, rows = pcall(api.PatternTipLines, id, nil)
                 if okr and type(rows) == "table" and #rows > 0 then fallback = { id, rows } end
             end
             tried = tried + 1
@@ -553,37 +559,41 @@ local function PickRecipe()
 end
 
 local function CrateNamesOK(c)
-    local opts = c.opts
+    local opts = c.options or c.opts
     if type(opts) ~= "table" then return true end
     local ok = true
     for i = 1, #opts do
         local o = opts[i]
-        if type(o) == "table" and o[1] ~= nil and not ItemNameOK(o[1]) then ok = false end
+        local oid = type(o) == "table" and (o.itemID or o[1]) or nil
+        if oid ~= nil and not ItemNameOK(oid) then ok = false end
     end
     return ok
 end
 
 local function CrateNeedBoth(c)
-    if type(c.opts) ~= "table" or type(c.opts[1]) ~= "table" then return false end
-    local PM = ns.ProfModule
-    if not (PM and PM.WritNeedOf) then return false end
-    local ok, tid = pcall(PM.WritNeedOf, c.opts[1][1])
+    local opts = c.options or c.opts
+    local firstOpt = type(opts) == "table" and opts[1] or nil
+    local oid = type(firstOpt) == "table" and (firstOpt.itemID or firstOpt[1]) or nil
+    if oid == nil then return false end
+    local api = getProfAPI()
+    if not (api and api.WritNeedOf) then return false end
+    local ok, tid = pcall(api.WritNeedOf, oid)
     return ok and tid ~= nil
 end
 
 local function PickCrate()
-    local PM = ns.ProfModule
-    local CD = ns.CratesData
-    local cr = CD and CD.crates
+    local api = getProfAPI()
+    local cr = api and api.CratesList and api.CratesList() or nil
     if type(cr) ~= "table" then return nil end
     local first, firstNoGap, firstNamed
-    if PM and PM.CrateTipLines then
+    if api and api.CrateTipLines then
         for i = 1, #cr do
             local c = cr[i]
-            if type(c) == "table" and type(c.id) == "number" then
-                local ok, rows = pcall(PM.CrateTipLines, c.id)
+            local cid = type(c) == "table" and (c.itemID or c.id) or nil
+            if type(cid) == "number" then
+                local ok, rows = pcall(api.CrateTipLines, cid)
                 if ok and type(rows) == "table" and #rows > 0 then
-                    local named = ItemNameOK(c.id) and CrateNamesOK(c)
+                    local named = ItemNameOK(cid) and CrateNamesOK(c)
                     if named and not RowsHaveGap(rows) and CrateNeedBoth(c) then return c, rows end
                     if named and not firstNamed then firstNamed = { c, rows } end
                     if not RowsHaveGap(rows) and not firstNoGap then firstNoGap = { c, rows } end
@@ -597,24 +607,26 @@ local function PickCrate()
     if first then return first[1], first[2] end
     for i = 1, #cr do
         local c = cr[i]
-        if type(c) == "table" and type(c.id) == "number" then return c, nil end
+        local cid = type(c) == "table" and (c.itemID or c.id) or nil
+        if type(cid) == "number" then return c, nil end
     end
     return nil
 end
 
 local function PickWrit()
-    local PM = ns.ProfModule
-    local CD = ns.CratesData
-    local wr = CD and CD.writs
+    local api = getProfAPI()
+    local wr = api and api.WritsList and api.WritsList() or nil
     if type(wr) ~= "table" then return nil end
     local first, firstNoGap, firstNamed
-    if PM and PM.WritTipLines then
+    if api and api.WritTipLines then
         for i = 1, #wr do
             local w = wr[i]
-            if type(w) == "table" and type(w.item) == "number" then
-                local ok, rows = pcall(PM.WritTipLines, w.item)
+            local wid = type(w) == "table" and (w.writItemID or w.item) or nil
+            local target = type(w) == "table" and (w.targetItemID or w.target) or nil
+            if type(wid) == "number" then
+                local ok, rows = pcall(api.WritTipLines, wid)
                 if ok and type(rows) == "table" and #rows > 0 then
-                    local named = ItemNameOK(w.item) and ItemNameOK(w.target)
+                    local named = ItemNameOK(wid) and ItemNameOK(target)
                     if named and not RowsHaveGap(rows) then return w, rows end
                     if named and not firstNamed then firstNamed = { w, rows } end
                     if not RowsHaveGap(rows) and not firstNoGap then firstNoGap = { w, rows } end
@@ -628,7 +640,8 @@ local function PickWrit()
     if first then return first[1], first[2] end
     for i = 1, #wr do
         local w = wr[i]
-        if type(w) == "table" and type(w.item) == "number" then return w, nil end
+        local wid = type(w) == "table" and (w.writItemID or w.item) or nil
+        if type(wid) == "number" then return w, nil end
     end
     return nil
 end
@@ -645,8 +658,8 @@ local function Refresh()
 
     PaintTip(boxes[1], needId, needRows)
     PaintTip(boxes[2], dmId, dmRows)
-    PaintTip(boxes[3], crate and crate.id or nil, crateRows)
-    PaintTip(boxes[4], writ and writ.item or nil, writRows)
+    PaintTip(boxes[3], crate and (crate.itemID or crate.id) or nil, crateRows)
+    PaintTip(boxes[4], writ and (writ.writItemID or writ.item) or nil, writRows)
     PaintTip(boxes[5], pid, patternRows)
 
     if not refreshRetried and #pendingIds > 0 then
@@ -659,8 +672,9 @@ local function Refresh()
             C_Timer.After(0.35, function()
                 if popup:IsShown() then
                     recipeCache = nil
-                    if ns.ProfModule and ns.ProfModule.ResetItemNameMemo then
-                        pcall(ns.ProfModule.ResetItemNameMemo)
+                    local api = getProfAPI()
+                    if api and api.ResetItemNameMemo then
+                        pcall(api.ResetItemNameMemo)
                     end
                     Refresh()
                 end

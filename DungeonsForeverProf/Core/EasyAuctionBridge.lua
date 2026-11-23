@@ -1,21 +1,62 @@
-local ns = _G.DF_NS or {}
-
-if not ns.LoadForeverPages then return end
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+local gns = _G.DF_NS
 
 local EB = {}
 ns.EasyBridge = EB
+if type(gns) == "table" and gns ~= ns then
+    gns.EasyBridge = EB
+end
 
-local DB_NAME = "EasyAuctionDB12"
-local CACHE_TTL = 2
-local INDEX_TTL = 30
+local LIST_NS = "EasyAuction12"
 
 local floor, huge = math.floor, math.huge
 local pairs, next, type, tonumber, tostring = pairs, next, type, tonumber, tostring
 local match, sub = string.match, string.sub
-local time = time
+
+local function getPricingCfg()
+    return ns.PricingConfig or (type(gns) == "table" and gns.PricingConfig) or nil
+end
+
+local function getRouteAuto()
+    return ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+end
+
+local function easyCfg()
+    local cfg = getPricingCfg()
+    return type(cfg) == "table" and type(cfg.EASY_AUCTION) == "table" and cfg.EASY_AUCTION or nil
+end
+
+local function dbName()
+    local ec = easyCfg()
+    return (ec and type(ec.dbName) == "string" and ec.dbName ~= "" and ec.dbName) or "EasyAuctionDB12"
+end
+
+local function cacheTTL()
+    local ec = easyCfg()
+    return (ec and type(ec.cacheTTL) == "number" and ec.cacheTTL > 0 and ec.cacheTTL) or 2
+end
+
+local function indexTTL()
+    local ec = easyCfg()
+    return (ec and type(ec.indexTTL) == "number" and ec.indexTTL > 0 and ec.indexTTL) or 30
+end
+
+local function listLimit()
+    local ec = easyCfg()
+    return (ec and type(ec.listLimit) == "number" and ec.listLimit > 0 and ec.listLimit) or 200
+end
 
 local function Now()
-    return (type(time) == "function") and time() or 0
+    if type(_G.time) == "function" then
+        local ok, value = pcall(_G.time)
+        if ok and type(value) == "number" then return value end
+    end
+    if type(os) == "table" and type(os.time) == "function" then
+        local ok, value = pcall(os.time)
+        if ok and type(value) == "number" then return value end
+    end
+    return 0
 end
 
 local function Int(value, minimum)
@@ -33,7 +74,11 @@ local function Num(value, minimum)
 end
 
 local function MaxAge()
-    local ra = ns.ProfRouteAuto
+    local cfg = getPricingCfg()
+    if type(cfg) == "table" and type(cfg.SUPPLY_MAX_AGE_SEC) == "number" and cfg.SUPPLY_MAX_AGE_SEC > 0 then
+        return cfg.SUPPLY_MAX_AGE_SEC
+    end
+    local ra = getRouteAuto()
     if ra and ra.MaxAuctionSupplyAgeSeconds then
         local ok, value = pcall(ra.MaxAuctionSupplyAgeSeconds)
         if ok and type(value) == "number" and value > 0 then return value end
@@ -42,17 +87,20 @@ local function MaxAge()
 end
 
 local function Database()
-    local db = _G[DB_NAME]
+    local db = _G[dbName()]
     if type(db) ~= "table" or type(db.scopes) ~= "table" then return nil end
     return db
 end
 
 local function ScopePrefix()
-    local region = GetCurrentRegion and GetCurrentRegion() or nil
-    local realm = GetRealmName and GetRealmName() or nil
+    local regionFn = _G.GetCurrentRegion
+    local realmFn = _G.GetRealmName
+    local factionFn = _G.UnitFactionGroup
+    local region = type(regionFn) == "function" and regionFn() or nil
+    local realm = type(realmFn) == "function" and realmFn() or nil
     if type(region) ~= "number" or region <= 0 then return nil end
     if type(realm) ~= "string" or realm == "" then return nil end
-    local faction = UnitFactionGroup and UnitFactionGroup("player") or nil
+    local faction = type(factionFn) == "function" and factionFn("player") or nil
     if type(faction) ~= "string" or faction == "" then faction = "Neutral" end
     return tostring(region) .. ":" .. realm .. ":" .. faction
 end
@@ -84,7 +132,7 @@ local cacheAt, cacheDB, cacheMarket, cacheScope
 
 local function Market()
     local now = Now()
-    if cacheMarket and now - cacheAt < CACHE_TTL then
+    if cacheMarket and cacheAt and now - cacheAt < cacheTTL() then
         return cacheDB, cacheMarket, cacheScope
     end
     local db, market, scope = SelectMarket()
@@ -96,7 +144,7 @@ local indexMarket, indexMap, indexAt
 
 local function Index(market)
     local now = Now()
-    if indexMarket == market and indexMap and now - indexAt < INDEX_TTL then return indexMap end
+    if indexMarket == market and indexMap and indexAt and now - indexAt < indexTTL() then return indexMap end
     local map = {}
     local items = market.items
     if type(items) == "table" then
@@ -220,7 +268,7 @@ function EB.Snapshot()
     if type(market) ~= "table" then return nil end
     local now = Now()
     if snapshotValue and snapshotValue.marketKey == "ea:" .. tostring(scope)
-        and now - snapshotAt < CACHE_TTL then return snapshotValue end
+        and snapshotAt and now - snapshotAt < cacheTTL() then return snapshotValue end
     local stamp = Int(market.lastFullScanAt, 0)
     if not stamp then
         for _, item in pairs(market.items or {}) do
@@ -232,12 +280,13 @@ function EB.Snapshot()
     end
     if not stamp or stamp <= 0 then return nil end
     local now2 = Now()
-    local expired = stamp > now2 or (now2 - stamp) > MaxAge()
+    local maxAge = MaxAge()
+    local expired = stamp > now2 or (now2 - stamp) > maxAge
     local value = {
         status = expired and "expired" or "available",
         observedAt = stamp,
         marketKey = "ea:" .. tostring(scope),
-        expiresAt = stamp + MaxAge(),
+        expiresAt = stamp + maxAge,
         source = "easyauction",
     }
     snapshotAt, snapshotValue = now, value
@@ -254,13 +303,19 @@ function EB.AuctionCut()
     return cut * 100
 end
 
-function EB.Invalidate()
-    cacheAt, cacheDB, cacheMarket, cacheScope = nil, nil, nil, nil
-    snapshotAt, snapshotValue = nil, nil
+function EB.DefaultAHCut()
+    local cfg = getPricingCfg()
+    if type(cfg) == "table" and type(cfg.AH_CUT) == "number" and cfg.AH_CUT >= 0 and cfg.AH_CUT <= 1 then
+        return cfg.AH_CUT
+    end
+    return 0.05
 end
 
-local LIST_NS = "EasyAuction12"
-local LIST_LIMIT = 200
+function EB.Invalidate()
+    cacheAt, cacheDB, cacheMarket, cacheScope = nil, nil, nil, nil
+    indexMarket, indexMap, indexAt = nil, nil, nil
+    snapshotAt, snapshotValue = nil, nil
+end
 
 local function ListStore()
     local root = _G[LIST_NS]
@@ -334,6 +389,7 @@ end
 function EB.ShareText(name, items)
     local safe = EscapeName(name)
     if not safe or type(items) ~= "table" then return nil end
+    local limit = listLimit()
     local lines = { "EA12|1|" .. safe }
     for index = 1, #items do
         local entry = items[index]
@@ -343,7 +399,7 @@ function EB.ShareText(name, items)
             local itemName = EscapeName(entry.name)
             if id and need and itemName then
                 lines[#lines + 1] = string.format("%d:0:0:0|%d|-|%s", id, need, itemName)
-                if #lines > LIST_LIMIT + 1 then return nil end
+                if #lines > limit + 1 then return nil end
             end
         end
     end

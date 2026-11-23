@@ -46,15 +46,54 @@ local Unpack = Host.Unpack
 local C_GOLD, C_GREY, C_DIM, C_TEXT = Host.C_GOLD, Host.C_GREY, Host.C_DIM, Host.C_TEXT
 local C_WHITE = Host.C_WHITE
 
-local D  = ns.ProfData
-local R
-local function RGet(k)
-    if not R then
-        R = ns.ProfRecipes
-    end
-    return R and R[k] or nil
+local function getDS()
+    return ns.ProfDataStore or (_G.DF_NS and _G.DF_NS.ProfDataStore) or nil
 end
-local LV = ns.ProfLeveling
+local function getAPI()
+    return ns.ProfAPI or (_G.DF_NS and _G.DF_NS.ProfAPI) or nil
+end
+local function profInfo(slug)
+    local api = getAPI()
+    if api and type(api.ProfessionInfo) == "function" then
+        return api.ProfessionInfo(slug)
+    end
+    local ds = getDS()
+    local p = ds and ds.Profession and ds.Profession(slug) or nil
+    if not p then return nil end
+    return { slug = slug, name = ds.ProfessionName and ds.ProfessionName(slug) or slug, icon = p.icon }
+end
+local function profNameOf(slug)
+    local info = profInfo(slug)
+    if info and type(info.name) == "string" and info.name ~= "" then return info.name end
+    local ds = getDS()
+    if ds and type(ds.ProfessionName) == "function" then
+        local nm = ds.ProfessionName(slug)
+        if type(nm) == "string" and nm ~= "" then return nm end
+    end
+    return slug
+end
+local function vendorNameOf(npcID)
+    if type(npcID) ~= "number" then return nil end
+    local ds = getDS()
+    return ds and type(ds.RawText) == "function" and ds.RawText("npc", npcID) or nil
+end
+local function vendorLocOf(npcID)
+    if type(npcID) ~= "number" then return nil end
+    local ds = getDS()
+    local npc = ds and type(ds.Npc) == "function" and ds.Npc(npcID) or nil
+    local sp = npc and type(npc.spawns) == "table" and npc.spawns[1] or nil
+    if sp and (sp.uiMapID or sp.zoneID) then
+        return { sp.zoneID, sp.uiMapID, sp.x, sp.y }
+    end
+    return nil
+end
+local function isVendorSold(itemID)
+    if type(itemID) ~= "number" then return false end
+    local ds = getDS()
+    local vo = ds and type(ds.VendorOffers) == "function" and ds.VendorOffers(itemID) or nil
+    if type(vo) ~= "table" then return false end
+    return (type(vo.offers) == "table" and #vo.offers > 0) or vo.commonVendor == true
+end
 local RA = ns.ProfRouteAuto
 local function trackingPaused()
     local xp=ns.ProfExecution
@@ -393,13 +432,22 @@ local function isGathering(slug)
     return not (slug=="mining" and view and view.GatherMode and view.GatherMode(slug)=="smelt")
 end
 local function hasRoute(slug)
-    return slug and ((LV[slug] and LV[slug].steps) or (ns.ProfGatheringRoutes and ns.ProfGatheringRoutes.HasRoute(slug)))
+    if not slug then return false end
+    if ns.ProfGatheringRoutes and ns.ProfGatheringRoutes.HasRoute(slug) then return true end
+    local info = profInfo(slug)
+    if info and (info.supportsAutoRoute or info.supportsExecution or info.fixedOnly) then return true end
+    local xp = ns.ProfExecution
+    if xp and xp.GetPlan and xp.GetPlan(slug) then return true end
+    return false
 end
 local function routeForCalc(slug, skill)
     if slug=="poisons" then
         PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
-        local guide=LV[slug]
-        return "fixed",clipFixedSteps(guide and guide.steps,routeTarget(slug))
+        local opts=RA and RA.OptionsFor and RA.OptionsFor(slug,skill) or {}
+        opts.target,opts.scheme=routeTarget(slug),"fixed"
+        local summary=RA and RA.FixedPlan and RA.FixedPlan(slug,opts)
+        local steps=clipFixedSteps(summary and summary.steps or nil,routeTarget(slug))
+        return "fixed",steps,summary
     end
     if isGathering(slug) then
         PF.pendingPlans=PF.pendingPlans or {};PF.pendingPlans[slug]=nil
@@ -472,16 +520,15 @@ local function routeForCalc(slug, skill)
         return "auto", {}
     end
     PF.pendingPlans[slug] = nil
-    local lv = LV[slug]
-    local steps=clipFixedSteps(lv and lv.steps or nil,routeTarget(slug))
     local opts=RA and RA.OptionsFor and RA.OptionsFor(slug,skill) or {}
     opts.target,opts.scheme=routeTarget(slug),"fixed"
     local summary=RA and RA.FixedPlan and RA.FixedPlan(slug,opts)
+    local steps=clipFixedSteps(summary and summary.steps or nil,routeTarget(slug))
     if summary and summary.status=="recalculate_required" then
         PF.pendingPlans[slug]=summary
         return "fixed",{}
     end
-    if summary then steps=summary.steps end
+    if summary and summary.steps then steps=summary.steps end
     if RA and RA.FilterFixedSpecializations then
         local filtered,blocked,goalRequired=RA.FilterFixedSpecializations(slug,steps,opts)
         if goalRequired or blocked and #blocked>0 then
@@ -550,7 +597,21 @@ local function derivedStep(slug, skill)
     return #steps + 1
 end
 
-local function recMats(rec) return rec and (rec[12] or rec.mats) or nil end
+local function recMats(rec)
+    if not rec then return nil end
+    if rec[12] or rec.mats then return rec[12] or rec.mats end
+    if type(rec.reagents) == "table" then
+        local out = {}
+        for i = 1, #rec.reagents do
+            local m = rec.reagents[i]
+            if type(m) == "table" and type(m.itemID) == "number" then
+                out[#out + 1] = { m.itemID, m.count or 1 }
+            end
+        end
+        return out
+    end
+    return nil
+end
 function PF.LearningWarning(slug, progress)
     if slug=="poisons" then return end
     local XP=ns.ProfExecution
@@ -570,10 +631,10 @@ local function stepRecipe(seg, fallback)
     if seg and XP and XP.IsSpecializationQuest(seg) then return {mats=XP.SpecializationQuest(seg).inputs or {}} end
     return fallback
 end
-local function recItem(rec) return rec and (rec[2] or rec.item or rec.makes) or nil end
+local function recItem(rec) return rec and (rec[2] or rec.outputItemID or rec.item or rec.makes) or nil end
 local function recBreaks(rec)
     if not rec then return nil end
-    return rec[7] or rec.learn, rec[8] or rec.yellow, rec[9] or rec.green, rec[10] or rec.grey
+    return rec[7] or rec.learnedAt or rec.orange or rec.learn, rec[8] or rec.yellow, rec[9] or rec.green, rec[10] or rec.grey
 end
 
 local recCache = {}
@@ -581,33 +642,18 @@ local function recMap(slug)
     local c = recCache[slug]
     if not c then
         c = {}
-        local rr = RGet(slug)
-        if rr and rr.rows then
-            for _, r in ipairs(rr.rows) do c[r[1]] = r end
-        end
-        local lv = LV[slug]
-        if lv and type(lv.rinfo) == "table" then
-            for spell, ri in pairs(lv.rinfo) do
-                if not c[spell] then c[spell] = ri end
+        local ds = getDS()
+        local bucket = ds and ds.EnsureRecipes and ds.EnsureRecipes(slug) or nil
+        if type(bucket) == "table" and type(bucket.recipes) == "table" then
+            for spellID, recipe in pairs(bucket.recipes) do
+                if type(spellID) == "number" and type(recipe) == "table" then
+                    c[spellID] = recipe
+                end
             end
         end
         recCache[slug] = c
     end
     return c
-end
-
-local soldCache = {}
-local function soldSet(slug)
-    local s = soldCache[slug]
-    if not s then
-        s = {}
-        local lv = LV[slug]
-        if lv and lv.sold then
-            for _, id in ipairs(lv.sold) do s[id] = true end
-        end
-        soldCache[slug] = s
-    end
-    return s
 end
 
 local function purchaseSource(entry)
@@ -1141,7 +1187,6 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
     local rm = recMap(s.slug)
     local totals, order = {}, {}
     local futureOutputs,futureSpells={},{}
-    local reserve=not onlyStep and plan and plan.reserve and plan.reserve.mode~="off" and ns.ProfReserve
     local xp=ns.ProfExecution
     local run=xp and xp.GetRun(s.slug)
     local readProgress=run and progressReader(run)
@@ -1155,7 +1200,6 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             baseRemaining[seg.segmentID]=progress.baseRemaining or 0
         end
     end end
-    local reserveNeeds=reserve and reserve.Remaining(plan,casts,matching and run.reserveDisabled,completed) or {}
     local curStep = s.step or 1
     for i = curStep, #steps do
         if onlyStep and i > curStep then break end
@@ -1174,7 +1218,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
         if crafts>0 then
             futureSpells[(seg.profession or s.slug)..":"..tostring(seg[3])]=true
             local item=recItem(rec)
-            local output=seg.outputMin or rec and (rec.outputMin or rec[3] or rec.count)
+            local output=seg.outputMin or rec and (rec.outputMin or rec.outputCountMin or rec[3] or rec.count)
             if item and type(output)=="number" and output>0 then
                 futureOutputs[item]=(futureOutputs[item] or 0)+crafts*output
             end
@@ -1219,7 +1263,7 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
             local count=math.ceil(segment.expectedCrafts or segment[4] or 0)
             for _,material in ipairs(recMats(recipe) or {}) do originalNeeds[material[1]]=(originalNeeds[material[1]] or 0)+(material[2] or 1)*count end
             local item=recItem(recipe)
-            local output=segment.outputMin or recipe and (recipe.outputMin or recipe[3] or recipe.count)
+            local output=segment.outputMin or recipe and (recipe.outputMin or recipe.outputCountMin or recipe[3] or recipe.count)
             if item and type(output)=="number" and output>0 then originalOutputs[item]=(originalOutputs[item] or 0)+output*count end
         end
         local function purchase(entry,formula)
@@ -1256,7 +1300,6 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
                 end
             end
         end
-        if reserve then for _,entry in ipairs(plan.reserve.mats or {}) do purchase(entry) end end
         for id,quantity in pairs(plan.retainedToolItems or {}) do
             if leaves[id] then
                 if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
@@ -1303,25 +1346,14 @@ local function shopList(s, onlyStep, bagsOnly, suppliedPlan)
                 row.craftedIntermediate=leaf.planPurchaseCount==0 and (originalOutputs[id] or 0)>0 or nil
             end
         end
-        if reserve then
-            for _,entry in ipairs(plan.reserve.materials or {}) do
-                local id=entry.id;local amount=reserveNeeds[id] or 0
-                if amount>0 then
-                    if not totals[id] then totals[id]={id=id,need=0,at=math.huge};order[#order+1]=id end
-                    local row=totals[id];row.baseNeed=row.need;row.reserveNeed=amount;row.need=row.need+amount
-                    if not row.planPurchases and leaves[id] then for key,value in pairs(leaves[id]) do row[key]=value end end
-                    row.planDemand=(row.planDemand or row.baseNeed)+entry.count
-                end
-            end
-        end
     end
     local list = {}
     for _, id in ipairs(order) do
         local e = totals[id]
         if onlyStep or e.need>0 then
-            e.have,e.haveKnown = Have(e.id,not (bagsOnly or reserve))
+            e.have,e.haveKnown = Have(e.id,not bagsOnly)
             if s.slug=="poisons" then
-                e.vendor=soldSet(s.slug)[e.id] or false
+                e.vendor=isVendorSold(e.id)
                 e.source=e.vendor and "vendor" or "ah"
             end
             if not onlyStep and e.planPurchases then allocatePurchases(e) end
@@ -1358,7 +1390,7 @@ function PF.ShoppingSourceText(entry)
         for _,purchase in ipairs(entry.purchases or {}) do
             local source=purchaseSource(purchase)
             local name=(source=="ah" or source=="auction") and L["拍卖行"]
-                or (source=="vendor" or source=="npc") and (ns.ProfVendorNames and ns.ProfVendorNames[purchase.npcID] or L["商人"])
+                or (source=="vendor" or source=="npc") and (vendorNameOf(purchase.npcID) or L["商人"])
                 or L["尚无购买来源"]
             local cost=type(purchase.cost)=="number" and not purchase.unpriced and RA and RA.MoneyStr and RA.MoneyStr(purchase.cost,"copper") or L["请核对价格"]
             local text=format("%s ×%d · %s",name,purchase.count or 0,cost)
@@ -1378,7 +1410,7 @@ function PF.ShoppingSourceText(entry)
     local text
     if source=="mixed" then text=L["商人"].." / "..L["拍卖行"]
     elseif source=="vendor" or source=="npc" then
-        text=ns.ProfVendorNames and ns.ProfVendorNames[entry.npcID] or L["商人"]
+        text=vendorNameOf(entry.npcID) or L["商人"]
         if entry.unlimited then text=text.." · "..L["不限量"]
         elseif entry.limited then text=text.." · "..L["限量"]
         elseif entry.stockUnknown then text=text.." · "..L["请向商人确认现货"] end
@@ -1532,14 +1564,17 @@ local function CraftingEntrySpellID(index)
 end
 
 local function openProfPanel(slug)
-    local profName = D.pro and D.pro[slug] and D.pro[slug].name
+    local profName = profNameOf(slug)
+    local api = getAPI()
     local ids = (GetProfessions and { GetProfessions() }) or {}
     local targetLine
     if type(GetProfessionInfo) == "function" then
         for _, idx in ipairs(ids) do
             if idx then
                 local nm, _, _, _, _, _, skillLine = GetProfessionInfo(idx)
-                if profName and nm == profName and skillLine then
+                local matched = (skillLine and api and api.SkillLineToSlug and api.SkillLineToSlug(skillLine) == slug)
+                    or (profName and nm == profName)
+                if matched and skillLine then
                     targetLine = skillLine
                     if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill
                         and pcall(C_TradeSkillUI.OpenTradeSkill, skillLine) then
@@ -1735,7 +1770,7 @@ end
 
 local importTries = 0
 local function DoImport(slug, profName)
-    if not (LV[slug] and LV[slug].steps) then return end
+    if not hasRoute(slug) then return end
     local s0 = st()
     local tmp
     if s0 and s0.slug == slug then
@@ -1820,13 +1855,24 @@ local function bidNameMap(force)
         local nm = DG.ItemName(id)
         if type(nm) == "string" and nm ~= "" then map[nm] = id end
     end
-    local book = ns.ProfRecipes and ns.ProfRecipes[slug]
-    for _, row in ipairs(book and book.rows or {}) do
-        add(row[2])
-        local formula = row[13]
-        if type(formula) == "table" then add(formula[1]) end
-        for _, m in ipairs(recMats(row) or {}) do
-            add(type(m) == "table" and m[1] or m)
+    local ds = getDS()
+    local bucket = ds and ds.EnsureRecipes and ds.EnsureRecipes(slug) or nil
+    if type(bucket) == "table" and type(bucket.recipes) == "table" then
+        for spellID, recipe in pairs(bucket.recipes) do
+            if type(recipe) == "table" then
+                add(recipe.outputItemID)
+                local lr = ds.LearningRoutes and ds.LearningRoutes(spellID) or nil
+                if type(lr) == "table" and type(lr.routes) == "table" then
+                    for _, route in ipairs(lr.routes) do
+                        if type(route) == "table" and type(route.teachingItemID) == "number" then
+                            add(route.teachingItemID)
+                        end
+                    end
+                end
+                for _, m in ipairs(recipe.reagents or {}) do
+                    if type(m) == "table" then add(m.itemID or m[1]) end
+                end
+            end
         end
     end
     if PF.ShoppingList then
@@ -2340,7 +2386,7 @@ local function BuildBody()
             GameTooltip:ClearLines()
             if r.srcKind == 1 then
                 GameTooltip:AddLine(r.srcFull or r.srcText, 1, 0.82, 0, true)
-                local loc = r.npcID and ns.ProfVendors and ns.ProfVendors[r.npcID]
+                local loc = vendorLocOf(r.npcID)
                 GameTooltip:AddLine(loc and L["点击在地图上标出该商人"] or L["该商人的位置暂未收录"],
                                     0.75, 0.75, 0.75, true)
             else
@@ -2357,7 +2403,7 @@ local function BuildBody()
             local r = self.__row
             if not r or r.srcKind ~= 1 or not r.npcID then return end
             local PDm = ns.ProfModule
-            local loc = ns.ProfVendors and ns.ProfVendors[r.npcID]
+            local loc = vendorLocOf(r.npcID)
             if PDm and PDm.MarkVendorLoc then PDm.MarkVendorLoc(loc) end
             if not loc then
                 craftNotify(format(L["%s 的位置暂未收录"], r.srcFull or r.srcText or "?"))
@@ -2371,7 +2417,7 @@ local function BuildBody()
     f.shopImp:SetScript("OnClick", function()
         local s0 = st()
         if not (s0 and s0.slug) then return end
-        local nm = (D.pro and D.pro[s0.slug] and D.pro[s0.slug].name) or s0.slug
+        local nm = profNameOf(s0.slug)
         DoImport(s0.slug, nm)
         ns.PlaySound(1)
     end)
@@ -2655,9 +2701,9 @@ function PF.Paint()
     local slug = s.slug
     local mode, steps = routeFor(slug, s.skill)
     if not steps then f:Hide() return end
-    local p = D.pro and D.pro[slug]
+    local p = profInfo(slug)
     local accent = Accent()
-    local name = (p and p.name) or slug
+    local name = (p and p.name) or profNameOf(slug)
 
     f.icon:SetTexture(ProfIconTex(p and p.icon))
     f.title:SetText(format(L["%s升级HUD"], name))
@@ -2993,7 +3039,7 @@ function PF.Paint()
                     for _, purchase in ipairs(entry.purchases or {}) do
                         if purchase.npcID then row.npcID = purchase.npcID; break end
                     end
-                    row.srcFull = row.npcID and ns.ProfVendorNames and ns.ProfVendorNames[row.npcID]
+                    row.srcFull = vendorNameOf(row.npcID)
                     row.srcText = row.srcFull or row.srcText
                 end
                 row.srcText = clipText(row.srcText, SRC_TEXT_W)
@@ -3238,7 +3284,7 @@ function PF.PaintButton(bt, slug)
         bt:SetShown(false)
         return
     end
-    local name = (D.pro and D.pro[slug] and D.pro[slug].name) or slug
+    local name = profNameOf(slug)
     local text = format(L["%s升级HUD"], name)
     bt:SetText(text)
     local PD = ns.ProfModule
@@ -3272,7 +3318,7 @@ function PF.PaintImportBtn(bt, slug)
     local PDm = ns.ProfModule
     if PDm and PDm.TextW then bt:SetWidth(math.ceil(PDm.TextW(text, 13)) + 22) end
     bt:SetScript("OnClick", function()
-        local name = (D.pro and D.pro[slug] and D.pro[slug].name) or slug
+        local name = profNameOf(slug)
         DoImport(slug, name)
         ns.PlaySound(1)
     end)

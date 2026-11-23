@@ -1,155 +1,323 @@
-local ns = _G.DF_NS or {}
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+local gns = _G.DF_NS
 
-local M = {}
+local M = { DataSchema = 2 }
 ns.ProfSourceMerge = M
+if type(gns) == "table" and gns ~= ns then
+    gns.ProfSourceMerge = M
+end
 
-local function ZoneName(area)
-    if type(area) ~= "number" or area <= 0 then return "" end
-    if ns.EnsureProfSources then ns.EnsureProfSources() end
-    local txt = ns.ProfZoneText
-    if type(txt) == "table" and txt[area] then return txt[area] end
-    local am = ns.AreaMap
-    local ui = type(am) == "table" and am[area] or nil
-    if ui then
-        local pd = ns.ProfModule
-        if pd and pd.MapName then
-            local nm = pd.MapName(ui)
-            if type(nm) == "string" and nm ~= "" then return nm end
-        end
+local function getDS()
+    return ns.ProfDataStore or (type(gns) == "table" and gns.ProfDataStore) or nil
+end
+
+local function ZoneName(areaID)
+    if type(areaID) ~= "number" or areaID <= 0 then return "" end
+    local DS = getDS()
+    if DS and type(DS.RawText) == "function" then
+        local raw = DS.RawText("zone", areaID)
+        if type(raw) == "string" and raw ~= "" then return raw end
     end
-    if C_Map and C_Map.GetAreaInfo then
-        local ok, nm = pcall(C_Map.GetAreaInfo, area)
+    if type(_G.C_Map) == "table" and type(_G.C_Map.GetAreaInfo) == "function" then
+        local ok, nm = pcall(_G.C_Map.GetAreaInfo, areaID)
         if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    if DS and type(DS.ZoneName) == "function" then
+        return DS.ZoneName(areaID)
     end
     return ""
 end
 
-local function VendorEntry(v)
-    local zone = ZoneName(v.area)
-    local result = {}
-    for k, value in pairs(v) do result[k] = value end
-    result.zone = zone ~= "" and zone or v.zone
-    return result
+local function copyList(raw)
+    local out = {}
+    if type(raw) ~= "table" then return out end
+    for i = 1, #raw do
+        local v = raw[i]
+        if type(v) == "table" then
+            local cp = {}
+            for k, val in pairs(v) do
+                if type(val) == "table" then
+                    local sub = {}
+                    for sk, sv in pairs(val) do
+                        if type(sv) == "table" then
+                            local sub2 = {}
+                            for s2k, s2v in pairs(sv) do sub2[s2k] = s2v end
+                            sub[sk] = sub2
+                        else
+                            sub[sk] = sv
+                        end
+                    end
+                    cp[k] = sub
+                else
+                    cp[k] = val
+                end
+            end
+            out[#out + 1] = cp
+        else
+            out[#out + 1] = v
+        end
+    end
+    return out
 end
 
-local function DropEntry(d)
-    local zone = ZoneName(d.area)
+local function copyCurrencies(raw)
+    local out = {}
+    if type(raw) ~= "table" then return out end
+    for i = 1, #raw do
+        local c = raw[i]
+        if type(c) == "table" then
+            local cid = tonumber(c.currencyID or c.id)
+            local amt = tonumber(c.amount ~= nil and c.amount or c.count) or 0
+            if cid and cid > 0 then
+                out[#out + 1] = {
+                    currencyID = cid,
+                    amount = amt,
+                    id = cid,
+                    count = amt,
+                }
+            end
+        end
+    end
+    return out
+end
+
+local function copyCostItems(raw)
+    local out = {}
+    if type(raw) ~= "table" then return out end
+    for i = 1, #raw do
+        local it = raw[i]
+        if type(it) == "table" then
+            local iid = tonumber(it.itemID or it.id)
+            local cnt = tonumber(it.count ~= nil and it.count or it.amount) or 1
+            if iid and iid > 0 then
+                out[#out + 1] = {
+                    itemID = iid,
+                    count = cnt,
+                    id = iid,
+                }
+            end
+        end
+    end
+    return out
+end
+
+local function normalizeSide(f)
+    if f == "A" or f == "Alliance" then return "a" end
+    if f == "H" or f == "Horde" then return "h" end
+    if f == "N" or f == "Neutral" then return "n" end
+    return nil
+end
+
+local function vendorEntry(o, DS)
+    local npcID = tonumber(o.npcID or o.id)
+    local npc = npcID and type(DS.Npc) == "function" and DS.Npc(npcID) or nil
+    local npcName = npcID and type(DS.NpcName) == "function" and DS.NpcName(npcID) or nil
+    local spawns = npc and copyList(npc.spawns) or {}
+    local firstArea = type(spawns[1]) == "table" and spawns[1].areaID or o.areaID or o.area
+    local zone = firstArea and ZoneName(firstArea) or ""
+    local currencies = copyCurrencies(o.currencies)
+    local costItems = copyCostItems(o.costItems)
+    local hasExt = (#currencies > 0 or #costItems > 0 or o.hasExtendedCost == true)
+    local bundle = o.bundleSize or o.quantity or 1
+    local price = o.priceCopper ~= nil and o.priceCopper or o.price
+    local stock = o.maxStock ~= nil and o.maxStock or o.stock
     return {
-        npc = d.npc,
-        id = d.id,
-        chance = d.pct,
-        zone = (zone ~= "" and zone or nil),
-        area = d.area,
+        id = npcID,
+        npcID = npcID,
+        name = npcName,
+        optionIndex = o.optionIndex,
+        faction = npc and npc.faction or o.faction,
+        side = normalizeSide(npc and npc.faction or o.faction),
+        price = price,
+        priceCopper = price,
+        quantity = bundle,
+        bundleSize = bundle,
+        stock = stock,
+        maxStock = stock,
+        priceVerified = o.priceVerified == true,
+        currencies = currencies,
+        costItems = costItems,
+        hasExtendedCost = hasExt,
+        cur = (#currencies > 0 and currencies[1].currencyID) or 0,
+        amt = (#currencies > 0 and currencies[1].amount) or 0,
+        conditions = copyList(o.conditions),
+        accessConditions = npc and copyList(npc.accessConditions) or {},
+        spawns = spawns,
+        area = firstArea,
+        areaID = firstArea,
+        zone = (zone ~= "" and zone) or nil,
     }
 end
 
-local function MergeVendor(byId, list, v)
-    local e = byId[v.id]
-    if type(e) ~= "table" then
-        e = VendorEntry(v)
-        byId[v.id] = e
-        list[#list + 1] = e
-        return e
-    end
-    if (tonumber(e.price) or 0) <= 0 and (v.price or 0) > 0 then e.price = v.price end
-    if (tonumber(e.cur) or 0) <= 0 and (v.cur or 0) > 0 then
-        e.cur = v.cur
-        e.amt = v.amt
-    end
-    if e.stock == nil and v.stock ~= nil then e.stock = v.stock end
-    if e.area == nil and v.area then e.area = v.area end
-    if (e.zone == nil or e.zone == "") and v.area then
-        local z = ZoneName(v.area)
-        if z ~= "" then e.zone = z end
-    end
-    return e
+local function dropEntry(d, DS)
+    local npcID = tonumber(d.npcID or d.id)
+    local npc = npcID and type(DS.Npc) == "function" and DS.Npc(npcID) or nil
+    local npcName = npcID and type(DS.NpcName) == "function" and DS.NpcName(npcID) or d.npc
+    local areaID = d.areaID or d.area
+    local zone = areaID and ZoneName(areaID) or ""
+    return {
+        id = npcID,
+        npcID = npcID,
+        npc = npcName,
+        chance = d.dropRatePct ~= nil and d.dropRatePct or d.pct,
+        dropRatePct = d.dropRatePct ~= nil and d.dropRatePct or d.pct,
+        sampleCount = d.sampleCount,
+        avgStack = d.avgStack,
+        minLevel = d.minLevel,
+        maxLevel = d.maxLevel,
+        area = areaID,
+        areaID = areaID,
+        zone = (zone ~= "" and zone) or nil,
+        isWorldDrop = d.isWorldDrop == true,
+        faction = npc and npc.faction or nil,
+        classification = npc and npc.classification or nil,
+    }
 end
 
-local function MergeDrop(byName, list, d)
-    local nm = d.npc
-    local e = nm and byName[nm] or nil
-    if type(e) ~= "table" then
-        e = DropEntry(d)
-        if nm then byName[nm] = e end
-        list[#list + 1] = e
-        return e
+local function extraEntry(e, DS)
+    local out = {
+        itemID = e.itemID,
+        sourceKind = e.sourceKind,
+        targetType = e.targetType,
+        targetID = e.targetID,
+        dropRatePct = e.dropRatePct,
+        chance = e.dropRatePct,
+        sampleCount = e.sampleCount,
+        avgStack = e.avgStack,
+    }
+    if e.targetType == "npc" and type(e.targetID) == "number" then
+        local npc = type(DS.Npc) == "function" and DS.Npc(e.targetID) or nil
+        out.npcID = e.targetID
+        out.targetName = type(DS.NpcName) == "function" and DS.NpcName(e.targetID) or nil
+        out.faction = npc and npc.faction or nil
+        out.spawns = npc and copyList(npc.spawns) or {}
+        local areaID = type(out.spawns[1]) == "table" and out.spawns[1].areaID or nil
+        out.areaID = areaID
+        local z = areaID and ZoneName(areaID) or ""
+        if z ~= "" then out.zone = z end
+    elseif e.targetType == "object" and type(e.targetID) == "number" then
+        local obj = type(DS.Object) == "function" and DS.Object(e.targetID) or nil
+        out.objectID = e.targetID
+        out.targetName = type(DS.ObjectName) == "function" and DS.ObjectName(e.targetID) or nil
+        out.objectType = obj and obj.objectType or nil
+        out.reqSkill = obj and obj.reqSkill or nil
+        out.areaIDs = obj and copyList(obj.areaIDs) or {}
+        local areaID = out.areaIDs[1]
+        out.areaID = areaID
+        local z = areaID and ZoneName(areaID) or ""
+        if z ~= "" then out.zone = z end
+    elseif e.targetType == "zone" and type(e.targetID) == "number" then
+        local zObj = type(DS.Zone) == "function" and DS.Zone(e.targetID) or nil
+        local z = ZoneName(e.targetID)
+        out.areaID = e.targetID
+        out.targetName = (z ~= "" and z) or nil
+        out.zone = out.targetName
+        out.uiMapID = zObj and zObj.uiMapID or nil
+        out.parentAreaID = zObj and zObj.parentAreaID or nil
+        out.isCapital = zObj and zObj.isCapital or nil
+        out.faction = zObj and zObj.faction or nil
+    elseif e.targetType == "item" and type(e.targetID) == "number" then
+        local it = type(DS.Item) == "function" and DS.Item(e.targetID) or nil
+        out.containerItemID = e.targetID
+        out.targetName = type(DS.ItemName) == "function" and DS.ItemName(e.targetID) or nil
+        out.quality = it and it.quality or nil
+        out.bindType = it and it.bindType or nil
     end
-    if e.id == nil and d.id then e.id = d.id end
-    if (e.chance == nil or e.chance == 0) and (d.pct or 0) > 0 then e.chance = d.pct end
-    if (e.zone == nil or e.zone == "") and d.area then
-        local z = ZoneName(d.area)
-        if z ~= "" then e.zone = z end
+    return out
+end
+
+function M.SourceOf(itemID)
+    if type(itemID) ~= "number" or itemID <= 0 then return nil end
+    local DS = getDS()
+    if not DS then return nil end
+
+    local vo = type(DS.VendorOffers) == "function" and DS.VendorOffers(itemID) or nil
+    local drops = type(DS.Drops) == "function" and DS.Drops(itemID) or nil
+    local extras = type(DS.ExtraSources) == "function" and DS.ExtraSources(itemID) or nil
+
+    local hasVo = type(vo) == "table" and type(vo.offers) == "table" and #vo.offers > 0
+    local hasDrops = type(drops) == "table" and #drops > 0
+    local hasExtras = type(extras) == "table" and #extras > 0
+    if not hasVo and not hasDrops and not hasExtras then return nil end
+
+    local out = {
+        commonVendorCount = type(vo) == "table" and vo.commonVendorCount or nil,
+        vendors = {},
+        drops = {},
+        extraSources = {},
+    }
+    if hasVo then
+        for i = 1, #vo.offers do
+            local o = vo.offers[i]
+            if type(o) == "table" then
+                out.vendors[#out.vendors + 1] = vendorEntry(o, DS)
+            end
+        end
     end
-    if e.area == nil and d.area then e.area = d.area end
-    return e
+    if hasDrops then
+        for i = 1, #drops do
+            local d = drops[i]
+            if type(d) == "table" then
+                local entry = dropEntry(d, DS)
+                if entry.isWorldDrop then out.worldDrop = true end
+                out.drops[#out.drops + 1] = entry
+            end
+        end
+    end
+    if hasExtras then
+        for i = 1, #extras do
+            local e = extras[i]
+            if type(e) == "table" then
+                out.extraSources[#out.extraSources + 1] = extraEntry(e, DS)
+            end
+        end
+    end
+    return out
+end
+
+function M.VendorsOf(itemID)
+    local src = M.SourceOf(itemID)
+    if type(src) == "table" and type(src.vendors) == "table" and #src.vendors > 0 then
+        return src.vendors
+    end
+    return nil
 end
 
 function M.Fill(row)
     if type(row) ~= "table" then return nil end
-    local s = row[14]
-    if type(s) == "table" and s.__srcDone then return s end
+    local existing = row[14] or row.source
+    if type(existing) == "table" and existing.__srcDone then return existing end
     local f = row[13]
-    local fid = type(f) == "table" and f[1] or nil
-    local src = fid and ns.EnsureProfSources()[fid] or nil
-    if type(src) ~= "table" then return s end
-    if type(s) ~= "table" then
-        s = {}
-        row[14] = s
+    local fid = (type(f) == "table" and f[1])
+        or row.formula
+        or row.formulaID
+        or row.teachingItemID
+        or row.outputItemID
+        or row.itemID
+    if type(fid) ~= "number" or fid <= 0 then return existing end
+    local src = M.SourceOf(fid)
+    if type(src) ~= "table" then return existing end
+    if getmetatable(row) == false then
+        return src
     end
-    s.__srcDone = true
-    local vs = src.v
-    if type(vs) == "table" and #vs > 0 then
-        if ns.ProfSourcesMeta and ns.ProfSourcesMeta.schemaVersion == 2 then
-            s.vendors = {}
-            for _, v in ipairs(vs) do s.vendors[#s.vendors + 1] = VendorEntry(v) end
-        else
-        local list = s.vendors
-        if type(list) ~= "table" then
-            list = {}
-            s.vendors = list
-        end
-        local byId = {}
-        for i = 1, #list do
-            local v = list[i]
-            if type(v) == "table" and v.id then byId[v.id] = v end
-        end
-        for i = 1, #vs do
-            local v = vs[i]
-            if type(v) == "table" and v.id then MergeVendor(byId, list, v) end
-        end
-        end
+    src.__srcDone = true
+    if row[13] ~= nil or row[14] ~= nil then
+        row[14] = src
+    else
+        row.source = src
     end
-    local ds = src.d
-    if type(ds) == "table" and #ds > 0 then
-        local list = s.drops
-        if type(list) ~= "table" then
-            list = {}
-            s.drops = list
-        end
-        local byName = {}
-        for i = 1, #list do
-            local d = list[i]
-            if type(d) == "table" then
-                if d.npc then byName[d.npc] = d end
-                if d.id then byName[d.id] = d end
-            end
-        end
-        for i = 1, #ds do
-            local d = ds[i]
-            if type(d) == "table" and d.npc then MergeDrop(byName, list, d) end
-        end
-    end
-    return s
+    return src
 end
 
-local function VendorList(src)
+local function vendorList(src)
     if type(src) ~= "table" then return nil end
-    local vs = src.vendors or src.v
+    local vs = src.vendors or src.v or src.offers
     if type(vs) ~= "table" then return nil end
     return vs
 end
 
-local function DropList(src)
+local function dropList(src)
     if type(src) ~= "table" then return nil end
     local ds = src.drops or src.d
     if type(ds) ~= "table" then return nil end
@@ -158,17 +326,17 @@ end
 
 function M.Primary(src)
     if type(src) ~= "table" then return nil end
-    local vs = VendorList(src)
+    local vs = vendorList(src)
     if vs then
         local gold, currency = false, false
         for i = 1, #vs do
             local v = vs[i]
             if type(v) == "table" then
-                local price = tonumber(v.price) or 0
+                local price = tonumber(v.priceCopper ~= nil and v.priceCopper or v.price) or 0
                 local cur = tonumber(v.cur) or 0
                 if v.hasExtendedCost or #(v.currencies or {}) > 0 or #(v.costItems or {}) > 0 then
                     currency = true
-                elseif price > 0 or v.price == 0 and v.priceVerified then
+                elseif price > 0 or (price == 0 and v.priceVerified) then
                     gold = true
                 elseif cur ~= 0 then
                     currency = true
@@ -178,17 +346,21 @@ function M.Primary(src)
         if gold then return "vendor" end
         if currency then return "currency" end
     end
-    local ds = DropList(src)
+    local ds = dropList(src)
     if ds and #ds > 0 then return "drop" end
     if src.worldDrop then return "drop" end
     local qs = src.quests
     if type(qs) == "table" and #qs > 0 then return "quest" end
     if src.questOnly then return "quest" end
+    local es = src.extraSources
+    if type(es) == "table" and #es > 0 and type(es[1]) == "table" and type(es[1].sourceKind) == "string" then
+        return es[1].sourceKind
+    end
     return nil
 end
 
 function M.CurrencyCount(src)
-    local vs = VendorList(src)
+    local vs = vendorList(src)
     local n = 0
     if not vs then return n end
     for i = 1, #vs do
@@ -199,21 +371,4 @@ function M.CurrencyCount(src)
         end
     end
     return n
-end
-
-function M.SourceOf(fid)
-    if type(fid) ~= "number" then return nil end
-    local ensure = ns.EnsureProfSources
-    if type(ensure) ~= "function" then return nil end
-    local ok, all = pcall(ensure)
-    if not ok or type(all) ~= "table" then return nil end
-    local src = all[fid]
-    return type(src) == "table" and src or nil
-end
-
-function M.VendorsOf(fid)
-    if type(fid) ~= "number" then return nil end
-    local src = ns.EnsureProfSources()[fid]
-    if type(src) ~= "table" then return nil end
-    return src.v
 end

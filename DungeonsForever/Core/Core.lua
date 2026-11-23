@@ -214,6 +214,27 @@ function ns.SetProfModule(on)
     ns.QuickCfg().tabs.Professions = on and true or false
 end
 
+function ns.EnsureProfAPI()
+    if type(ns.ProfAPI) == "table" then return ns.ProfAPI end
+    if ns.AddonLoaded and ns.AddonLoaded("DungeonsForeverProf") then
+        return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+    end
+    local m = ns.MODULE_BY_ADDON and ns.MODULE_BY_ADDON["DungeonsForeverProf"]
+    if m and type(ns.ModuleWant) == "function" and not ns.ModuleWant(m) then
+        return nil
+    end
+    if type(C_AddOns) == "table" and C_AddOns.GetAddOnEnableState then
+        local ok, state = pcall(C_AddOns.GetAddOnEnableState, "DungeonsForeverProf")
+        if ok and state == 0 then return nil end
+    end
+    if type(C_AddOns) == "table" and C_AddOns.LoadAddOn then
+        pcall(C_AddOns.LoadAddOn, "DungeonsForeverProf")
+    elseif type(LoadAddOn) == "function" then
+        pcall(LoadAddOn, "DungeonsForeverProf")
+    end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
 function ns.TalentEnhOn()
     local v = DB().ui.talentEnh
     if v == nil then return true end
@@ -805,25 +826,24 @@ do
                         local wantProf = tabs["Professions"] ~= false
                         local wantBis = tabs["Bis"] ~= false
                         local wantGear = tabs["Gear"] ~= false
-                local profEnsure = ns.EnsureProfRecipes
+                local profApi = ns.EnsureProfAPI and ns.EnsureProfAPI() or nil
                 local profKeys = nil
                 if not wantProf and wantBis then
                     profKeys = { "enchanting", "leatherworking" }
                 end
-                if type(profEnsure) == "function" and (wantProf or wantBis) then
+                if type(profApi) == "table" and type(profApi.EnsureRecipes) == "function" and (wantProf or wantBis) then
                     J.Add(function()
                         local mf = _G.DungeonsForever_MainFrame
                         if mf and mf.IsShown and mf:IsShown() then return false end
                         if profKeys == nil then
-                            local PM = ns.ProfModule
-                            local learned = PM and PM.ProfLearned and PM.ProfLearned()
+                            local learned = type(profApi.ProfLearned) == "function" and profApi.ProfLearned() or nil
                             local keys = {}
                             if type(learned) == "table" then
                                 for slug in pairs(learned) do keys[#keys + 1] = slug end
                             end
                             profKeys = keys
                         end
-                        profEnsure(profKeys)
+                        profApi.EnsureRecipes(profKeys)
                         if DungeonsForeverDB and DungeonsForeverDB.dfMemProbe then
                             ns.MemMark("profData")
                         end
@@ -923,7 +943,7 @@ do
                     if ns.GearModule then wrapw(ns.GearModule, "Refresh", "GRefresh") end
                     if ns.GearModule then wrapw(ns.GearModule, "BuildCatalog", "BuildCatalog") end
                     wrapw(ns, "EnsureGearData", "GearEnsure")
-                    wrapw(ns, "EnsureProfRecipes", "ProfEnsure")
+                    if type(ns.ProfAPI) == "table" then wrapw(ns.ProfAPI, "EnsureRecipes", "ProfEnsure") end
                     local preCatalog = (ns.GearModule and ns.GearModule.catalog ~= nil) or false
                     local white
                     if DungeonsForeverDB.dfWhite then

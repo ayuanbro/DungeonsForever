@@ -1,133 +1,305 @@
-local ns = _G.DF_NS or {}
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+local gns = _G.DF_NS
 
-local CAP = 4
+local function readBudget()
+    local cfg = ns.SolverConfig or (type(gns) == "table" and gns.SolverConfig) or nil
+    return type(cfg) == "table" and cfg.COROUTINE_BUDGET or nil
+end
+
+local initialBudget = readBudget()
+local CAP = (type(initialBudget) == "table" and type(initialBudget.paintCapMs) == "number" and initialBudget.paintCapMs > 0)
+    and initialBudget.paintCapMs or 4
 
 local function nowMs()
-    if type(debugprofilestop) == "function" then
-        local ok, v = pcall(debugprofilestop)
+    if type(_G.debugprofilestop) == "function" then
+        local ok, v = pcall(_G.debugprofilestop)
         if ok and type(v) == "number" then return v end
     end
     return 0
 end
 
-local qUrg, qNorm, qStep = {}, {}, {}
+local qUrg, qNorm, qStep, qBg = {}, {}, {}, {}
 local jobs = {}
 local jobGen = {}
-local drv, armed = nil, false
+local deferredByKey = {}
+local drv, armed, pumping = nil, false, false
 
 local function inCombat()
-    return InCombatLockdown and InCombatLockdown() or false
+    if type(_G.InCombatLockdown) == "function" then
+        local ok, v = pcall(_G.InCombatLockdown)
+        if ok then return v == true end
+    end
+    return false
 end
 
 local function stepJob(key, gen)
     local j = jobs[key]
-    if not j or j.gen ~= gen then return true end
+    if not j or j.gen ~= gen or jobGen[key] ~= gen then return true end
     local cap = j.cap or CAP
     local t0 = nowMs()
     while true do
         if coroutine.status(j.co) == "dead" then break end
         local ok, err = coroutine.resume(j.co)
+        if jobs[key] ~= j or j.gen ~= gen or jobGen[key] ~= gen then
+            return true
+        end
         if not ok then
             _G.DF_LAST_PAINT_ERR = tostring(err)
-            print("|cffff5040[无限副本手册] 页面渲染出错（已停止该次渲染）：|r" .. tostring(err))
+            pcall(print, "|cffff5040[无限副本手册] 页面渲染出错（已停止该次渲染）：|r" .. tostring(err))
             break
         end
         if coroutine.status(j.co) == "dead" then break end
         if nowMs() - t0 >= cap then return false end
     end
-    jobs[key] = nil
-    if type(j.onDone) == "function" then pcall(j.onDone) end
+    if jobs[key] == j and j.gen == gen and jobGen[key] == gen then
+        jobs[key] = nil
+        if type(j.onDone) == "function" then pcall(j.onDone) end
+    end
     return true
 end
 
 local function idleNow()
-    return next(jobs) == nil and #qUrg == 0 and #qStep == 0 and #qNorm == 0
+    return next(jobs) == nil and #qUrg == 0 and #qStep == 0 and #qNorm == 0 and #qBg == 0
 end
 
+local function runQueue(queue, allowYield, capMs)
+    local t0 = nowMs()
+    local keep = {}
+    local ran = false
+    while #queue > 0 do
+        local fn = table.remove(queue, 1)
+        ran = true
+        local ok, done = pcall(fn)
+        if allowYield and ok and done ~= true then
+            keep[#keep + 1] = fn
+        end
+        if nowMs() - t0 >= capMs then break end
+    end
+    for i = 1, #keep do
+        queue[#queue + 1] = keep[i]
+    end
+    return ran
+end
+
+local arm
+
 local function pumpTick()
+    local ran = false
+    if not drv then
+        armed = false
+    end
     if next(jobs) ~= nil then
         local keys = {}
         for k in pairs(jobs) do keys[#keys + 1] = k end
         for i = 1, #keys do
             local k = keys[i]
             local j = jobs[k]
-            if j then stepJob(k, j.gen) end
+            if j then
+                ran = true
+                stepJob(k, j.gen)
+            end
         end
     end
     if #qUrg > 0 then
-        local t0 = nowMs()
-        local keep = {}
-        while #qUrg > 0 do
-            local fn = table.remove(qUrg, 1)
-            local ok, done = pcall(fn)
-            if ok and done ~= true then keep[#keep + 1] = fn end
-            if nowMs() - t0 >= CAP then break end
-        end
-        for i = 1, #keep do qUrg[#qUrg + 1] = keep[i] end
+        if runQueue(qUrg, true, CAP) then ran = true end
     end
     if #qStep > 0 then
-        local t0 = nowMs()
-        while #qStep > 0 do
-            local fn = table.remove(qStep, 1)
-            pcall(fn)
-            if nowMs() - t0 >= CAP then break end
-        end
+        if runQueue(qStep, false, CAP) then ran = true end
     end
-    if #qNorm > 0 and not inCombat() then
-        local t0 = nowMs()
-        local keep = {}
-        while #qNorm > 0 do
-            local fn = table.remove(qNorm, 1)
-            local ok, done = pcall(fn)
-            if ok and done ~= true then keep[#keep + 1] = fn end
-            if nowMs() - t0 >= CAP then break end
+    if not inCombat() then
+        if #qNorm > 0 then
+            if runQueue(qNorm, true, CAP) then ran = true end
         end
-        for i = 1, #keep do qNorm[#qNorm + 1] = keep[i] end
+        if #qBg > 0 and #qNorm == 0 then
+            if runQueue(qBg, true, CAP) then ran = true end
+        end
     end
     if idleNow() then
         armed = false
-        drv:SetScript("OnUpdate", nil)
+        if drv and type(drv.SetScript) == "function" then
+            pcall(drv.SetScript, drv, "OnUpdate", nil)
+        end
+    elseif not drv and not pumping then
+        arm()
+    end
+    return ran
+end
+
+if type(_G.CreateFrame) == "function" then
+    local ok, f = pcall(_G.CreateFrame, "Frame", nil, _G.UIParent)
+    if ok and type(f) == "table" and type(f.SetScript) == "function" then
+        drv = f
+        if type(drv.SetSize) == "function" then pcall(drv.SetSize, drv, 1, 1) end
+        if type(drv.SetFrameStrata) == "function" then pcall(drv.SetFrameStrata, drv, "BACKGROUND") end
+        if type(drv.Show) == "function" then pcall(drv.Show, drv) end
     end
 end
 
-drv = CreateFrame("Frame", nil, UIParent)
-drv:SetSize(1, 1)
-drv:SetFrameStrata("BACKGROUND")
-drv:Show()
-
-local function arm()
+arm = function()
     if armed then return end
-    armed = true
-    drv:SetScript("OnUpdate", pumpTick)
+    if drv then
+        armed = true
+        pcall(drv.SetScript, drv, "OnUpdate", pumpTick)
+        return
+    end
+    if type(_G.C_Timer) == "table" and type(_G.C_Timer.After) == "function" then
+        armed = true
+        local ok = pcall(_G.C_Timer.After, 0, pumpTick)
+        if ok then return end
+        armed = false
+    end
+    if pumping then return end
+    pumping = true
+    local guard = 0
+    while not idleNow() do
+        guard = guard + 1
+        local progressed = pumpTick()
+        if not progressed or guard > 100000 then break end
+    end
+    pumping = false
 end
 
-ns.ProfIdle = {}
+local Idle = {}
 
-function ns.ProfIdle.Add(fn)
+function Idle.SliceCap(defaultMs)
+    local budget = readBudget()
+    local baseCap = (type(budget) == "table" and type(budget.paintCapMs) == "number" and budget.paintCapMs > 0)
+        and budget.paintCapMs or CAP
+    local def = (type(defaultMs) == "number" and defaultMs > 0) and defaultMs or baseCap
+    if type(_G.GetFramerate) == "function" then
+        local ok, fps = pcall(_G.GetFramerate)
+        if ok and type(fps) == "number" and fps > 0 then
+            local ad = type(budget) == "table" and type(budget.adaptiveSlice) == "table" and budget.adaptiveSlice or {}
+            local lowThresh = ad.lowFpsThreshold or 25
+            local lowMs = ad.lowFpsMs or 0.6
+            local frac = ad.frameFraction or 0.09
+            local minMs = ad.minMs or 0.8
+            local maxMs = ad.maxMs or 2.25
+            local adaptive
+            if fps < lowThresh then
+                adaptive = lowMs
+            else
+                adaptive = math.max(minMs, math.min(maxMs, (1000 / fps) * frac))
+            end
+            return math.min(def, adaptive)
+        end
+    end
+    return def
+end
+
+function Idle.Add(fn)
     if type(fn) ~= "function" then return end
     qNorm[#qNorm + 1] = fn
     arm()
 end
 
-function ns.ProfIdle.Urgent(fn)
+function Idle.Urgent(fn)
     if type(fn) ~= "function" then return end
     qUrg[#qUrg + 1] = fn
     arm()
 end
 
-function ns.ProfIdle.StepGC(frames, kb)
+function Idle.Background(fn)
+    if type(fn) ~= "function" then return end
+    qBg[#qBg + 1] = fn
+    arm()
+end
+
+function Idle.Defer(key, fn, priority)
+    if type(fn) ~= "function" then return end
+    priority = priority or "normal"
+    if key == nil then
+        if priority == "urgent" then
+            Idle.Urgent(fn)
+        elseif priority == "background" then
+            Idle.Background(fn)
+        else
+            Idle.Add(fn)
+        end
+        return
+    end
+    local existing = deferredByKey[key]
+    if existing and not existing.cancelled then
+        if existing.priority == priority and not existing.running then
+            existing.fn = fn
+            return
+        end
+        existing.cancelled = true
+    end
+    local entry = {
+        key = key,
+        fn = fn,
+        priority = priority,
+        cancelled = false,
+        running = false,
+    }
+    deferredByKey[key] = entry
+    local function wrapper()
+        if entry.cancelled then return true end
+        entry.running = true
+        local ok, done = pcall(entry.fn)
+        entry.running = false
+        if not ok then
+            if deferredByKey[key] == entry then
+                deferredByKey[key] = nil
+            end
+            error(done, 0)
+        end
+        if entry.cancelled or done == true then
+            if deferredByKey[key] == entry then
+                deferredByKey[key] = nil
+            end
+            return true
+        end
+        return false
+    end
+    if priority == "urgent" then
+        Idle.Urgent(wrapper)
+    elseif priority == "background" then
+        Idle.Background(wrapper)
+    else
+        Idle.Add(wrapper)
+    end
+end
+
+function Idle.Cancel(key)
+    if key == nil then return end
+    local entry = deferredByKey[key]
+    if entry then
+        entry.cancelled = true
+        deferredByKey[key] = nil
+    end
+end
+
+function Idle.StepGC(frames, kb)
     local left = frames or 60
-    ns.ProfIdle.Add(function()
+    Idle.Add(function()
         if left <= 0 then return true end
         left = left - 1
-        collectgarbage("step", kb or 512)
+        if type(collectgarbage) == "function" then
+            pcall(collectgarbage, "step", kb or 512)
+        end
         return false
     end)
 end
 
-ns.ProfPaint = {}
+function Idle.Pump()
+    return pumpTick()
+end
 
-function ns.ProfPaint.Run(key, body, onDone, cap)
+function Idle.Flush()
+    local guard = 0
+    while not idleNow() do
+        guard = guard + 1
+        local progressed = pumpTick()
+        if not progressed or guard > 100000 then break end
+    end
+end
+
+local Paint = {}
+
+function Paint.Run(key, body, onDone, cap)
     if type(body) ~= "function" and type(body) ~= "thread" then return end
     local gen = (jobGen[key] or 0) + 1
     jobGen[key] = gen
@@ -141,42 +313,46 @@ function ns.ProfPaint.Run(key, body, onDone, cap)
     return gen
 end
 
-function ns.ProfPaint.Active(key)
+function Paint.Active(key)
     return jobs[key] ~= nil
 end
 
-function ns.ProfPaint.Cancel(key)
+function Paint.Cancel(key)
     jobGen[key] = (jobGen[key] or 0) + 1
     jobs[key] = nil
 end
 
-ns.ProfStep = {}
+local Step = {}
 
-function ns.ProfStep.Push(fn)
+function Step.Push(fn)
     if type(fn) ~= "function" then return end
     qStep[#qStep + 1] = fn
     arm()
 end
 
-function ns.ProfStep.Run()
+function Step.Run()
+    if not idleNow() then
+        pumpTick()
+    end
 end
 
 local function profGate()
-    local h = ns.ProfHost
+    local h = ns.ProfHost or (type(gns) == "table" and gns.ProfHost) or nil
     if type(h) ~= "table" then return nil end
     local dg = h.DG
     if type(dg) ~= "table" then return nil end
     return dg.Gate
 end
 
-function ns.ProfPhased(total, body, onFail)
+local function ProfPhased(total, body, onFail)
+    if type(body) ~= "function" and type(body) ~= "thread" then return end
     local Gate = profGate()
     if type(collectgarbage) == "function" then
         pcall(collectgarbage, "setpause", 150)
         pcall(collectgarbage, "setstepmul", 300)
     end
     local co = type(body) == "thread" and body or coroutine.create(body)
-    if Gate and Gate.Begin then pcall(Gate.Begin, total) end
+    if Gate and type(Gate.Begin) == "function" then pcall(Gate.Begin, total) end
     local function restore()
         if type(collectgarbage) == "function" then
             pcall(collectgarbage, "restart")
@@ -184,25 +360,36 @@ function ns.ProfPhased(total, body, onFail)
             pcall(collectgarbage, "setstepmul", 200)
         end
     end
-    ns.ProfIdle.Urgent(function()
+    Idle.Urgent(function()
         local t0 = nowMs()
         while true do
             if coroutine.status(co) == "dead" then
                 restore()
-                if Gate and Gate.Finish then pcall(Gate.Finish) end
+                if Gate and type(Gate.Finish) == "function" then pcall(Gate.Finish) end
                 return true
             end
             local ok, err = coroutine.resume(co)
             if not ok then
                 restore()
                 _G.DF_LAST_BUILD_ERR = tostring(err)
-                if Gate and Gate.Finish then pcall(Gate.Finish) end
+                if Gate and type(Gate.Finish) == "function" then pcall(Gate.Finish) end
                 if type(onFail) == "function" then pcall(onFail) end
-                print("|cffff5040[无限副本手册] 分帧构建出错（已跳过该块）：|r" .. tostring(err))
+                pcall(print, "|cffff5040[无限副本手册] 分帧构建出错（已跳过该块）：|r" .. tostring(err))
                 return true
             end
-            if Gate and Gate.Advance then pcall(Gate.Advance, 1) end
+            if Gate and type(Gate.Advance) == "function" then pcall(Gate.Advance, 1) end
             if nowMs() - t0 >= CAP then return false end
         end
     end)
+end
+
+ns.ProfIdle = Idle
+ns.ProfPaint = Paint
+ns.ProfStep = Step
+ns.ProfPhased = ProfPhased
+if type(gns) == "table" and gns ~= ns then
+    gns.ProfIdle = Idle
+    gns.ProfPaint = Paint
+    gns.ProfStep = Step
+    gns.ProfPhased = ProfPhased
 end

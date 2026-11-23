@@ -161,10 +161,22 @@ local function HasClassGuide(cls)
     return (type(cg) == "table" and type(cg.specs) == "table" and cg.specs[cls]) and true or false
 end
 
+local function getProfAPI()
+    if type(ns.EnsureProfAPI) == "function" then return ns.EnsureProfAPI() end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
 local function CrateIcon(DG)
-    local CD = ns.CratesData
-    local first = CD and CD.crates and CD.crates[1]
-    local id = first and first.id
+    local api = getProfAPI()
+    if not api then return nil end
+    if type(api.CrateIcon) == "function" then
+        local tex = api.CrateIcon()
+        if type(tex) == "number" then return tex end
+        if type(tex) == "string" and tex ~= "" and tex ~= FALLBACK_ICON then return tex end
+    end
+    local crates = type(api.CratesList) == "function" and api.CratesList() or nil
+    local first = crates and crates[1]
+    local id = first and (first.itemID or first.id)
     if not (id and DG and DG.ItemIcon) then return nil end
     local tex = DG.ItemIcon(id)
     if type(tex) == "number" then return tex end
@@ -205,45 +217,47 @@ function QB:Collect()
     end
 
     if cfg.groups.prof and ns.LoadForeverPages and ns.ModuleOn("Professions") then
-        out[#out + 1] = { grp = L["专业"] }
-        local D = ns.ProfData
-        local PD = ns.ProfModule
-        local learned = (PD and PD.ProfLearned) and PD.ProfLearned() or {}
-        for _, slug in ipairs((D and D.order) or {}) do
-            local p = D.pro and D.pro[slug]
-            local known = learned[slug]
-            local crate = (p and p.kind == "crates") and true or false
-            local show
-            if crate then
-                show = cfg.profCrate and true or false
-            else
-                show = (cfg.profMode == "all" or known) and true or false
-            end
-            if p and show then
-                local tip = p.name or slug
-                if not crate then
-                    if known then
-                        tip = tip .. "\n" .. format(L["熟练度 %d/%d"], known.cur or 0, known.max or 0)
-                    else
-                        tip = tip .. "\n" .. L["未学习"]
-                    end
-                end
-                local icon = p.icon
+        local api = getProfAPI()
+        if api then
+            out[#out + 1] = { grp = L["专业"] }
+            local learned = type(api.ProfLearned) == "function" and api.ProfLearned() or {}
+            local slugs = type(api.ProfessionList) == "function" and api.ProfessionList() or {}
+            for _, slug in ipairs(slugs) do
+                local p = type(api.ProfessionInfo) == "function" and api.ProfessionInfo(slug) or nil
+                local known = learned[slug]
+                local crate = (p and (p.kind == "crates" or p.slug == "crates")) and true or false
+                local show
                 if crate then
-                    icon = CrateIcon(DG)
+                    show = cfg.profCrate and true or false
+                else
+                    show = (cfg.profMode == "all" or known) and true or false
                 end
-                out[#out + 1] = {
-                    text = p.name or slug,
-                    icon = icon,
-                    tip = tip,
-                    act = "prof",
-                    slug = slug,
-                    known = known and true or false,
-                }
-                n.prof = n.prof + 1
+                if p and show then
+                    local tip = p.name or slug
+                    if not crate then
+                        if known then
+                            tip = tip .. "\n" .. format(L["熟练度 %d/%d"], known.cur or 0, known.max or 0)
+                        else
+                            tip = tip .. "\n" .. L["未学习"]
+                        end
+                    end
+                    local icon = p.icon
+                    if crate then
+                        icon = CrateIcon(DG)
+                    end
+                    out[#out + 1] = {
+                        text = p.name or slug,
+                        icon = icon,
+                        tip = tip,
+                        act = "prof",
+                        slug = slug,
+                        known = known and true or false,
+                    }
+                    n.prof = n.prof + 1
+                end
             end
+            if n.prof == 0 then out[#out + 1] = { text = L["未学任何专业"], dead = true } end
         end
-        if n.prof == 0 then out[#out + 1] = { text = L["未学任何专业"], dead = true } end
     end
 
     if cfg.groups.explore and ns.LoadForeverPages and ns.ModuleOn("Explore") then
@@ -489,7 +503,8 @@ function QB:Click(spec)
         if ns.ShowDungeonDetail then ns.ShowDungeonDetail(spec.id) end
     elseif spec.act == "prof" then
         ns.OpenPage("Professions")
-        if ns.ProfModule and ns.ProfModule.Show then ns.ProfModule.Show(spec.slug) end
+        local api = getProfAPI()
+        if api and api.Show then api.Show(spec.slug) end
     elseif spec.act == "explore" then
         ns.OpenPage("Explore")
         if ns.ExploreModule and ns.ExploreModule.ShowSub then

@@ -1,19 +1,57 @@
-local ns = _G.DF_NS or {}
+local _, ns = ...
+if type(ns) ~= "table" then ns = _G.DF_NS or {} end
+local gns = _G.DF_NS
 
-if not ns.LoadForeverPages then return end
-
-local L = ns.L
 local format = string.format
 
 local W = {}
 ns.ProfCDWatch = W
+if type(gns) == "table" and gns ~= ns then
+    gns.ProfCDWatch = W
+end
 
 local KEEP_SEC = 45 * 86400
 local MAX_ROWS = 3
-local STEP = 40
+local fallbackStore = nil
+
+local function getDS()
+    return ns.ProfDataStore or (type(gns) == "table" and gns.ProfDataStore) or nil
+end
+
+local function getAPI()
+    return ns.ProfAPI or (type(gns) == "table" and gns.ProfAPI) or nil
+end
+
+local function getDB()
+    return ns.ProfDB or (type(gns) == "table" and gns.ProfDB) or nil
+end
+
+local function getPricingCfg()
+    return ns.PricingConfig or (type(gns) == "table" and gns.PricingConfig) or nil
+end
+
+local function getRouteAuto()
+    return ns.ProfRouteAuto or (type(gns) == "table" and gns.ProfRouteAuto) or nil
+end
+
+local function getZoneHint()
+    return ns.ZoneHint or (type(gns) == "table" and gns.ZoneHint) or nil
+end
+
+local function getProfModule()
+    return ns.ProfModule or (type(gns) == "table" and gns.ProfModule) or nil
+end
+
+local function tr(key)
+    local L = ns.L or (type(gns) == "table" and gns.L)
+    if type(L) == "table" and L[key] ~= nil then return L[key] end
+    return key
+end
 
 local function now()
-    return type(time) == "function" and time() or 0
+    if type(_G.time) == "function" then return _G.time() end
+    if type(os) == "table" and type(os.time) == "function" then return os.time() end
+    return 0
 end
 
 local function clock()
@@ -21,48 +59,57 @@ local function clock()
     return type(f) == "function" and f() or 0
 end
 
-local CD_VER = 2
-
-local function prof()
-    local db = ns.ProfDB()
-    if type(db.prof) ~= "table" then db.prof = {} end
-    local p = db.prof
-    if p.cdVer ~= CD_VER then
-        p.cdVer = CD_VER
-        p.cd = {}
-        p.cdKnow = {}
+local function getRootDB()
+    local DB = getDB()
+    if type(DB) == "function" or (type(DB) == "table" and type(getmetatable(DB)) == "table" and getmetatable(DB).__call) then
+        local ok, res = pcall(DB)
+        if ok and type(res) == "table" then return res end
     end
-    return p
+    if type(DB) == "table" and type(DB.Get) == "function" then
+        local ok, res = pcall(DB.Get)
+        if ok and type(res) == "table" then return res end
+    end
+    if not fallbackStore then
+        fallbackStore = { chars = {}, cdWatch = {} }
+    end
+    return fallbackStore
+end
+
+local function cdWatchBucket()
+    local db = getRootDB()
+    if type(db.cdWatch) ~= "table" then db.cdWatch = {} end
+    local cw = db.cdWatch
+    if type(cw.records) ~= "table" then cw.records = {} end
+    if type(cw.list) ~= "table" then cw.list = {} end
+    if type(cw.know) ~= "table" then cw.know = {} end
+    if type(cw.off) ~= "table" then cw.off = {} end
+    if type(cw.todoOn) ~= "table" then cw.todoOn = {} end
+    if type(cw.cls) ~= "table" then cw.cls = {} end
+    return cw
 end
 
 local function store()
-    local p = prof()
-    if type(p.cd) ~= "table" then p.cd = {} end
-    return p.cd
+    return cdWatchBucket().records
 end
 
 local function list()
-    local p = prof()
-    if type(p.cdList) ~= "table" then p.cdList = {} end
-    return p.cdList
+    return cdWatchBucket().list
 end
 
 local function know()
-    local p = prof()
-    if type(p.cdKnow) ~= "table" then p.cdKnow = {} end
-    return p.cdKnow
+    return cdWatchBucket().know
 end
 
 local function offs()
-    local p = prof()
-    if type(p.cdOff) ~= "table" then p.cdOff = {} end
-    return p.cdOff
+    return cdWatchBucket().off
 end
 
 local function todoOns()
-    local p = prof()
-    if type(p.cdTodoOn) ~= "table" then p.cdTodoOn = {} end
-    return p.cdTodoOn
+    return cdWatchBucket().todoOn
+end
+
+local function clsMap()
+    return cdWatchBucket().cls
 end
 
 local TODO_DEF = { [17187] = true, [1317279] = true }
@@ -79,11 +126,10 @@ function W.SetTodo(spell, on)
     if W.TodoOn(spell) == on then return false end
     local o = todoOns()
     if on then o[spell] = true else o[spell] = false end
-    local pd = ns.ProfModule
-    if pd and pd.RequestRender then pd.RequestRender() end
-    if ns.ZoneHint and ns.ZoneHint.RefreshSoft then
-        pcall(ns.ZoneHint.RefreshSoft, true)
-    end
+    local pd = getProfModule()
+    if pd and pd.RequestRender then pcall(pd.RequestRender) end
+    local zh = getZoneHint()
+    if zh and zh.RefreshSoft then pcall(zh.RefreshSoft, true) end
     return true
 end
 
@@ -101,30 +147,29 @@ function W.SetEnabled(spell, on)
         if o[spell] == true then return false end
         o[spell] = true
     end
-    local pd = ns.ProfModule
-    if pd and pd.RequestRender then pd.RequestRender() end
-    if ns.ZoneHint and ns.ZoneHint.RefreshSoft then
-        pcall(ns.ZoneHint.RefreshSoft, true)
-    end
+    local pd = getProfModule()
+    if pd and pd.RequestRender then pcall(pd.RequestRender) end
+    local zh = getZoneHint()
+    if zh and zh.RefreshSoft then pcall(zh.RefreshSoft, true) end
     return true
 end
 
 W.Store = store
 
 local function hasSurname()
-    if type(RegionalUniqueNamesEnabled) ~= "function" then return false end
-    local ok, v = pcall(RegionalUniqueNamesEnabled)
+    if type(_G.RegionalUniqueNamesEnabled) ~= "function" then return false end
+    local ok, v = pcall(_G.RegionalUniqueNamesEnabled)
     return ok and v == true
 end
 
 local function nameParts()
     local n, s2
-    if type(UnitNameUnmodified) == "function" then
-        local ok, a, b = pcall(UnitNameUnmodified, "player")
+    if type(_G.UnitNameUnmodified) == "function" then
+        local ok, a, b = pcall(_G.UnitNameUnmodified, "player")
         if ok then n, s2 = a, b end
     end
-    if type(n) ~= "string" or n == "" then
-        local ok, a = pcall(UnitName, "player")
+    if (type(n) ~= "string" or n == "") and type(_G.UnitName) == "function" then
+        local ok, a = pcall(_G.UnitName, "player")
         if ok and type(a) == "string" then n = a end
     end
     if type(s2) ~= "string" or s2 == "" then s2 = nil end
@@ -139,56 +184,27 @@ function W.Name()
     return n
 end
 
-local function migrate()
-    local p = prof()
-    if p.cdMig == 6 then return end
-    p.cdMig = 6
-    p.cdTodoOff = nil
-    local full = W.Name()
-    local ok, r = pcall(GetRealmName)
-    if not ok or type(r) ~= "string" then r = "?" end
-    local newKey = full .. "-" .. r
-    local k = know()
-    local short = nil
-    local okn, a = pcall(UnitName, "player")
-    if okn and type(a) == "string" and a ~= "" then short = a end
-    if type(short) ~= "string" or short == full then return end
-    local old = short .. "-" .. r
-    local db = store()
-    for _, by in pairs(db) do
-        if type(by) == "table" and type(by[old]) == "table" then
-            local src, dst = by[old], by[newKey]
-            if type(dst) ~= "table" then
-                by[newKey] = src
-            elseif type(src.u) == "number" and (type(dst.u) ~= "number" or src.u > dst.u) then
-                by[newKey] = src
-            end
-            by[old] = nil
-            if type(by[newKey]) == "table" then by[newKey].n = full end
-        end
-    end
-    if type(k[old]) == "table" then
-        local src, dst = k[old], k[newKey]
-        if type(dst) ~= "table" then
-            k[newKey] = src
-        else
-            for spell, v in pairs(src) do
-                if dst[spell] == nil then dst[spell] = v end
-            end
-        end
-        k[old] = nil
-    end
-    local marks = k[newKey]
-    if type(marks) == "table" then
-        for spell, v in pairs(marks) do
-            if v == short then marks[spell] = full end
-        end
-    end
-end
-
 function W.CharKey()
-    local r = type(GetRealmName) == "function" and GetRealmName() or nil
-    return W.Name() .. "-" .. tostring(r or "?")
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.CharacterKey) == "function" then
+        return DB.CharacterKey()
+    end
+    if type(_G.UnitGUID) == "function" then
+        local ok, guid = pcall(_G.UnitGUID, "player")
+        if ok and type(guid) == "string" and guid ~= "" then
+            return guid
+        end
+    end
+    local r
+    if type(_G.GetRealmName) == "function" then
+        local ok, v = pcall(_G.GetRealmName)
+        if ok and type(v) == "string" and v ~= "" then r = v end
+    end
+    local nm = W.Name()
+    if nm ~= "?" or r then
+        return "offline:" .. nm .. "-" .. tostring(r or "?")
+    end
+    return "offline:player"
 end
 
 local function charName()
@@ -196,32 +212,49 @@ local function charName()
 end
 
 local function charClass()
-    if type(UnitClass) ~= "function" then return nil end
-    local _, token, id = UnitClass("player")
+    if type(_G.UnitClass) ~= "function" then return nil end
+    local ok, _, token, id = pcall(_G.UnitClass, "player")
+    if not ok then return nil end
     if type(token) == "string" and token ~= "" then return token end
     if type(id) == "string" and id ~= "" then return id end
     return nil
 end
 
+local function syncCharacterMeta(key)
+    local DB = getDB()
+    if type(DB) == "table" and type(DB.CharacterMeta) == "function" and key == W.CharKey() then
+        pcall(DB.CharacterMeta, key)
+    end
+end
+
 local function clsOf(key, rec)
     if type(rec) == "table" and type(rec.cls) == "string" then return rec.cls end
-    local p = prof()
-    local t = p.cdCls
-    if type(t) == "table" and type(t[key]) == "string" then return t[key] end
+    local db = getRootDB()
+    if type(db.chars) == "table" and type(db.chars[key]) == "table" and type(db.chars[key].class) == "string" then
+        return db.chars[key].class
+    end
+    local t = clsMap()
+    if type(t[key]) == "string" then return t[key] end
     if key == W.CharKey() then return charClass() end
     return nil
 end
 
 local function baseCD(spell)
+    local cs = _G.C_Spell
+    if type(cs) == "table" and type(cs.GetSpellBaseCooldown) == "function" then
+        local ok, ms = pcall(cs.GetSpellBaseCooldown, spell)
+        if ok and type(ms) == "number" then return ms > 0 end
+    end
     local f = _G.GetSpellBaseCooldown
-    if type(f) ~= "function" then return nil end
-    local ok, ms = pcall(f, spell)
-    if ok and type(ms) == "number" then return ms > 0 end
+    if type(f) == "function" then
+        local ok, ms = pcall(f, spell)
+        if ok and type(ms) == "number" then return ms > 0 end
+    end
     return nil
 end
 
 local function liveCD(spell)
-    local api = C_Spell
+    local api = _G.C_Spell
     if type(api) == "table" and type(api.GetSpellCooldown) == "function" then
         local ok, sc = pcall(api.GetSpellCooldown, spell)
         if ok and type(sc) == "table" then
@@ -233,9 +266,18 @@ local function liveCD(spell)
             end
         end
     end
-    local tr = C_TradeSkillUI
-    if type(tr) == "table" and type(tr.GetRecipeCooldown) == "function" then
-        local ok, sec = pcall(tr.GetRecipeCooldown, spell)
+    local gsc = _G.GetSpellCooldown
+    if type(gsc) == "function" then
+        local ok, st, du = pcall(gsc, spell)
+        if ok and type(st) == "number" and type(du) == "number" and st > 0 and du > 0 then
+            local left = st + du - clock()
+            if left > 0 then return left, du end
+            return nil
+        end
+    end
+    local ct = _G.C_TradeSkillUI
+    if type(ct) == "table" and type(ct.GetRecipeCooldown) == "function" then
+        local ok, sec = pcall(ct.GetRecipeCooldown, spell)
         if ok and type(sec) == "number" and sec > 0 then return sec, sec end
     end
     return nil
@@ -259,37 +301,40 @@ function W.UnmarkChar(spell, key)
 end
 
 function W.MarkChar(spell, key, nm)
-    if type(spell) ~= "number" then return false end
+    if type(spell) ~= "number" or type(key) ~= "string" or key == "" then return false end
     local k = know()
     local marks = k[key]
-    if type(marks) ~= "table" then marks = {}; k[key] = marks end
+    if type(marks) ~= "table" then
+        marks = {}
+        k[key] = marks
+    end
+    syncCharacterMeta(key)
+    local cm = clsMap()
+    local c = charClass()
+    if c and key == W.CharKey() then cm[key] = c end
     if marks[spell] then return false end
     marks[spell] = nm or key
-    local p = prof()
-    if type(p.cdCls) ~= "table" then p.cdCls = {} end
-    local c = charClass()
-    if c then p.cdCls[key] = c end
     return true
 end
 
 local function recipeInfo(spell)
-    local api = C_TradeSkillUI
-    if not (api and api.GetRecipeInfo) then return nil end
+    local api = _G.C_TradeSkillUI
+    if type(api) ~= "table" or type(api.GetRecipeInfo) ~= "function" then return nil end
     local ok, info = pcall(api.GetRecipeInfo, spell)
     if ok and type(info) == "table" then return info end
     return nil
 end
 
 local function openRecipes()
-    local api = C_TradeSkillUI
-    if not (api and api.GetAllRecipeIDs) then return nil end
+    local api = _G.C_TradeSkillUI
+    if type(api) ~= "table" or type(api.GetAllRecipeIDs) ~= "function" then return nil end
     local ok, ids = pcall(api.GetAllRecipeIDs)
     if not ok or type(ids) ~= "table" or #ids == 0 then return nil end
-    if api.IsDataSourceChanging then
+    if type(api.IsDataSourceChanging) == "function" then
         local ok2, changing = pcall(api.IsDataSourceChanging)
         if ok2 and changing == true then return nil end
     end
-    if api.IsTradeSkillReady then
+    if type(api.IsTradeSkillReady) == "function" then
         local ok3, ready = pcall(api.IsTradeSkillReady)
         if ok3 and ready == false then return nil end
     end
@@ -311,15 +356,40 @@ end
 local function slugOf(spell)
     local l = list()
     if type(l[spell]) == "string" then return l[spell] end
-    for slug, g in pairs(ns.ProfRecipes or {}) do
-        for _, row in ipairs(g.rows or {}) do
-            if row[1] == spell then
-                W.Mark(spell, slug)
-                return slug
-            end
+    local DS = getDS()
+    if DS and type(DS.RecipeProfession) == "function" then
+        local slug = DS.RecipeProfession(spell)
+        if type(slug) == "string" and slug ~= "" then
+            W.Mark(spell, slug)
+            return slug
         end
     end
     return nil
+end
+
+local function recipeEntryDS(slug, spell)
+    local DS = getDS()
+    if not DS then return nil end
+    if type(slug) == "string" and type(DS.Recipes) == "function" then
+        local bucket = DS.Recipes(slug)
+        if type(bucket) == "table" and type(bucket.recipes) == "table" and type(bucket.recipes[spell]) == "table" then
+            return bucket.recipes[spell]
+        end
+    end
+    if type(DS.Recipe) == "function" then
+        return DS.Recipe(spell)
+    end
+    return nil
+end
+
+local function hasRecipeCooldown(spell, rec)
+    if type(rec) == "table" then
+        if rec.availability ~= "live" then return false end
+        if type(rec.cooldownSeconds) == "number" and rec.cooldownSeconds > 0 then return true end
+        if type(rec.cooldownGroup) == "string" and rec.cooldownGroup ~= "" then return true end
+        return baseCD(spell) == true
+    end
+    return baseCD(spell) == true
 end
 
 function W.Record(spell, slug, left, dur)
@@ -328,10 +398,17 @@ function W.Record(spell, slug, left, dur)
     local t0 = now()
     local db = store()
     local by = db[spell]
-    if type(by) ~= "table" then by = {}; db[spell] = by end
+    if type(by) ~= "table" then
+        by = {}
+        db[spell] = by
+    end
     local key = W.CharKey()
+    syncCharacterMeta(key)
     local rec = by[key]
-    if type(rec) ~= "table" then rec = {}; by[key] = rec end
+    if type(rec) ~= "table" then
+        rec = {}
+        by[key] = rec
+    end
     local stop = t0 + left
     local changed = (type(rec.u) ~= "number") or (math.abs(rec.u - stop) > 3) or rec.prof ~= slug
     rec.u = stop
@@ -340,43 +417,51 @@ function W.Record(spell, slug, left, dur)
     rec.t = t0
     rec.prof = slug
     rec.n = charName()
-    rec.cls = charClass() or rec.cls
+    local c = charClass()
+    rec.cls = c or rec.cls
+    if rec.cls then clsMap()[key] = rec.cls end
     return changed
 end
 
 function W.Observe(spell, slug)
     if type(spell) ~= "number" or spell <= 0 then return false end
-    local left, dur = liveCD(spell)
-    if not left then return false end
     if type(slug) ~= "string" then slug = slugOf(spell) end
     if type(slug) ~= "string" then return false end
+    local left, dur = liveCD(spell)
+    if not left then return false end
     return W.Record(spell, slug, left, dur)
 end
 
 local function scanRows(slug)
-    local g = ns.ProfRecipes and ns.ProfRecipes[slug]
-    local rows = g and g.rows
-    if type(rows) ~= "table" or #rows == 0 then return 0 end
+    local DS = getDS()
+    if not DS or type(DS.Recipes) ~= "function" then return 0 end
+    local bucket = DS.Recipes(slug)
+    local recipes = type(bucket) == "table" and bucket.recipes or nil
+    if type(recipes) ~= "table" then return 0 end
+    local ids = {}
+    for spell in pairs(recipes) do
+        if type(spell) == "number" then ids[#ids + 1] = spell end
+    end
+    table.sort(ids)
     local hit = 0
     local key, nm = W.CharKey(), charName()
-    for i = 1, #rows do
-        local spell = rows[i][1]
-        if type(spell) == "number" then
-            if baseCD(spell) == true then
-                W.Mark(spell, slug)
-                local info = recipeInfo(spell)
-                if info and info.learned == true then
-                    W.UnmarkChar(spell, key)
-                    W.MarkChar(spell, key, nm)
-                    if W.Enabled(spell) then
-                        local left, dur = liveCD(spell)
-                        if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
-                    end
-                elseif confirmedUnlearned(spell, info) then
-                    W.UnmarkChar(spell, key)
-                    local by = store()[spell]
-                    if type(by) == "table" then by[key] = nil end
+    for i = 1, #ids do
+        local spell = ids[i]
+        local rec = recipes[spell]
+        if hasRecipeCooldown(spell, rec) then
+            W.Mark(spell, slug)
+            local info = recipeInfo(spell)
+            if info and info.learned == true then
+                W.UnmarkChar(spell, key)
+                W.MarkChar(spell, key, nm)
+                if W.Enabled(spell) then
+                    local left, dur = liveCD(spell)
+                    if left and W.Record(spell, slug, left, dur) then hit = hit + 1 end
                 end
+            elseif confirmedUnlearned(spell, info) then
+                W.UnmarkChar(spell, key)
+                local by = store()[spell]
+                if type(by) == "table" then by[key] = nil end
             end
         end
     end
@@ -384,9 +469,11 @@ local function scanRows(slug)
 end
 
 local function ensureEvents()
-    if W.__ef or type(CreateFrame) ~= "function" then return end
-    local ok, f = pcall(CreateFrame, "Frame")
-    if not ok or not f then return end
+    if W.__ef or type(_G.CreateFrame) ~= "function" then return end
+    local ok, f = pcall(_G.CreateFrame, "Frame")
+    if not ok or type(f) ~= "table" or type(f.RegisterEvent) ~= "function" or type(f.SetScript) ~= "function" then
+        return
+    end
     W.__ef = f
     pcall(f.RegisterEvent, f, "PLAYER_ENTERING_WORLD")
     pcall(f.RegisterEvent, f, "SPELLS_CHANGED")
@@ -400,11 +487,16 @@ local function ensureEvents()
             if not slug then return end
             local function grab()
                 if W.Observe(spell, slug) then
-                    local pd = ns.ProfModule
-                    if pd and pd.RequestRender then pd.RequestRender() end
+                    local pd = getProfModule()
+                    if pd and pd.RequestRender then pcall(pd.RequestRender) end
                 end
             end
-            if C_Timer and C_Timer.After then C_Timer.After(0.2, grab) else grab() end
+            local ct = _G.C_Timer
+            if type(ct) == "table" and type(ct.After) == "function" then
+                ct.After(0.2, grab)
+            else
+                grab()
+            end
             return
         end
         W.__last = 0
@@ -413,14 +505,20 @@ local function ensureEvents()
 end
 
 local function allSlugs()
+    local DS = getDS()
+    if not DS or type(DS.RecipeProfessions) ~= "function" then return {} end
+    local raw = DS.RecipeProfessions()
     local out = {}
-    for slug in pairs(ns.ProfRecipes or {}) do out[#out + 1] = slug end
+    if type(raw) == "table" then
+        for i = 1, #raw do
+            if type(raw[i]) == "string" then out[#out + 1] = raw[i] end
+        end
+    end
     table.sort(out)
     return out
 end
 
 function W.ScanAll()
-    migrate()
     ensureEvents()
     local list_ = allSlugs()
     local i, hits = 0, 0
@@ -432,17 +530,17 @@ function W.ScanAll()
             hits = hits + scanRows(slug)
         end
         if i < #list_ then
-            if C_Timer and C_Timer.After then
-                C_Timer.After(0.02, step)
+            local ct = _G.C_Timer
+            if type(ct) == "table" and type(ct.After) == "function" then
+                ct.After(0.02, step)
             else
                 step()
             end
         else
-            local pd = ns.ProfModule
-            if pd and pd.RequestRender then pd.RequestRender() end
-            if ns.ZoneHint and ns.ZoneHint.ScheduleSoft then
-                pcall(ns.ZoneHint.ScheduleSoft, 1)
-            end
+            local pd = getProfModule()
+            if pd and pd.RequestRender then pcall(pd.RequestRender) end
+            local zh = getZoneHint()
+            if zh and zh.ScheduleSoft then pcall(zh.ScheduleSoft, 1) end
         end
     end
     if #list_ == 0 then return 0 end
@@ -450,7 +548,7 @@ function W.ScanAll()
     return #list_
 end
 
-function W.AutoScan(slug)
+function W.AutoScan(_slug)
     local t = now()
     W.__last = W.__last or 0
     if t - W.__last < 6 then return end
@@ -473,64 +571,107 @@ function W.Left(rec)
     return rec.u - now()
 end
 
-local function itemName(id)
-    if type(id) ~= "number" then return nil end
-    local nm
-    if C_Item and C_Item.GetItemNameByID then
-        local ok, v = pcall(C_Item.GetItemNameByID, id)
-        if ok then nm = v end
+local function itemName(id, spell)
+    if type(id) == "number" and id > 0 then
+        local api = getAPI()
+        if api and type(api.ItemName) == "function" then
+            local nm, known = api.ItemName(id)
+            if known == true and type(nm) == "string" and nm ~= "" then
+                return nm
+            end
+        end
+        local ci = _G.C_Item
+        if type(ci) == "table" and type(ci.GetItemNameByID) == "function" then
+            local ok, v = pcall(ci.GetItemNameByID, id)
+            if ok and type(v) == "string" and v ~= "" then return v end
+        end
+        if type(_G.GetItemInfo) == "function" then
+            local ok, v = pcall(_G.GetItemInfo, id)
+            if ok and type(v) == "string" and v ~= "" then return v end
+        end
     end
-    if (type(nm) ~= "string" or nm == "") and type(GetItemInfo) == "function" then
-        local v = GetItemInfo(id)
-        if type(v) == "string" then nm = v end
-    end
-    return nm
-end
-
-local function recipeRow(slug, spell)
-    local g = ns.ProfRecipes and ns.ProfRecipes[slug]
-    if not g then return nil end
-    for _, row in ipairs(g.rows or {}) do
-        if row[1] == spell then return row end
+    if type(spell) == "number" then
+        local DS = getDS()
+        if DS and type(DS.RawText) == "function" then
+            local snm = DS.RawText("spell", spell)
+            if type(snm) == "string" and snm ~= "" then return snm end
+        end
+        return format(tr("法术 #%d"), spell)
     end
     return nil
 end
 
-local RA
-local function router()
-    if RA == nil then RA = ns.ProfRouteAuto or false end
-    return RA or nil
+local function recipeMats(rec)
+    if type(rec) ~= "table" or type(rec.reagents) ~= "table" then return nil end
+    local out = {}
+    for i = 1, #rec.reagents do
+        local rg = rec.reagents[i]
+        if type(rg) == "table" and type(rg.itemID) == "number" then
+            out[#out + 1] = { rg.itemID, rg.count or 1 }
+        end
+    end
+    return out
 end
 
 local function gainOf(item, mats)
-    local m = router()
-    if not m or not m.AHPriceOf or type(item) ~= "number" then return nil end
-    local ok, ah = pcall(m.AHPriceOf, item)
-    if not ok or type(ah) ~= "number" or ah <= 0 then return nil end
-    if not (m.MatListCost and type(mats) == "table" and #mats > 0) then return nil end
-    local ok2, cost, unpriced, n = pcall(m.MatListCost, mats)
-    if not ok2 or type(cost) ~= "number" or cost <= 0 then return nil end
-    if type(unpriced) == "number" and type(n) == "number" and n > 0 and unpriced >= n then return nil end
-    return math.floor(ah * 0.95) - cost
+    if type(item) ~= "number" then return nil end
+    local api = getAPI()
+    local ra = getRouteAuto()
+    local ah
+    if api and type(api.AHPriceOf) == "function" then
+        local ok, v = pcall(api.AHPriceOf, item)
+        if ok and type(v) == "number" then ah = v end
+    end
+    if (type(ah) ~= "number" or ah <= 0) and ra and type(ra.AHPriceOf) == "function" then
+        local ok, v = pcall(ra.AHPriceOf, item)
+        if ok and type(v) == "number" then ah = v end
+    end
+    if type(ah) ~= "number" or ah <= 0 then return nil end
+    if type(mats) ~= "table" or #mats == 0 then return nil end
+
+    local cost
+    if ra and type(ra.MatListCost) == "function" then
+        local ok2, c, unpriced, n = pcall(ra.MatListCost, mats)
+        if ok2 and type(c) == "number" and c > 0
+            and not (type(unpriced) == "number" and type(n) == "number" and n > 0 and unpriced >= n) then
+            cost = c
+        end
+    elseif api and type(api.EffectiveCost) == "function" then
+        local sum, unpriced = 0, 0
+        for i = 1, #mats do
+            local m = mats[i]
+            local c = api.EffectiveCost(m[1], m[2] or 1)
+            if type(c) == "number" and c >= 0 then
+                sum = sum + c
+            else
+                unpriced = unpriced + 1
+            end
+        end
+        if sum > 0 and unpriced < #mats then cost = sum end
+    end
+    if type(cost) ~= "number" or cost <= 0 then return nil end
+
+    local cfg = getPricingCfg()
+    local mult = (type(cfg) == "table" and type(cfg.NET_MULTIPLIER) == "number" and cfg.NET_MULTIPLIER) or 0.95
+    return math.floor(ah * mult) - cost
 end
 
 local function fmtLeft(sec)
     if type(sec) ~= "number" then return nil end
-    if sec <= 0 then return L["可再做"] end
+    if sec <= 0 then return tr("可再做") end
     local s = math.floor(sec)
     local d = math.floor(s / 86400)
     local h = math.floor((s % 86400) / 3600)
     local m = math.floor((s % 3600) / 60)
-    if d > 0 then return format(L["%d 天 %d 小时"], d, h) end
-    if h > 0 then return format(L["%d 小时 %d 分"], h, m) end
-    if m > 0 then return format(L["%d 分钟"], m) end
-    return L["不到 1 分钟"]
+    if d > 0 then return format(tr("%d 天 %d 小时"), d, h) end
+    if h > 0 then return format(tr("%d 小时 %d 分"), h, m) end
+    if m > 0 then return format(tr("%d 分钟"), m) end
+    return tr("不到 1 分钟")
 end
 
 W.FmtLeft = fmtLeft
 
 function W.Cards(slug)
-    migrate()
     local out = {}
     if type(slug) ~= "string" then return out end
     local db = store()
@@ -543,20 +684,23 @@ function W.Cards(slug)
         if s == slug and W.Enabled(spell) then spells[spell] = true end
     end
     for spell, by in pairs(db) do
-        if type(by) == "table" then
+        if type(by) == "table" and W.Enabled(spell) then
             for _, rec in pairs(by) do
-                if type(rec) == "table" and rec.prof == slug then spells[spell] = true break end
+                if type(rec) == "table" and rec.prof == slug then
+                    spells[spell] = true
+                    break
+                end
             end
         end
     end
     for spell in pairs(spells) do
         local by = type(db[spell]) == "table" and db[spell] or {}
-        local rows, seen = {}, {}
+        local rows = {}
         for key, rec in pairs(by) do
             local marks = k[key]
             local learned = type(marks) == "table" and marks[spell] ~= nil
             if learned and type(rec) == "table" and (rec.prof == nil or rec.prof == slug) then
-                if type(rec.t) == "number" and t - rec.t > KEEP_SEC then
+                if type(rec.t) == "number" and (t - rec.t) > KEEP_SEC then
                     by[key] = nil
                 else
                     rows[#rows + 1] = {
@@ -565,14 +709,17 @@ function W.Cards(slug)
                         left = (type(rec.u) == "number") and (rec.u - t) or nil,
                         cls = clsOf(key, rec),
                     }
-                    seen[key] = true
                 end
             end
         end
         for key, marks in pairs(k) do
             if type(marks) == "table" and marks[spell] and type(by[key]) ~= "table" then
-                rows[#rows + 1] = { key = key, name = marks[spell], left = nil,
-                                    cls = clsOf(key, nil) }
+                rows[#rows + 1] = {
+                    key = key,
+                    name = marks[spell],
+                    left = nil,
+                    cls = clsOf(key, nil),
+                }
             end
         end
         if #rows > 0 then
@@ -581,9 +728,9 @@ function W.Cards(slug)
                 if ac ~= bc then return ac end
                 return (a.left or 0) < (b.left or 0)
             end)
-            local row = recipeRow(slug, spell)
-            local item = row and row[2] or nil
-            local mats = row and row[12] or nil
+            local rds = recipeEntryDS(slug, spell)
+            local item = rds and rds.outputItemID or nil
+            local mats = recipeMats(rds)
             local free, best = 0, nil
             for i = 1, #rows do
                 local it = rows[i]
@@ -606,7 +753,7 @@ function W.Cards(slug)
                     end
                     shown[#shown + 1] = {
                         name = it.name,
-                        text = (it.left == nil) and L["可再做"] or fmtLeft(it.left),
+                        text = (it.left == nil) and tr("可再做") or fmtLeft(it.left),
                         free = (it.left == nil or it.left <= 0),
                         cur = (it.key == cur),
                         cls = c,
@@ -615,14 +762,14 @@ function W.Cards(slug)
             end
             if #rows > MAX_ROWS then
                 shown[#shown + 1] = {
-                    name = format(L["另有 %d 个角色"], #rows - MAX_ROWS),
+                    name = format(tr("另有 %d 个角色"), #rows - MAX_ROWS),
                     text = "",
                 }
             end
             out[#out + 1] = {
                 spell = spell,
                 item = item,
-                name = itemName(item) or format(L["法术 #%d"], spell),
+                name = itemName(item, spell),
                 mats = mats,
                 gain = gainOf(item, mats),
                 rows = shown,
@@ -642,7 +789,6 @@ function W.Cards(slug)
 end
 
 function W.TodoList()
-    migrate()
     local out = {}
     local db = store()
     local l = list()
@@ -651,17 +797,16 @@ function W.TodoList()
     for spell, slug in pairs(l) do
         if W.Enabled(spell) and W.TodoOn(spell) then
             local by = type(db[spell]) == "table" and db[spell] or {}
-            local names, byc, seen = {}, {}, {}
+            local names, byc = {}, {}
             for key, rec in pairs(by) do
                 local marks = k[key]
                 if type(marks) == "table" and marks[spell] and type(rec) == "table"
-                   and (rec.prof == nil or rec.prof == slug) then
+                    and (rec.prof == nil or rec.prof == slug) then
                     local left = (type(rec.u) == "number") and (rec.u - t) or nil
                     if left == nil or left <= 0 then
                         local nm = rec.n or key
                         names[#names + 1] = nm
                         byc[#byc + 1] = { name = nm, cls = clsOf(key, rec) }
-                        seen[key] = true
                     end
                 end
             end
@@ -675,13 +820,13 @@ function W.TodoList()
             if #names > 0 then
                 table.sort(names)
                 table.sort(byc, function(a, b) return (a.name or "") < (b.name or "") end)
-                local row = recipeRow(slug, spell)
-                local item = row and row[2] or nil
+                local rds = recipeEntryDS(slug, spell)
+                local item = rds and rds.outputItemID or nil
                 out[#out + 1] = {
                     spell = spell,
                     slug = slug,
                     item = item,
-                    name = itemName(item) or format(L["法术 #%d"], spell),
+                    name = itemName(item, spell),
                     by = names,
                     byc = byc,
                 }
@@ -696,19 +841,26 @@ function W.TodoList()
 end
 
 function W.Manage(slug)
-    migrate()
     local out = {}
     if type(slug) ~= "string" then return out end
+    local DS = getDS()
+    if not DS or type(DS.Recipes) ~= "function" then return out end
+    local bucket = DS.Recipes(slug)
+    local recipes = type(bucket) == "table" and bucket.recipes or nil
+    if type(recipes) ~= "table" then return out end
+    local ids = {}
+    for spell in pairs(recipes) do
+        if type(spell) == "number" then ids[#ids + 1] = spell end
+    end
+    table.sort(ids)
     local l = list()
     local db = store()
     local cur = W.CharKey()
     local t = now()
-    local g = ns.ProfRecipes and ns.ProfRecipes[slug]
-    local src = g and g.rows
-    if type(src) ~= "table" then return out end
-    for i = 1, #src do
-        local spell = src[i][1]
-        if type(spell) == "number" and l[spell] == slug then
+    for i = 1, #ids do
+        local spell = ids[i]
+        local recDS = recipes[spell]
+        if type(recDS) == "table" and recDS.availability == "live" and l[spell] == slug then
             local by = type(db[spell]) == "table" and db[spell] or {}
             local rec = by[cur]
             local left
@@ -716,11 +868,11 @@ function W.Manage(slug)
                 left = rec.u - t
                 if left < 0 then left = 0 end
             end
-            local item = src[i][2]
+            local item = recDS.outputItemID
             out[#out + 1] = {
                 spell = spell,
                 item = item,
-                name = itemName(item) or format(L["法术 #%d"], spell),
+                name = itemName(item, spell),
                 on = W.Enabled(spell),
                 todo = W.TodoOn(spell),
                 left = left,
@@ -754,3 +906,13 @@ function W.Summary(slug)
     end
     return free, total, priced, #cards
 end
+
+local function ensureDelegate()
+    local api = getAPI()
+    if api and type(api.RegisterDelegate) == "function" then
+        api.RegisterDelegate("cdwatch", { TodoList = W.TodoList })
+    end
+end
+
+W.RegisterDelegate = ensureDelegate
+ensureDelegate()

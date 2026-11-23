@@ -1,25 +1,55 @@
 local _, ns = ...
 
-local VDB = { revision = 0, SourceQuestSchema = 1, SourceAccessSchema = 1, SourcePurchaseSchema = 1 }
+local VDB = { revision = 0, SourceQuestSchema = 2, SourceAccessSchema = 2, SourcePurchaseSchema = 2 }
 ns.VendorPriceDB = VDB
 local watchers = {}
 local capitalMaps = { [1453]=true, [1454]=true, [1455]=true, [1456]=true, [1457]=true, [1458]=true }
 local capitalAreas = { [1519]=true, [1637]=true, [1537]=true, [1638]=true, [1657]=true, [1497]=true }
 local capitalNPCs = {}
 
+local function getProfAPI()
+    if type(ns.EnsureProfAPI) == "function" then return ns.EnsureProfAPI() end
+    return type(ns.ProfAPI) == "table" and ns.ProfAPI or nil
+end
+
+local function getDS()
+    local ds = ns.ProfDataStore or (_G.DF_NS and _G.DF_NS.ProfDataStore) or nil
+    if type(ds) == "table" then return ds end
+    getProfAPI()
+    return ns.ProfDataStore or (_G.DF_NS and _G.DF_NS.ProfDataStore) or nil
+end
+
+local function getCond()
+    return ns.ProfConditions or (_G.DF_NS and _G.DF_NS.ProfConditions) or nil
+end
+
+local function npcNameOf(npcID)
+    if type(npcID) ~= "number" then return nil end
+    local ds = getDS()
+    return ds and type(ds.RawText) == "function" and ds.RawText("npc", npcID) or nil
+end
+
 function VDB.IsCapitalOffer(offer)
     if type(offer) ~= "table" or offer.summoned then return false end
     local map = offer.uiMapID or offer.mapID or offer.map
-    if type(map)=="number" and map>0 then return capitalMaps[map] or false end
+    if type(map) == "number" and map > 0 then return capitalMaps[map] or false end
     if capitalMaps[map] or capitalAreas[offer.areaID or offer.area] then return true end
     local id = offer.npcID or offer.id
-    if not id then return false end
+    if type(id) ~= "number" then return false end
     if capitalNPCs[id] ~= nil then return capitalNPCs[id] end
-    local loc = ns.ProfVendors and ns.ProfVendors[id]
-    local locations = ns.EnsureProfNPCLocs and ns.EnsureProfNPCLocs() or ns.ProfNPCLocs
-    local found = loc and capitalMaps[loc[2]] or false
-    for _, entry in ipairs(locations and locations[id] or {}) do
-        if capitalMaps[entry[2]] then found = true; break end
+    local ds = getDS()
+    local npc = ds and type(ds.Npc) == "function" and ds.Npc(id) or nil
+    local found = false
+    if type(npc) == "table" then
+        if capitalAreas[npc.zoneID] then found = true end
+        if not found and type(npc.spawns) == "table" then
+            for _, sp in ipairs(npc.spawns) do
+                if type(sp) == "table" and (capitalMaps[sp.uiMapID] or capitalAreas[sp.zoneID]) then
+                    found = true
+                    break
+                end
+            end
+        end
     end
     capitalNPCs[id] = found
     return found
@@ -29,12 +59,12 @@ function VDB.PreferredOffers(offers, eligible)
     local cities, others = {}, {}
     for _, offer in ipairs(offers or {}) do
         if (not eligible or eligible(offer)) and VDB.IsCapitalOffer(offer) then
-            cities[#cities+1] = offer
+            cities[#cities + 1] = offer
         else
-            others[#others+1] = offer
+            others[#others + 1] = offer
         end
     end
-    for _, offer in ipairs(others) do cities[#cities+1] = offer end
+    for _, offer in ipairs(others) do cities[#cities + 1] = offer end
     return cities
 end
 
@@ -64,7 +94,7 @@ local function Copy(offer)
     result.unit = result.quantity and type(offer.price) == "number" and offer.price / result.quantity or nil
     result.estimated = false
     if result.npcID then
-        if not result.npcName and ns.ProfVendorNames then result.npcName = ns.ProfVendorNames[result.npcID] end
+        if not result.npcName then result.npcName = npcNameOf(result.npcID) end
         result.url = result.url or "https://www.wowhead.com/forever/npc=" .. result.npcID
     end
     return result
@@ -72,6 +102,10 @@ end
 
 local function Notify()
     VDB.revision = VDB.revision + 1
+    local api = ns.ProfAPI
+    if type(api) == "table" and type(api.InvalidatePricing) == "function" then
+        pcall(api.InvalidatePricing)
+    end
     local route = ns.ProfRouteAuto
     if route and route.Invalidate then pcall(route.Invalidate) end
     for fn in pairs(watchers) do pcall(fn, VDB.revision) end
@@ -83,24 +117,164 @@ function VDB.OnChanged(fn)
     return function() watchers[fn] = nil end
 end
 
-local function RequirementsMet(offer, context)
-    if VDB.SourceAccessState("vendor",offer.npcID,offer.itemID,context,offer.conditions)~=true then return false end
-    for _,condition in ipairs(offer.conditions or {}) do
-        if condition.kind=="sourceCondition" then return false end
-        if condition.kind=="reputation" then
-            local standing=context and context.reputations and context.reputations[condition.factionID]
-            if type(standing)=="table" then standing=standing.standingID or standing.rank or standing.reaction end
-            if standing==nil and not (context and (context.completedQuests or context.learningSourcesRequired)) then
-                local get=C_Reputation and C_Reputation.GetFactionDataByID
-                if get then
-                    local ok,data=pcall(get,condition.factionID);if ok then standing=data and data.reaction end
-                elseif GetFactionInfoByID then
-                    local ok,_,_,rank=pcall(GetFactionInfoByID,condition.factionID);if ok then standing=rank end
-                end
-            end
-            if type(standing)~="number" or standing<condition.value then return false end
+local function collectNpcConditions(kind, npcID, targetID, extraConditions)
+    local list = {}
+    local function pushAll(conds)
+        if type(conds) ~= "table" then return end
+        for i = 1, #conds do
+            local c = conds[i]
+            if type(c) == "table" then list[#list + 1] = c end
         end
     end
+    local ds = getDS()
+    if ds and type(npcID) == "number" then
+        local npc = type(ds.Npc) == "function" and ds.Npc(npcID) or nil
+        if type(npc) == "table" then pushAll(npc.accessConditions) end
+        if kind == "trainer" and type(targetID) == "number" and targetID > 0 and type(ds.LearningRoutes) == "function" then
+            local lr = ds.LearningRoutes(targetID)
+            if type(lr) == "table" and type(lr.routes) == "table" then
+                for _, rt in ipairs(lr.routes) do
+                    if type(rt) == "table" and rt.kind == "trainer" then
+                        pushAll(rt.conditions)
+                        for _, tr in ipairs(rt.trainers or {}) do
+                            if type(tr) == "table" and tr.npcID == npcID then
+                                pushAll(tr.conditions)
+                            end
+                        end
+                    end
+                end
+            end
+        elseif kind == "vendor" and type(targetID) == "number" and targetID > 0 and type(ds.VendorOffers) == "function" then
+            local vo = ds.VendorOffers(targetID)
+            if type(vo) == "table" and type(vo.offers) == "table" then
+                for _, off in ipairs(vo.offers) do
+                    if type(off) == "table" and off.npcID == npcID then
+                        pushAll(off.conditions)
+                    end
+                end
+            end
+        end
+    end
+    pushAll(extraConditions)
+    return list
+end
+
+local function evaluateConditionList(conds, context)
+    if type(conds) ~= "table" or #conds == 0 then return true end
+    local Cond = getCond()
+    if Cond and type(Cond.EvaluateAll) == "function" then
+        return Cond.EvaluateAll(conds, context)
+    end
+    local unknown = false
+    for _, c in ipairs(conds) do
+        if c.kind == "questGroup" then
+            local r = VDB.QuestGroupsState(c.groups, context)
+            if r == false then return false end
+            if r == nil then unknown = true end
+        elseif c.kind == "hasItem" or c.kind == "sourceItem" then
+            local r = VDB.SourceItemState(c.itemID or c.value, context)
+            if r == false then return false end
+            if r == nil then unknown = true end
+        elseif c.kind == "unknown" or c.kind == "sourceCondition" then
+            return nil
+        end
+    end
+    if unknown then return nil end
+    return true
+end
+
+function VDB.QuestGroupsState(groups, context)
+    if type(groups) ~= "table" or #groups == 0 then return nil end
+    local anyUnknown = false
+    for _, group in ipairs(groups) do
+        if type(group) ~= "table" or #group == 0 then return nil end
+        local failed, unknown = false, false
+        for _, id in ipairs(group) do
+            local done
+            if type(id) ~= "number" or id <= 0 then return nil end
+            if context and (context.completedQuests ~= nil or context.quests ~= nil or context.learningSourcesRequired) then
+                local quests = context.completedQuests or context.quests
+                done = quests and quests[id]
+            elseif C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompleted) == "function" then
+                local ok, value = pcall(C_QuestLog.IsQuestFlaggedCompleted, id)
+                if ok then done = value end
+            elseif type(IsQuestFlaggedCompleted) == "function" then
+                local ok, value = pcall(IsQuestFlaggedCompleted, id)
+                if ok then done = value end
+            end
+            if done == false then failed = true elseif done ~= true then unknown = true end
+        end
+        if not failed and not unknown then return true end
+        if not failed and unknown then anyUnknown = true end
+    end
+    if anyUnknown then return nil end
+    return false
+end
+
+function VDB.SourceQuestState(kind, npcID, targetID, context, conditions)
+    local all = collectNpcConditions(kind, npcID, targetID, conditions)
+    local qOnly = {}
+    for i = 1, #all do
+        if all[i].kind == "questGroup" or all[i].kind == "quest" then
+            qOnly[#qOnly + 1] = all[i]
+        end
+    end
+    return evaluateConditionList(qOnly, context)
+end
+
+function VDB.ItemHasQuestSources(itemID)
+    if type(itemID) ~= "number" then return false end
+    local ds = getDS()
+    if not ds or type(ds.VendorOffers) ~= "function" then return false end
+    local vo = ds.VendorOffers(itemID)
+    if type(vo) ~= "table" or type(vo.offers) ~= "table" then return false end
+    for _, offer in ipairs(vo.offers) do
+        if type(offer) == "table" then
+            if type(offer.conditions) == "table" and #offer.conditions > 0 then return true end
+            local npc = type(offer.npcID) == "number" and ds.Npc and ds.Npc(offer.npcID) or nil
+            if type(npc) == "table" and type(npc.accessConditions) == "table" and #npc.accessConditions > 0 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function VDB.SourceItemCount(itemID, context)
+    if context and (context.ownedSourceItems ~= nil or context.ownedItems ~= nil or context.completedQuests ~= nil or context.learningSourcesRequired) then
+        local map = context.ownedSourceItems or context.ownedItems
+        return map and map[itemID]
+    end
+    local get = C_Item and C_Item.GetItemCount or GetItemCount
+    if type(get) == "function" then
+        local ok, count = pcall(get, itemID, false)
+        if ok and type(count) == "number" then return count end
+    end
+end
+
+function VDB.SourceItemState(itemID, context)
+    local count = VDB.SourceItemCount(itemID, context)
+    if type(count) ~= "number" then return nil end
+    return count >= 1
+end
+
+function VDB.SourceAccessState(kind, npcID, targetID, context, conditions)
+    local all = collectNpcConditions(kind, npcID, targetID, conditions)
+    return evaluateConditionList(all, context)
+end
+
+function VDB.SourceRequiresQuest(kind, npcID, targetID)
+    local all = collectNpcConditions(kind, npcID, targetID, nil)
+    for i = 1, #all do
+        if all[i].kind == "questGroup" or all[i].kind == "quest" then
+            return true
+        end
+    end
+    return false
+end
+
+local function RequirementsMet(offer, context)
+    if VDB.SourceAccessState("vendor", offer.npcID, offer.itemID, context, offer.conditions) ~= true then return false end
     if context and context.npcAccess and context.npcAccess[offer.npcID] == false then return false end
     if offer.summoned and not (context and context.npcAccess and context.npcAccess[offer.npcID] == true) then
         return false
@@ -158,115 +332,6 @@ local function RequirementsMet(offer, context)
     return true
 end
 
-function VDB.QuestGroupsState(groups,context)
-    if type(groups)~="table" or #groups==0 then return nil end
-    local anyUnknown=false
-    for _,group in ipairs(groups) do
-        if type(group)~="table" or #group==0 then return nil end
-        local failed,unknown=false,false
-        for _,id in ipairs(group) do
-            local done
-            if type(id)~="number" or id<=0 then return nil end
-            if context and (context.completedQuests~=nil or context.quests~=nil or context.learningSourcesRequired) then
-                local quests=context.completedQuests or context.quests
-                done=quests and quests[id]
-            elseif C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompleted)=="function" then
-                local ok,value=pcall(C_QuestLog.IsQuestFlaggedCompleted,id);if ok then done=value end
-            elseif type(IsQuestFlaggedCompleted)=="function" then
-                local ok,value=pcall(IsQuestFlaggedCompleted,id);if ok then done=value end
-            end
-            if done==false then failed=true elseif done~=true then unknown=true end
-        end
-        if not failed and not unknown then return true end
-        if not failed and unknown then anyUnknown=true end
-    end
-    if anyUnknown then return nil end
-    return false
-end
-
-function VDB.SourceQuestState(kind,npcID,targetID,context,conditions)
-    local data=ns.ProfSourceQuestUnlocks
-    local rules=data and data.rules and data.rules[kind]
-    local npc=rules and rules[npcID]
-    local unknown=false
-    local function check(rule)
-        local result=VDB.QuestGroupsState(rule.groups,context)
-        if result==nil then unknown=true end
-        return result~=false
-    end
-    if npc then
-        if npc[0] and not check(npc[0]) then return false end
-        if targetID~=0 and npc[targetID] and not check(npc[targetID]) then return false end
-    end
-    for _,condition in ipairs(conditions or {}) do
-        if condition.kind=="questGroup" and not check(condition) then return false end
-    end
-    if unknown then return nil end
-    return true
-end
-
-function VDB.ItemHasQuestSources(itemID)
-    local data=ns.ProfSourceQuestUnlocks
-    for _,rules in pairs(data and data.rules and data.rules.vendor or {}) do
-        if rules[0] or rules[itemID] then return true end
-    end
-    local sources=ns.EnsureProfSources and ns.EnsureProfSources() or ns.ProfSources
-    for _,offer in ipairs(sources and sources[itemID] and sources[itemID].v or {}) do
-        if #(offer.conditions or {})>0 then return true end
-    end
-    return false
-end
-
-function VDB.SourceItemCount(itemID,context)
-    if context and (context.ownedSourceItems~=nil or context.completedQuests~=nil or context.learningSourcesRequired) then
-        return context.ownedSourceItems and context.ownedSourceItems[itemID]
-    end
-    local get=C_Item and C_Item.GetItemCount or GetItemCount
-    if type(get)=="function" then
-        local ok,count=pcall(get,itemID,false)
-        if ok and type(count)=="number" then return count end
-    end
-end
-
-function VDB.SourceItemState(itemID,context)
-    local count=VDB.SourceItemCount(itemID,context)
-    if type(count)~="number" then return nil end
-    return count>=1
-end
-
-function VDB.SourceAccessState(kind,npcID,targetID,context,conditions)
-    local result=VDB.SourceQuestState(kind,npcID,targetID,context,conditions)
-    if result==false then return false end
-    local unknown=result==nil
-    local data=ns.ProfSourceQuestUnlocks
-    local rules=data and data.rules and data.rules[kind]
-    local npc=rules and rules[npcID]
-    local function check(id)
-        local value=VDB.SourceItemState(id,context)
-        if value==nil then unknown=true end
-        return value~=false
-    end
-    for _,key in ipairs(targetID and targetID~=0 and {0,targetID} or {0}) do
-        local rule=npc and npc[key]
-        if rule and rule.requiredItemID and not check(rule.requiredItemID) then return false end
-    end
-    for _,condition in ipairs(conditions or {}) do
-        if condition.kind=="sourceItem" and not check(condition.value) then return false end
-    end
-    if unknown then return nil end
-    return true
-end
-
-function VDB.SourceRequiresQuest(kind,npcID,targetID)
-    local data=ns.ProfSourceQuestUnlocks
-    local rules=data and data.rules and data.rules[kind]
-    local npc=rules and rules[npcID]
-    local function required(rule)
-        return type(rule)=="table" and type(rule.groups)=="table" and next(rule.groups)~=nil
-    end
-    return npc and (required(npc[0]) or required(npc[targetID])) or false
-end
-
 local function Accessible(offer, context)
     if type(offer) ~= "table" or offer.unlimited ~= true or offer.available == false
         or offer.purchasable == false or offer.priceOnly == true
@@ -280,7 +345,7 @@ local function Accessible(offer, context)
         and faction ~= Faction(context) then return false end
     return RequirementsMet(offer, context)
 end
-VDB.OfferAccessible=Accessible
+VDB.OfferAccessible = Accessible
 
 function VDB.GetCachedOffer(itemID)
     if type(itemID) ~= "number" then return end
@@ -289,21 +354,26 @@ function VDB.GetCachedOffer(itemID)
     if type(quote) == "function" and not VDB.ItemHasQuestSources(itemID) then
         local ok, unit = pcall(quote, "DungeonsForever", itemID)
         if ok and type(unit) == "number" and unit >= 0 and unit < math.huge then
-            return {price=unit, unit=unit, quantity=1, bundleSize=1,
-                unlimited=true, available=true, purchasable=true,
-                source="auctionator-vendor", priceSource="auctionator-vendor", priceBasis="cached-unit"}
+            return {
+                price = unit, unit = unit, quantity = 1, bundleSize = 1,
+                unlimited = true, available = true, purchasable = true,
+                source = "auctionator-vendor", priceSource = "auctionator-vendor", priceBasis = "cached-unit",
+            }
         end
     end
 end
 
 function VDB.GetOffers(itemID, context)
     if type(itemID) ~= "number" then return {} end
-    local cached=VDB.GetCachedOffer(itemID)
-    if cached then return {cached} end
-    if ns.ProfSupply then ns.ProfSupply.Ensure() end
+    local cached = VDB.GetCachedOffer(itemID)
+    if cached then return { cached } end
+    local api = getProfAPI()
+    if not api then return {} end
+    if ns.ProfSupply and ns.ProfSupply.Ensure then ns.ProfSupply.Ensure() end
     local result = {}
     for _, offer in ipairs(ns.ProfVendorOffers and ns.ProfVendorOffers[itemID] or {}) do
-        offer=Copy(offer);offer.itemID=itemID
+        offer = Copy(offer)
+        offer.itemID = itemID
         if offer.reference == true and offer.priceVerified == true and offer.source == "supply-verified"
             and type(offer.npcID) == "number" and offer.npcID > 0 and Accessible(offer, context) then
             result[#result + 1] = offer
@@ -329,7 +399,17 @@ end
 
 function VDB.GetPrice(itemID, context)
     local offers = VDB.GetOffers(itemID, context)
-    return offers[1] and offers[1].unit or nil
+    if offers[1] and offers[1].unit ~= nil then return offers[1].unit end
+    local api = getProfAPI()
+    if api and type(api.VendorPrice) == "function" then
+        local vp = api.VendorPrice(itemID, context)
+        if type(vp) == "table" and type(vp.unitCopper) == "number" then
+            local pure = (type(vp.currencies) ~= "table" or #vp.currencies == 0)
+                and (type(vp.costItems) ~= "table" or #vp.costItems == 0)
+            if pure then return vp.unitCopper end
+        end
+    end
+    return nil
 end
 
 function VDB.GetFormulaOffers(itemID, context, source)
@@ -338,9 +418,11 @@ function VDB.GetFormulaOffers(itemID, context, source)
     local result, seen = {}, {}
     local function add(raw, verified)
         if type(raw) ~= "table" or type(raw.npcID) ~= "number" or raw.npcID <= 0 or raw.priceOnly then return end
-        local o = {}; for k,v in pairs(raw) do o[k] = v end
-        o.itemID=itemID
-        local check = {}; for k,v in pairs(o) do check[k] = v end
+        local o = {}
+        for k, v in pairs(raw) do o[k] = v end
+        o.itemID = itemID
+        local check = {}
+        for k, v in pairs(o) do check[k] = v end
         check.price, check.quantity = 0, 1
         check.unlimited, check.available, check.purchasable = true, true, true
         if not Accessible(check, context) then return end
@@ -349,7 +431,8 @@ function VDB.GetFormulaOffers(itemID, context, source)
         local price = raw.price
         local priced = verified and validPack and type(price) == "number" and price >= 0 and price < math.huge
         o.price = priced and price or nil
-        o.quantity = validPack and pack or nil; o.bundleSize = o.quantity
+        o.quantity = validPack and pack or nil
+        o.bundleSize = o.quantity
         o.unit = priced and price / pack or nil
         o.stock = nil
         local stock = raw.maxStock
@@ -363,11 +446,13 @@ function VDB.GetFormulaOffers(itemID, context, source)
         o.priceUsable = o.available and priced and true or false
         o.priceVerified = priced and true or false
         o.reference, o.estimated = true, false
-        if not o.npcName and ns.ProfVendorNames then o.npcName = ns.ProfVendorNames[o.npcID] end
+        if not o.npcName then o.npcName = npcNameOf(o.npcID) end
         o.url = o.url or "https://www.wowhead.com/forever/npc=" .. o.npcID
-        result[#result + 1] = o; seen[o.npcID] = true
+        result[#result + 1] = o
+        seen[o.npcID] = true
     end
-    local supply = ns.ProfSupply
+    local api = getProfAPI()
+    local supply = api and ns.ProfSupply or nil
     for _, offer in ipairs(supply and supply.FormulaList and supply.FormulaList(itemID) or {}) do
         add(offer, offer.priceVerified == true and offer.reference == true)
     end
@@ -375,15 +460,16 @@ function VDB.GetFormulaOffers(itemID, context, source)
         local id = v.id or v.npcID or v[5]
         local currency = tonumber(v.currencyID or v.cur) or 0
         if type(id) == "number" and id > 0 and not seen[id] and currency == 0 and not v.hasExtendedCost then
-            local o = {}; for k,value in pairs(v) do o[k] = value end
+            local o = {}
+            for k, value in pairs(v) do o[k] = value end
             o.npcID, o.npcName, o.zone = id, v.name or v[1], v.zone or v[2]
             o.source, o.reference = "catalogue", true
             o.verifiedAt = v.verifiedAt or "catalogue-unpriced"
             add(o, v.priceVerified == true and v.verifiedAt ~= nil)
         end
     end
-    table.sort(result, function(a,b)
-        local ap,bp = a.unit or math.huge, b.unit or math.huge
+    table.sort(result, function(a, b)
+        local ap, bp = a.unit or math.huge, b.unit or math.huge
         if ap ~= bp then return ap < bp end
         return a.npcID < b.npcID
     end)
@@ -392,21 +478,55 @@ end
 
 local questStamp
 local function QuestChanged()
-    local data=ns.ProfSourceQuestUnlocks
-    if not data and not ns.ProfSourcesMeta then return false end
-    local ids,parts,items={},{},{}
-    for _,npcs in pairs(data and data.rules or {}) do for _,targets in pairs(npcs) do for _,rule in pairs(targets) do
-        for _,group in ipairs(rule.groups or {}) do for _,id in ipairs(group) do ids[id]=true end end
-        if rule.requiredItemID then items[rule.requiredItemID]=true end
-    end end end
-    for _,id in ipairs(ns.ProfSourcesMeta and ns.ProfSourcesMeta.questIDs or {}) do ids[id]=true end
-    local sorted={};for id in pairs(ids) do sorted[#sorted+1]=id end;table.sort(sorted)
-    for _,id in ipairs(sorted) do parts[#parts+1]=id..":"..tostring(VDB.QuestGroupsState({{id}})) end
-    sorted={};for id in pairs(items) do sorted[#sorted+1]=id end;table.sort(sorted)
-    for _,id in ipairs(sorted) do parts[#parts+1]="item:"..id..":"..tostring(VDB.SourceItemState(id)) end
-    local stamp=table.concat(parts,";")
-    if stamp==questStamp then return false end
-    questStamp=stamp
+    local ds = ns.ProfDataStore
+    if type(ds) ~= "table" or type(ds.Ensure) ~= "function" then return false end
+    local ids, items = {}, {}
+    local function scanConds(conds)
+        if type(conds) ~= "table" then return end
+        for _, c in ipairs(conds) do
+            if type(c) == "table" then
+                if c.kind == "quest" and type(c.questID) == "number" then
+                    ids[c.questID] = true
+                elseif c.kind == "questGroup" and type(c.groups) == "table" then
+                    for _, g in ipairs(c.groups) do
+                        for _, qid in ipairs(g or {}) do
+                            if type(qid) == "number" then ids[qid] = true end
+                        end
+                    end
+                elseif (c.kind == "hasItem" or c.kind == "sourceItem") and type(c.itemID or c.value) == "number" then
+                    items[c.itemID or c.value] = true
+                end
+            end
+        end
+    end
+    local ent = ds.Ensure("entities")
+    if type(ent) == "table" and type(ent.npcs) == "table" then
+        for _, npc in pairs(ent.npcs) do
+            if type(npc) == "table" then scanConds(npc.accessConditions) end
+        end
+    end
+    local src = ds.Ensure("sources")
+    if type(src) == "table" and type(src.vendorOffers) == "table" then
+        for _, vo in pairs(src.vendorOffers) do
+            if type(vo) == "table" and type(vo.offers) == "table" then
+                for _, off in ipairs(vo.offers) do
+                    if type(off) == "table" then scanConds(off.conditions) end
+                end
+            end
+        end
+    end
+    local parts = {}
+    local sorted = {}
+    for id in pairs(ids) do sorted[#sorted + 1] = id end
+    table.sort(sorted)
+    for _, id in ipairs(sorted) do parts[#parts + 1] = id .. ":" .. tostring(VDB.QuestGroupsState({ { id } })) end
+    sorted = {}
+    for id in pairs(items) do sorted[#sorted + 1] = id end
+    table.sort(sorted)
+    for _, id in ipairs(sorted) do parts[#parts + 1] = "item:" .. id .. ":" .. tostring(VDB.SourceItemState(id)) end
+    local stamp = table.concat(parts, ";")
+    if stamp == questStamp then return false end
+    questStamp = stamp
     return true
 end
 
@@ -419,10 +539,13 @@ if CreateFrame then
     frame:RegisterEvent("BAG_UPDATE_DELAYED")
     frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
     frame:RegisterEvent("MERCHANT_CLOSED")
-    frame:SetScript("OnEvent", function(_,event)
-        if event=="UPDATE_FACTION" or event=="MERCHANT_CLOSED" or QuestChanged() then
-            local E=ns.ProfEconomy
-            if (event=="BAG_UPDATE_DELAYED" or event=="PLAYER_EQUIPMENT_CHANGED") and E and E.RefreshLearningObservations then E.RefreshLearningObservations(event) end
+    frame:SetScript("OnEvent", function(_, event)
+        if event == "UPDATE_FACTION" or event == "MERCHANT_CLOSED" or QuestChanged() then
+            local api = ns.ProfAPI
+            if (event == "BAG_UPDATE_DELAYED" or event == "PLAYER_EQUIPMENT_CHANGED")
+                and type(api) == "table" and type(api.RefreshLearningObservations) == "function" then
+                pcall(api.RefreshLearningObservations, event)
+            end
             Notify()
         end
     end)
