@@ -4682,9 +4682,13 @@ function DG.ApplyDetailChrome(cur)
             if bt then
                 local bx = DG.Q_PAD
                 for k = 1, i - 1 do bx = bx + ((k <= 2) and 92 or 50) end
+                local bw = (i <= 2) and 84 or 42
+                if ns.WIDE_UI and DG.Q_BTN_EN[i] then
+                    bx, bw = DG.Q_PAD + DG.Q_BTN_EN[i][1], DG.Q_BTN_EN[i][2]
+                end
                 bt:ClearAllPoints()
                 bt:SetPoint("TOPLEFT", plateL, "TOPLEFT", bx, -DG.Q_PAD)
-                bt:SetWidth((i <= 2) and 84 or 42)
+                bt:SetWidth(bw)
                 bt:SetFrameLevel(plateL:GetFrameLevel() + 5)
             end
         end
@@ -8462,6 +8466,10 @@ function DG.PaintQListRow(r, st)
     end
 end
 
+-- 英文客户端：阵营/总览/列表按钮总宽不变，重新分配给更长的英文标签 {x, 宽}
+-- English UI: same total width for Faction/Overview/List buttons, redistributed for longer labels {x, width}
+DG.Q_BTN_EN = { { 0, 80 }, { 84, 80 }, { 168, 66 }, { 238, 38 } }
+
 function U:RenderDungeonQuests()
     local d = U.dungeonDetailCur
     DG.EnsureQuestLane()
@@ -8527,7 +8535,7 @@ function U:RenderDungeonQuests()
                 key, label = "qlist", L["列表"]
             end
             bt.__mode, bt.__key = "quest", key
-            bt:SetWidth((i <= 2) and 84 or 42)
+            bt:SetWidth((ns.WIDE_UI and DG.Q_BTN_EN[i]) and DG.Q_BTN_EN[i][2] or ((i <= 2) and 84 or 42))
             if n then
                 bt:SetText(label .. " " .. n)
             else
@@ -8572,6 +8580,10 @@ function U:RenderDungeonQuests()
                     bfs:SetPoint("CENTER", bt, "CENTER", 0, 0)
                 end
                 bfs:SetJustifyH("CENTER")
+                if ns.WIDE_UI and ns.FitFS then
+                    ns.FullText(bfs, bt:GetText())
+                    ns.FitFS(bfs, (bt:GetWidth() or 40) - (tex and 28 or 6), 10)
+                end
             end
         end
     end

@@ -2491,6 +2491,20 @@ local function PaintTopbar()
                 bt:SetShown(true)
                 bt:SetText(BG.SpecTabName(sr))
                 if bt.__icon then bt.__icon:SetTexture(sr.icon) end
+                if ns.WIDE_UI and ns.FitFS and BG.tspecX0 then
+                    -- 英文专精名较长：按专精数均分剩余宽度，文字放不下则缩小字号
+                    -- Long English spec names: split the remaining width evenly; shrink text that doesn't fit
+                    local pw = (BG.tspecParent and BG.tspecParent:GetWidth() or 0)
+                    if pw <= 0 then pw = 383 end
+                    local n = #dir
+                    local tw = math.floor((pw - 8 - BG.tspecX0 - (n - 1) * 4) / n)
+                    bt:SetWidth(tw)
+                    bt:ClearAllPoints()
+                    bt:SetPoint("TOPLEFT", BG.tspecParent, "TOPLEFT", BG.tspecX0 + (i - 1) * (tw + 4), -BG.tspecY)
+                    ns.FullText(bt.lbl, BG.SpecTabName(sr))
+                    bt.lbl:SetWidth(0)
+                    ns.FitFS(bt.lbl, tw - 22, 10)
+                end
                 local on = (sr.role == "tank" and BG.spec == "tank")
                     or (sr.role ~= "tank" and BG.spec ~= "tank" and BG.tspec == sr.key)
                 SetButtonSelected(bt, on)
@@ -2585,6 +2599,11 @@ local function PaintStats()
         row.val:SetPoint("TOPRIGHT", BG.statParent, "TOPLEFT", vx, -ry)
         row.val:SetText(tostring(v))
         row.val:SetTextColor(Unpack(C_GREEN))
+        if ns.WIDE_UI and ns.FitFS then
+            row.lab:SetWidth(0)
+            ns.FullText(row.lab, row.lab:GetText())
+            ns.FitFS(row.lab, (vx - lx) - (row.val:GetStringWidth() or 0) - 5, 10)
+        end
         row.lab:Show()
         row.val:Show()
         n = n + 1
@@ -3904,6 +3923,21 @@ function FillBwRow(r)
     else
         r.chip3:Hide()
     end
+    if ns.WIDE_UI and ns.FitFS then
+        -- 英文名较长：名字宽度让出右侧徽章与"已装备/已收藏"标签
+        -- Long English names: leave room for the right-side badges and Equipped/Collected tags
+        local rw = (BG.bwChild and BG.bwChild:GetWidth() or 0)
+        if rw <= 0 then rw = 301 end
+        local used = 6
+        for _, c in ipairs({ r.chip, r.chip2, r.chip3 }) do
+            if c:IsShown() then used = used + (c:GetWidth() or 0) + 4 end
+        end
+        if r.eqTag:IsShown() then used = used + (r.eqTag:GetStringWidth() or 0) + 8 end
+        if r.ownTag:IsShown() then used = used + (r.ownTag:GetStringWidth() or 0) + 6 end
+        r.name:SetWidth(0)
+        ns.FullText(r.name, nm)
+        ns.FitFS(r.name, rw - 46 - used - 4, 12)
+    end
     if gm and gm.WishIs then
         local on = gm.WishIs(row.item)
         r.wishBt.star:SetText(on and ns.SYM.star or ns.SYM.star0)
@@ -3938,6 +3972,10 @@ local function PaintBrowser()
         BG.bwTitle:SetText(SLOT_NAMES[BG.sel] or BG.sel)
     else
         BG.bwTitle:SetText(L["点左侧部位查看备选"])
+    end
+    if ns.WIDE_UI and ns.FitFS then
+        ns.FullText(BG.bwTitle, BG.bwTitle:GetText())
+        ns.FitFS(BG.bwTitle, BG.bwTitle:GetWidth(), 11)
     end
     local list = {}
     if BG.sel and rkey and not offLocked then
@@ -4094,6 +4132,13 @@ local function PaintEnchs()
         r.__vh = 36
         r.name:SetText(BG.sel and L["该部位没有附魔推荐"] or L["点左侧部位查看该部位的附魔"])
         r.name:SetTextColor(Unpack(C_DIM))
+        if ns.WIDE_UI and ns.FitFS then
+            local ew = (BG.enchChild and BG.enchChild:GetWidth() or 0)
+            if ew <= 0 then ew = 301 end
+            r.name:SetWidth(0)
+            ns.FullText(r.name, r.name:GetText())
+            ns.FitFS(r.name, ew - (r.name:GetLeft() and r:GetLeft() and (r.name:GetLeft() - r:GetLeft()) or 8) - 8, 11)
+        end
         r.lvl:SetText("")
         r.note:SetText("")
         if r.__huiCard then ns.hui.HuiCardState(r, "norm") end
@@ -4863,6 +4908,7 @@ local function BuildSpecRow(parent, yt)
     BG.ddBtn = dd
     x = x + 99
     BG.tspecBtns = {}
+    BG.tspecX0, BG.tspecY, BG.tspecParent = x, y, parent
     for i = 1, 4 do
         local bt = NewButton(parent, "", 60, 24, 14)
         bt:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
@@ -5117,7 +5163,8 @@ local function BuildMid(m1, m2)
     BG.planHead:SetPoint("TOPLEFT", m1, "TOPLEFT", x, -8)
     BG.planHead:SetText(L["方案"])
     local tw = BG.planHead:GetStringWidth() or 0
-    BG.renameBtn = NewButton(m1, L["改名"], 56, 24, 14)
+    local pbw = ns.WIDE_UI and 66 or 56
+    BG.renameBtn = NewButton(m1, L["改名"], pbw, 24, 14)
     BG.renameBtn.lbl = BG.renameBtn:GetFontString()
     BG.renameBtn:SetPoint("TOPLEFT", m1, "TOPLEFT", x + tw + 8, -8)
     BG.renameBtn:SetScript("OnClick", function()
@@ -5134,9 +5181,9 @@ local function BuildMid(m1, m2)
             end
         end
     end)
-    BG.deleteBtn = NewButton(m1, L["删除"], 56, 24, 14)
+    BG.deleteBtn = NewButton(m1, L["删除"], pbw, 24, 14)
     BG.deleteBtn.lbl = BG.deleteBtn:GetFontString()
-    BG.deleteBtn:SetPoint("TOPLEFT", m1, "TOPLEFT", x + tw + 72, -8)
+    BG.deleteBtn:SetPoint("TOPLEFT", m1, "TOPLEFT", x + tw + 16 + pbw, -8)
     BG.deleteBtn:SetScript("OnClick", function()
         local p = BG.usingPlan
         if not p then return end
@@ -5153,6 +5200,12 @@ local function BuildMid(m1, m2)
     reset:SetPoint("TOPLEFT", m1, "TOPLEFT", x + (w - 8) / 2 + 8, -40)
     reset:SetScript("OnClick", function() BG.ResetToRec() end)
     BG.saveBtn, BG.resetBtn = save, reset
+    if ns.WIDE_UI and ns.FitFS then
+        for _, b in ipairs({ BG.renameBtn, BG.deleteBtn, save, reset }) do
+            local fs = b:GetFontString()
+            if fs then ns.FitFS(fs, (b:GetWidth() or 60) - 8, 10) end
+        end
+    end
 
     local pool = CreateFrame("ScrollFrame", nil, m1)
     if pool.SetClipsChildren then pool:SetClipsChildren(true) end
@@ -5198,11 +5251,12 @@ local function BuildBrowser(parent)
     local x, w = 8, 309
     BG.bwTitle = MakeFS(parent, 16, C_WHITE, "LEFT")
     BG.bwTitle:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -8)
-    BG.bwTitle:SetWidth(w - 16 - 258)
+    local ebW = ns.WIDE_UI and 118 or 150
+    BG.bwTitle:SetWidth(w - 16 - 108 - ebW)
     BG.bwTitle:SetWordWrap(false)
 
-    local eb = ns.CreateEditBox and ns.CreateEditBox(parent, 150) or CreateFrame("EditBox", nil, parent)
-    eb:SetSize(150, 22)
+    local eb = ns.CreateEditBox and ns.CreateEditBox(parent, ebW) or CreateFrame("EditBox", nil, parent)
+    eb:SetSize(ebW, 22)
     eb:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -x, -8)
     eb:SetAutoFocus(false)
     eb:SetMaxLetters(30)
