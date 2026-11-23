@@ -1,8 +1,7 @@
-local gl = (type(DF_Locale) == 'function') and DF_Locale() or 'zhCN'
+local gl = (type(DF_Locale) == "function") and DF_Locale() or "zhCN"
 if gl ~= 'zhTW' then return end
 
 local AddonName, ns = ...
-if not ns.IsTitan then return end
 
 ns.NPCLoc = {
     [234] = { 1436, 56.2, 47.4, "西部荒野" },

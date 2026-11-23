@@ -154,7 +154,6 @@ end
 local SUPPLY_MAX_AGE = (ns.ProfRouteAuto and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds
     and ns.ProfRouteAuto.MaxAuctionSupplyAgeSeconds()) or 172800
 local SNAPSHOT_VERSION = 3
-local SCAN_SILENT_SEC = 45
 local function WholeNumber(n)
     return type(n)=="number" and n>=0 and n<math.huge and n==math.floor(n)
 end
@@ -257,7 +256,13 @@ local function FullBatchFailure(batch)
 end
 
 
-local function ValidSavedBatch(batch)
+local function BatchIds(items)
+    local ids={}
+    for id in pairs(items) do ids[#ids+1]=id end
+    return ids
+end
+
+local function ValidBatchHead(batch)
     local now=time and time() or 0
     if type(batch)~="table" or batch.v~=SNAPSHOT_VERSION or batch.c~=true
         or batch.s~="client-auction-results" or type(batch.ox)~="boolean"
@@ -266,36 +271,62 @@ local function ValidSavedBatch(batch)
         or not WholeNumber(batch.completedAt) or batch.completedAt<batch.t or batch.completedAt>now
         or not WholeNumber(batch.expected) or batch.received~=batch.expected or type(batch.items)~="table" then return false end
     if batch.dv~=nil and batch.dv~=1 then return false end
-    local count=0
-    for id,item in pairs(batch.items) do
-        if not WholeNumber(id) or id==0 or type(item)~="table" or not WholeNumber(item.q)
-            or item.failure~=nil and item.failure~="incomplete"
-            or item.p~=nil and (type(item.p)~="number" or item.p~=item.p or item.p<=0 or item.p==math.huge)
-            or item.q>0 and item.p==nil then return false end
-        if batch.dv==1 then
-            if type(item.d)~="table" then return false end
-            local total,last=0,0
-            local entries=0
-            for index,level in pairs(item.d) do
-                if not WholeNumber(index) or index<1 or index>#item.d then return false end
-                entries=entries+1
-            end
-            if entries~=#item.d then return false end
-            for _,level in ipairs(item.d) do
-                if type(level)~="table" or type(level[1])~="number" or level[1]~=level[1]
-                    or level[1]<=last or level[1]==math.huge or not WholeNumber(level[2]) or level[2]==0 then return false end
-                last=level[1];total=total+level[2]
-            end
-            if total~=item.q then return false end
-        end
-        count=count+1
+    return true
+end
+
+local function ValidItemEntry(id,item,dv)
+    if not WholeNumber(id) or id==0 or type(item)~="table" or not WholeNumber(item.q)
+        or item.failure~=nil and item.failure~="incomplete"
+        or item.p~=nil and (type(item.p)~="number" or item.p~=item.p or item.p<=0 or item.p==math.huge)
+        or item.q>0 and item.p==nil then return false end
+    if dv~=1 then return true end
+    if type(item.d)~="table" then return false end
+    local total,last=0,0
+    local entries=0
+    for index in pairs(item.d) do
+        if not WholeNumber(index) or index<1 or index>#item.d then return false end
+        entries=entries+1
     end
-    return count<=batch.expected
+    if entries~=#item.d then return false end
+    for _,level in ipairs(item.d) do
+        if type(level)~="table" or type(level[1])~="number" or level[1]~=level[1]
+            or level[1]<=last or level[1]==math.huge or not WholeNumber(level[2]) or level[2]==0 then return false end
+        last=level[1];total=total+level[2]
+    end
+    return total==item.q
+end
+
+local function ValidBatchStep(batch,ids,st,over)
+    local dv=batch.dv
+    while st.pos<=#ids do
+        local id=ids[st.pos]
+        if not ValidItemEntry(id,batch.items[id],dv) then return false end
+        st.count=st.count+1
+        st.pos=st.pos+1
+        if over and debugprofilestop()>over then return nil end
+    end
+    return st.count<=batch.expected
+end
+
+local function ValidSavedBatch(batch)
+    if not ValidBatchHead(batch) then return false end
+    return ValidBatchStep(batch,BatchIds(batch.items),{pos=1,count=0},nil)
+end
+
+local function ClassifyFailedBatch(saved)
+    if type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
+        and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
+        fullFailure=saved
+    elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION
+        and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
+        and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
+        fullFailure=saved
+    else ReleaseFullBatch("incomplete",saved) end
 end
 
 
 local function PruneLegacyBatch(batch)
-    if batch.dv~=1 or batch.mk~=MarketKey() or not ValidSavedBatch(batch) then return end
+    if batch.dv~=1 or batch.mk~=MarketKey() then return end
     local db=ScanDB()
     local old=db.auctionFullScan
     if type(old)~="table" then return end
@@ -543,13 +574,12 @@ function AB.GetAuctionPriceObservedAt(id)
     return nil
 end
 
-local fullBus,fullListener,fullEvents,fullRead,fullTimer,fullWatchdog
+local fullBus,fullListener,fullEvents,fullRead,fullTimer
 local fullGeneration=0
 local fullState={status="unavailable"}
 local function StopFullImport()
     fullGeneration=fullGeneration+1
     if fullTimer then fullTimer:Cancel();fullTimer=nil end
-    if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
     fullRead=nil
 end
 local function ScheduleFullExpiry()
@@ -711,18 +741,6 @@ local function DisconnectFullScan()
     StopFullImport()
 end
 
-local function ArmWatchdog(token)
-    if not (C_Timer and C_Timer.NewTimer) then return end
-    if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
-    fullWatchdog=C_Timer.NewTimer(SCAN_SILENT_SEC,function()
-        fullWatchdog=nil
-        if fullRead~=token or token.gotRows then return end
-        if fullState.status~="scanning" then return end
-        fullState={status="noresponse",pct=fullState.pct,startedAt=token.startedAt}
-        ScanStatusChanged()
-    end)
-end
-
 function AB.ConnectAuctionatorStock()
     local enabled=AB.ReplicateScanEnabled()
     if enabled~=true then
@@ -753,28 +771,17 @@ function AB.ConnectAuctionatorStock()
                 modeGeneration=mode.generation,scanSerial=mode.scanSerial}
             local token=fullRead
             fullState={status="scanning",pct=0,startedAt=token.startedAt}
-            ArmWatchdog(token)
             ScanStatusChanged()
         elseif event==ev.ScanProgress and fullRead and type(data)=="number" then
-            if fullState.status=="noresponse" then
-                fullState.status="scanning"
-                ScanStatusChanged()
-            end
             if fullState.status=="scanning" then
                 local before=math.floor((tonumber(fullState.pct) or 0)*10)
                 fullState.pct=data
                 if math.floor(data*10)~=before then ScanStatusChanged() end
             end
-            if not fullRead.gotRows then ArmWatchdog(fullRead) end
-            if data>=0.2 then
-                fullRead.gotRows=true
-                if fullWatchdog then fullWatchdog:Cancel();fullWatchdog=nil end
-                ExpectedFullRows(fullRead)
-            end
+            if data>=0.2 then ExpectedFullRows(fullRead) end
         elseif event==ev.ScanFailed then
             ImportFailed("failed")
-        elseif event==ev.ScanComplete and fullRead
-            and (fullState.status=="scanning" or fullState.status=="noresponse") then
+        elseif event==ev.ScanComplete and fullRead and fullState.status=="scanning" then
             if fullRead.expected==nil then ExpectedFullRows(fullRead) end
             ImportFullRows(fullRead,data)
         end
@@ -803,19 +810,49 @@ SelectMarket=function()
     if ValidSavedBatch(saved) then
         if key and type(db.auctionFullScans)=="table" and db.auctionFullScans[key]==saved then PruneLegacyBatch(saved) end
         fullBatch=saved;ScheduleFullExpiry()
-    elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION and saved.items==nil
-        and saved.failure=="incomplete" and saved.snapshotStatus=="missing" then
-        fullFailure=saved
-    elseif type(saved)=="table" and saved.v==SNAPSHOT_VERSION
-        and saved.failure=="expired" and WholeNumber(saved.t) and saved.t>0
-        and (time and time() or 0)-saved.t>SUPPLY_MAX_AGE then
-        fullFailure=saved
-    else ReleaseFullBatch("incomplete",saved) end
+    else ClassifyFailedBatch(saved) end
+end
+
+local function SlowSelectMarket()
+    local key=MarketKey()
+    if currentMarket==key then return end
+    StopFullImport()
+    if fullExpiryTimer then fullExpiryTimer:Cancel();fullExpiryTimer=nil end
+    fullExpiryToken=nil;forcedUntil=0
+    currentMarket=key;fullBatch=nil;fullFailure=nil;restoredSnapshot=false
+    fullState={status=fullBus and "ready" or "unavailable"}
+    local db=ScanDB()
+    local saved=key and type(db.auctionFullScans)=="table" and db.auctionFullScans[key] or nil
+    if saved==nil then saved=db.auctionFullScan end
+    if saved==nil then return end
+    restoredSnapshot=true
+    if not ValidBatchHead(saved) then ClassifyFailedBatch(saved) return end
+    if not (ns.IdleJobs and ns.IdleJobs.Add) then
+        if ValidSavedBatch(saved) then
+            if key and type(db.auctionFullScans)=="table" and db.auctionFullScans[key]==saved then PruneLegacyBatch(saved) end
+            fullBatch=saved;ScheduleFullExpiry()
+        else ClassifyFailedBatch(saved) end
+        return
+    end
+    local ids=BatchIds(saved.items)
+    local st={pos=1,count=0}
+    local function step()
+        if currentMarket~=key then return true end
+        local ok=ValidBatchStep(saved,ids,st,debugprofilestop()+3)
+        if ok==nil then return end
+        if ok then
+            if currentMarket~=key then return true end
+            if key and type(ScanDB().auctionFullScans)=="table" and ScanDB().auctionFullScans[key]==saved then PruneLegacyBatch(saved) end
+            fullBatch=saved;ScheduleFullExpiry()
+        else ClassifyFailedBatch(saved) end
+        return true
+    end
+    ns.IdleJobs.Add(step)
 end
 local function InitializeAuctionatorStock()
     local db=ScanDB()
     db.auctionReplicateGate=nil;db.replicateRequiredAfter=nil
-    SelectMarket()
+    SlowSelectMarket()
     AB.ConnectAuctionatorStock()
     AB.ObserveReplicateMode()
     AB.HookReplicateModeSetting()
@@ -921,4 +958,10 @@ function AB.ClearSavedScans()
     return true
 end
 
-if ns.Init then ns.Init(InitializeAuctionatorStock) else InitializeAuctionatorStock() end
+if ns.Init then
+    ns.Init(function()
+        C_Timer.After(2, function() pcall(InitializeAuctionatorStock) end)
+    end)
+else
+    InitializeAuctionatorStock()
+end

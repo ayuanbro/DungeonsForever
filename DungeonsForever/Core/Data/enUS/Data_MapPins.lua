@@ -59,7 +59,7 @@ ns.MapPins = {
     },
     ["maraudon"] = {
         quest = { { 57.7, 65.5, 7029, 3 }, { 57.7, 66, 7041, 3 }, { 48, 51.8, 7044, 3 }, { 23.7, 78, 7066, 2 }, { 45.6, 80.3, 93404, 2, "Small water orb above the water surface" }, { 42.6, 46.9, 96776, 2 } },
-        entrance = { { 76.7, 65.6, nil, 1, nil, 4, 58, 32.2 }, { 62.3, 28.1, nil, 1, nil, 3, 78.8, 63.2 }, { 78.8, 63.2, nil, 3, nil, 1, 62.3, 28.1 }, { 58, 32.2, nil, 4, nil, 1, 76.7, 65.6 } },
+        entrance = { { 76.7, 65.6, nil, 1, nil, 4, 58, 32.2 }, { 62.3, 28.1, nil, 1, nil, 3, 78.8, 63.2 }, { 78.8, 63.2, nil, 3, nil, 1, 62.3, 28.1 }, { 55.6, 23.4, nil, 4, nil, 1, 76.7, 65.6 } },
         prev = { { 30, 4.4, 2, nil, nil, 1, 13.4, 58.4 }, { 23.9, 43.4, 3, "World map entrance" }, { 46.9, 88.2, 4, nil, nil, 3, 30.1, 43 }, { 47.9, 77.8, 4, nil, nil, 3, 27.7, 32 } },
         next = { { 13.4, 58.4, 1, nil, nil, 2, 30, 4.4 }, { 30.1, 43, 3, nil, nil, 4, 46.9, 88.2 }, { 27.7, 32, 3, nil, nil, 4, 47.9, 77.8 } },
     },
@@ -80,7 +80,7 @@ ns.MapPins = {
         next = { { 51.3, 62.8, 5, nil, nil, 6, 62.1, 82.9 } },
     },
     ["blackrock_depths"] = {
-        quest = { { 56.1, 96.8, 3802, 2 }, { 23.9, 50.9, 4024, 1, "Use the quest item Special Black Dragon Skin on the corpse to complete" }, { 61.3, 68.5, 4123, 2 }, { 47.6, 57.5, 4126, 2, "Smash 3 Thunderbrew kegs to spawn Hurley Blackbreath; kill him and loot quest item \"Lost Thunderbrew Recipe\"" }, { 49.2, 63.9, 4136, 2, "Talk to Ribbly Screwspigot by the outside tables to start the fight" }, { 50.8, 60.9, 4201, 2, "Succubus quest pickup" }, { 34.5, 82.6, 4282, 2 }, { 52.1, 81.5, 4341, 1 }, { 65.7, 29.6, 7848, 2 }, { 53.5, 75.3, 82062, 2 } },
+        quest = { { 56.1, 96.8, 3802, 2 }, { 23.9, 50.9, 4024, 1, "Use the quest item Special Black Dragon Skin on the corpse to complete" }, { 61.3, 68.5, 4123, 2 }, { 47.6, 57.5, 4126, 2, "Smash 3 Thunderbrew kegs to spawn Hurley Blackbreath; kill him and loot quest item \"Lost Thunderbrew Recipe\"" }, { 49.2, 63.9, 4136, 2, "Talk to Ribbly Screwspigot by the outside tables to start the fight" }, { 50.8, 60.9, 4201, 2, "Succubus quest pickup" }, { 34.5, 82.6, 4282, 2 }, { 52.1, 81.5, 4341, 1 }, { 53.5, 75.3, 82062, 2 } },
         entrance = { { 33.2, 79.2, nil, 1, nil, 4, 39.5, 17.9 }, { 67.2, 35.6, nil, 2 }, { 39.5, 17.9, nil, 4, nil, 1, 33.3, 78.9 } },
         prev = { { 66, 30.8, 1, nil, nil, 2, 60.8, 59.9 }, { 41.1, 64.6, 1, nil, nil, 2, 42, 94.1 }, { 47.9, 62.8, 1, nil, nil, 2, 45.8, 92.4 }, { 46.5, 50, 1, "Jump down", nil, 2, 47, 77.4 }, { 58.1, 87.8, 4, nil, nil, 3, 44.1, 44.6 } },
         next = { { 45.8, 92.4, 2, nil, nil, 1, 47.9, 62.8 }, { 42, 94.1, 2, nil, nil, 1, 41.1, 64.6 }, { 47, 77.4, 2, "Jump down", nil, 1, 46.5, 50 }, { 60.8, 59.9, 2, nil, nil, 1, 65.8, 30.3 }, { 44.1, 44.6, 3, nil, nil, 4, 58.1, 87.8 } },

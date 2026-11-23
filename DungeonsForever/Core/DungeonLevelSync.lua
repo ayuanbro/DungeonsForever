@@ -40,13 +40,13 @@ local LFG_ID = {
 
 ns.DungeonLFGID = LFG_ID
 
-local function apply()
-    local list = ns.DungeonData and ns.DungeonData.dungeons
-    if not list then return 0 end
-    if not (C_LFGList and C_LFGList.GetActivityInfoTable) then return 0 end
-    local changed = 0
-    for i = 1, #list do
-        local d = list[i]
+local syncBusy = false
+local syncAt = -1e9
+
+local function applyStep(list, state)
+    local over = debugprofilestop() + 3
+    while state.idx <= #list do
+        local d = list[state.idx]
         local lfg = d and LFG_ID[d.id]
         if lfg then
             local ok, info = pcall(C_LFGList.GetActivityInfoTable, lfg)
@@ -54,30 +54,55 @@ local function apply()
                 local lo, hi = info.minLevelSuggestion, info.maxLevelSuggestion
                 if type(lo) == "number" and type(hi) == "number" and lo > 0 and hi >= lo and (d.levelMin ~= lo or d.levelMax ~= hi) then
                     d.levelMin, d.levelMax = lo, hi
-                    changed = changed + 1
+                    state.changed = state.changed + 1
                 end
             end
         end
+        state.idx = state.idx + 1
+        if debugprofilestop() > over then return false end
     end
-    return changed
+    return true
 end
 
 function ns.SyncDungeonLevels()
-    local n = apply()
-    if n > 0 then
-        local U = ns.DungeonUI
-        if U then
-            U.dungeonListLevel = -1
-            if U.dungeonBuilt then pcall(U.UpdateDungeons, U) end
+    if syncBusy then return 0 end
+    local list = ns.DungeonData and ns.DungeonData.dungeons
+    if not list then return 0 end
+    if not (C_LFGList and C_LFGList.GetActivityInfoTable) then return 0 end
+    syncBusy = true
+    syncAt = (GetTime and GetTime()) or 0
+    local state = { idx = 1, changed = 0 }
+    local function step()
+        if not applyStep(list, state) then return false end
+        syncBusy = false
+        local changed = state.changed
+        if changed > 0 then
+            local U = ns.DungeonUI
+            if U then
+                U.dungeonListLevel = -1
+                if U.dungeonBuilt then pcall(U.UpdateDungeons, U) end
+            end
         end
+        return true
     end
-    return n
+    if ns.IdleJobs and ns.IdleJobs.Add then
+        ns.IdleJobs.Add(step)
+    else
+        while step() == false do end
+    end
+    return 0
 end
 
 ns.Init(function() ns.SyncDungeonLevels() end)
+
+local function throttled()
+    local nowT = (GetTime and GetTime()) or 0
+    if nowT - syncAt < 5 then return end
+    ns.SyncDungeonLevels()
+end
 
 local f = CreateFrame("Frame")
 pcall(f.RegisterEvent, f, "PLAYER_ENTERING_WORLD")
 pcall(f.RegisterEvent, f, "LFG_LIST_AVAILABLE_ACTIVITY_UPDATE")
 pcall(f.RegisterEvent, f, "LFG_LIST_ENTRY_CREATED")
-f:SetScript("OnEvent", function() ns.SyncDungeonLevels() end)
+f:SetScript("OnEvent", throttled)

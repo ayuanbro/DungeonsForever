@@ -61,6 +61,9 @@ local function CFG()
     if c.tent == nil then c.tent = true end
     if c.tentOwn == nil then c.tentOwn = true end
     if tonumber(c.tentText) == nil then c.tentText = 1 end
+    if c.carrot == nil then c.carrot = true end
+    if c.carrot == false and c.carrotAuto == nil then c.carrotAuto = false; c.carrot = true end
+    if c.carrotAuto == nil then c.carrotAuto = true end
     if c.voice == nil then c.voice = false end
     if c.voiceInit ~= 2 then
         c.voiceInit = 2
@@ -792,127 +795,115 @@ end
 
 local questCache = { key = nil, t = 0, res = nil }
 
-local function PQuest(ctx)
-    local c = CFG()
-    local wantTodo = (c.quest ~= false)
-    local wantTaken = (c.questTaken == true)
-    if not wantTodo and not wantTaken then return nil end
-    local DG = DGRef()
-    local all = ns.DungeonQuests
-    if not (DG and all) then return nil end
-    local lv = (UnitLevel and UnitLevel("player")) or 60
-    local side = DG.PlayerSide and DG.PlayerSide() or nil
-    local hideGrey = (c.questGrey ~= false)
-    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side) .. "|" .. tostring(Z.IgnoreRev or 0) .. "|" .. tostring(wantTodo) .. tostring(wantTaken) .. "|" .. tostring(hideGrey)
-    local nowT = (GetTime and GetTime()) or 0
-    if questCache.key == ck and (nowT - questCache.t) < 30 then return questCache.res end
-    local function QOwn(q)
-        if ns.MapModule and ns.MapModule.QuestPinOK and not ns.MapModule.QuestPinOK(q[1]) then return false end
-        if side and q[2] and q[2] ~= side then return false end
-        if not QuestClassOK(q) then return false end
-        if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
-        return true
-    end
-    local function QHitPin(q, slug)
-        if not QOwn(q) then return false end
-        local r = DunLvRange(slug)
-        if hideGrey then
-            local gt
-            if type(q[13]) == "table" then
-                for k = 1, #q[13] do
-                    local dd = q[13][k]
-                    if type(dd) == "table" and dd[2] == 5 and type(dd[1]) == "number" then gt = dd[1] break end
-                end
-            end
-            if gt then
-                if lv >= gt then return false end
-            else
-                local glv = DG.QuestLevel and DG.QuestLevel(q[1]) or nil
-                if glv == nil then glv = q[4] end
-                if glv == nil then glv = q[3] end
-                if glv and QGreyLv(lv, glv) then return false end
+local questSlugs, qscan = nil, nil
+
+local function ScanQOwn(sc, q)
+    if ns.MapModule and ns.MapModule.QuestPinOK and not ns.MapModule.QuestPinOK(q[1]) then return false end
+    if sc.side and q[2] and q[2] ~= sc.side then return false end
+    if not QuestClassOK(q) then return false end
+    if sc.DG.QuestRaceOK and not sc.DG.QuestRaceOK(q[1]) then return false end
+    return true
+end
+
+local function ScanQHit(sc, q, slug)
+    if not ScanQOwn(sc, q) then return false end
+    local r = DunLvRange(slug)
+    if sc.hideGrey then
+        local gt
+        if type(q[13]) == "table" then
+            for k = 1, #q[13] do
+                local dd = q[13][k]
+                if type(dd) == "table" and dd[2] == 5 and type(dd[1]) == "number" then gt = dd[1] break end
             end
         end
-        if r and lv >= r[1] and lv <= r[2] then return true end
-        return q[3] ~= nil and q[3] <= lv
+        if gt then
+            if sc.lv >= gt then return false end
+        else
+            local glv = sc.DG.QuestLevel and sc.DG.QuestLevel(q[1]) or nil
+            if glv == nil then glv = q[4] end
+            if glv == nil then glv = q[3] end
+            if glv and QGreyLv(sc.lv, glv) then return false end
+        end
     end
-    local hits, n = {}, 0
-    local directSeen = {}
-    for slug, rows in pairs(all) do
-        for i = 1, #rows do
-            local q = rows[i]
-            local loc = q[6]
-            local sloc = HereSloc(q[1], ctx)
-            local mapName = sloc and sloc[6] or (loc and DG.QuestMapName and DG.QuestMapName(loc))
-            if mapName and not q[8] and SameName(mapName, ctx.zone) then
-                local ok = QHitPin(q, slug)
-                if ok and q[9] then
-                    for k = 1, #q[9] do
-                        if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then ok = false break end
+    if r and sc.lv >= r[1] and sc.lv <= r[2] then return true end
+    return q[3] ~= nil and q[3] <= sc.lv
+end
+
+local function ScanRowDirect(sc, slug, q)
+    local ctx = sc.ctx
+    local loc = q[6]
+    local sloc = HereSloc(q[1], ctx)
+    local mapName = sloc and sloc[6] or (loc and sc.DG.QuestMapName and sc.DG.QuestMapName(loc))
+    if not (mapName and not q[8] and SameName(mapName, ctx.zone)) then return end
+    local DG = sc.DG
+    local ok = ScanQHit(sc, q, slug)
+    if ok and q[9] then
+        for k = 1, #q[9] do
+            if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then ok = false break end
+        end
+    end
+    if ok and DG.QuestState and DG.QuestState(q[1]) ~= "todo" then ok = false end
+    if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
+    if ok and sc.wantTodo then
+        sc.n = sc.n + 1
+        sc.hits[sc.n] = { q = q, slug = slug, loc = loc, sloc = sloc }
+        sc.directSeen[q[1]] = true
+    end
+end
+
+local function ScanRowPre(sc, slug, q)
+    local pre = q[9]
+    if not (type(pre) == "table" and not q[8] and not sc.directSeen[q[1]] and sc.wantTodo) then return end
+    local DG = sc.DG
+    if not (ScanQHit(sc, q, slug) and (not DG.QuestState or DG.QuestState(q[1]) == "todo")) then return end
+    for k = 1, #pre do
+        local pid = pre[k]
+        local prow = DG.QuestRowByID and DG.QuestRowByID(pid) or nil
+        local psd = (type(prow) == "table") and prow[2] or nil
+        if not sc.preSeen[pid] and not sc.directSeen[pid] and not (DG.QuestDone and DG.QuestDone(pid))
+           and not Z.IsIgnored(ItemKey("quest", pid))
+           and not (sc.side and psd and psd ~= sc.side)
+           and not (DG.QuestRaceOK and not DG.QuestRaceOK(pid))
+           and not (ns.MapModule and ns.MapModule.QuestSideOK and not ns.MapModule.QuestSideOK(pid)) then
+            local ps = HereSloc(pid, sc.ctx)
+            if ps and (not DG.QuestState or DG.QuestState(pid) == "todo") then
+                local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pid]
+                local plv = (type(prow) == "table" and type(prow[3]) == "number") and prow[3] or nil
+                if plv == nil and type(pe) == "table" and type(pe.lv) == "number" then plv = pe.lv end
+                local chainOk = true
+                if type(pe) == "table" then
+                    for j = 1, #pe do
+                        local pq = pe[j]
+                        if type(pq) == "number" and not DG.QuestDone(pq) then chainOk = false break end
                     end
                 end
-                if ok and DG.QuestState and DG.QuestState(q[1]) ~= "todo" then ok = false end
-                if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
-                if ok and wantTodo then
-                    n = n + 1
-                    hits[n] = { q = q, slug = slug, loc = loc, sloc = sloc }
-                    directSeen[q[1]] = true
-                end
-            end
-        end
-    end
-    local preSeen = {}
-    for slug, rows in pairs(all) do
-        for i = 1, #rows do
-            local q = rows[i]
-            local pre = q[9]
-            if type(pre) == "table" and not q[8] and not directSeen[q[1]] and wantTodo then
-                if QHitPin(q, slug) and (not DG.QuestState or DG.QuestState(q[1]) == "todo") then
-                    for k = 1, #pre do
-                        local pid = pre[k]
-                        local prow = DG.QuestRowByID and DG.QuestRowByID(pid) or nil
-                        local psd = (type(prow) == "table") and prow[2] or nil
-                        if not preSeen[pid] and not directSeen[pid] and not (DG.QuestDone and DG.QuestDone(pid))
-                           and not Z.IsIgnored(ItemKey("quest", pid))
-                           and not (side and psd and psd ~= side)
-                           and not (DG.QuestRaceOK and not DG.QuestRaceOK(pid))
-                           and not (ns.MapModule and ns.MapModule.QuestSideOK and not ns.MapModule.QuestSideOK(pid)) then
-                            local ps = HereSloc(pid, ctx)
-                            if ps and (not DG.QuestState or DG.QuestState(pid) == "todo") then
-                                local pe = ns.DungeonQuestPreExtra and ns.DungeonQuestPreExtra[pid]
-                                local plv = (type(prow) == "table" and type(prow[3]) == "number") and prow[3] or nil
-                                if plv == nil and type(pe) == "table" and type(pe.lv) == "number" then plv = pe.lv end
-                                local chainOk = true
-                                if type(pe) == "table" then
-                                    for j = 1, #pe do
-                                        local pq = pe[j]
-                                        if type(pq) == "number" and not DG.QuestDone(pq) then chainOk = false break end
-                                    end
-                                end
-                                if chainOk and type(prow) == "table" and type(prow[9]) == "table" then
-                                    for j = 1, #prow[9] do
-                                        if not DG.QuestDone(prow[9][j]) then chainOk = false break end
-                                    end
-                                end
-                                if chainOk and (plv == nil or lv >= plv) then
-                                    preSeen[pid] = true
-                                    n = n + 1
-                                    hits[n] = { q = q, slug = slug, pre = pid, sloc = ps }
-                                end
-                            end
-                        end
+                if chainOk and type(prow) == "table" and type(prow[9]) == "table" then
+                    for j = 1, #prow[9] do
+                        if not DG.QuestDone(prow[9][j]) then chainOk = false break end
                     end
                 end
+                if chainOk and (plv == nil or sc.lv >= plv) then
+                    sc.preSeen[pid] = true
+                    sc.n = sc.n + 1
+                    sc.hits[sc.n] = { q = q, slug = slug, pre = pid, sloc = ps }
+                end
             end
         end
     end
+end
+
+local function FinishQuestScan(sc)
+    local DG = sc.DG
+    local ctx = sc.ctx
+    local lv = sc.lv
+    local hits, n = sc.hits, sc.n
     local instSlugs = CurInstSlugs()
     if instSlugs then
         local seenQ = {}
-        for k in pairs(directSeen) do seenQ[k] = true end
+        for k in pairs(sc.directSeen) do seenQ[k] = true end
         for si = 1, #instSlugs do
             local slug = instSlugs[si]
-            local rows = all[slug]
+            local rows = sc.all[slug]
             if type(rows) == "table" then
                 for i = 1, #rows do
                     local q = rows[i]
@@ -920,9 +911,9 @@ local function PQuest(ctx)
                     if st ~= "ready" and st ~= "done" then
                         local ok
                         if st == "active" then
-                            ok = QOwn(q)
+                            ok = ScanQOwn(sc, q)
                         else
-                            ok = QHitPin(q, slug)
+                            ok = ScanQHit(sc, q, slug)
                             if ok and type(q[9]) == "table" then
                                 for k = 1, #q[9] do
                                     if not DG.QuestDone(q[9][k]) and not DG.IsOptPre(q[1], q[9][k]) then ok = false break end
@@ -930,7 +921,7 @@ local function PQuest(ctx)
                             end
                         end
                         if ok and Z.IsIgnored(ItemKey("quest", q[1])) then ok = false end
-                        if ok and not seenQ[q[1]] and ((st == "active" and wantTaken) or (st ~= "active" and wantTodo)) then
+                        if ok and not seenQ[q[1]] and ((st == "active" and sc.wantTaken) or (st ~= "active" and sc.wantTodo)) then
                             seenQ[q[1]] = true
                             n = n + 1
                             hits[n] = { q = q, slug = slug, loc = q[6], inst = true }
@@ -940,9 +931,11 @@ local function PQuest(ctx)
             end
         end
     end
+    local nowT = (GetTime and GetTime()) or 0
     if n == 0 then
-        questCache.key, questCache.t, questCache.res = ck, nowT, nil
-        return nil
+        questCache.key, questCache.t, questCache.res = sc.ck, nowT, nil
+        Z.RefreshSoft(true)
+        return
     end
     table.sort(hits, function(a, b)
         local oa, ob = DungeonOrder(a.slug), DungeonOrder(b.slug)
@@ -1061,8 +1054,88 @@ local function PQuest(ctx)
         title = L["副本 · 任务"],
         text = string.format(anyInst and L["本副本待办 %d 个任务"] or L["本图可接 %d 个副本任务"], n),
     }
-    questCache.key, questCache.t, questCache.res = ck, nowT, res
-    return res
+    questCache.key, questCache.t, questCache.res = sc.ck, nowT, res
+    Z.RefreshSoft(true)
+end
+
+local function QuestScanTick(sc)
+    if qscan ~= sc then return true end
+    local all = sc.all
+    if type(all) ~= "table" then qscan = nil return true end
+    local over = debugprofilestop() + 3
+    while true do
+        if sc.phase <= 2 then
+            local slugs = sc.slugs
+            local si, ri = sc.si, sc.ri
+            while si <= #slugs do
+                local slug = slugs[si]
+                local rows = all[slug]
+                local cnt = type(rows) == "table" and #rows or 0
+                local i = ri + 1
+                while i <= cnt do
+                    local q = rows[i]
+                    if sc.phase == 1 then
+                        ScanRowDirect(sc, slug, q)
+                    else
+                        ScanRowPre(sc, slug, q)
+                    end
+                    if debugprofilestop() > over then
+                        sc.si, sc.ri = si, i
+                        return
+                    end
+                    i = i + 1
+                end
+                si, ri = si + 1, 0
+            end
+            sc.phase = sc.phase + 1
+            sc.si, sc.ri = 1, 0
+        else
+            FinishQuestScan(sc)
+            qscan = nil
+            return true
+        end
+    end
+end
+
+local function StartQuestScan(ck, ctx, DG, all, lv, side, hideGrey, wantTodo, wantTaken)
+    local sc = qscan
+    if sc and sc.ck == ck then return end
+    if not questSlugs then
+        questSlugs = {}
+        for k in pairs(all) do questSlugs[#questSlugs + 1] = k end
+    end
+    sc = {
+        ck = ck, ctx = ctx, DG = DG, all = all, lv = lv, side = side,
+        hideGrey = hideGrey, wantTodo = wantTodo, wantTaken = wantTaken,
+        slugs = questSlugs, hits = {}, n = 0, directSeen = {}, preSeen = {},
+        phase = 1, si = 1, ri = 0,
+    }
+    qscan = sc
+    if ns.IdleJobs and ns.IdleJobs.Add then
+        ns.IdleJobs.Add(function() return QuestScanTick(sc) end)
+    else
+        while qscan == sc do
+            QuestScanTick(sc)
+        end
+    end
+end
+
+local function PQuest(ctx)
+    local c = CFG()
+    local wantTodo = (c.quest ~= false)
+    local wantTaken = (c.questTaken == true)
+    if not wantTodo and not wantTaken then return nil end
+    local DG = DGRef()
+    local all = ns.DungeonQuests
+    if not (DG and all) then return nil end
+    local lv = (UnitLevel and UnitLevel("player")) or 60
+    local side = DG.PlayerSide and DG.PlayerSide() or nil
+    local hideGrey = (c.questGrey ~= false)
+    local ck = tostring(ctx and ctx.zone) .. "|" .. tostring(ctx and ctx.sub) .. "|" .. tostring(lv) .. "|" .. tostring(side) .. "|" .. tostring(Z.IgnoreRev or 0) .. "|" .. tostring(wantTodo) .. tostring(wantTaken) .. "|" .. tostring(hideGrey)
+    local nowT = (GetTime and GetTime()) or 0
+    if questCache.key == ck and (nowT - questCache.t) < 30 then return questCache.res end
+    StartQuestScan(ck, ctx, DG, all, lv, side, hideGrey, wantTodo, wantTaken)
+    return nil
 end
 
 local function ZoneHasClassTrainer(ctx)
@@ -1803,6 +1876,299 @@ end
 
 Z.Register("buff", PBuff)
 
+local CARROT_ID = 11122
+local CT = { slot = nil, orig = nil, id = nil, wait = nil, was = nil }
+Z.MountSwap = CT
+
+local function InvID(slot)
+    if type(GetInventoryItemID) ~= "function" then return nil end
+    local ok, v = pcall(GetInventoryItemID, "player", slot)
+    if ok then return v end
+    return nil
+end
+
+local function CarrotOn()
+    return InvID(13) == CARROT_ID or InvID(14) == CARROT_ID
+end
+
+local function InInst()
+    if type(IsInInstance) ~= "function" then return false end
+    local ok, v = pcall(IsInInstance)
+    return ok and v == true
+end
+
+local function BagFn(k)
+    local C = rawget(_G, "C_Container")
+    return (type(C) == "table" and C[k]) or rawget(_G, k)
+end
+
+local function FindInBags(id)
+    local num, get = BagFn("GetContainerNumSlots"), BagFn("GetContainerItemID")
+    if not (num and get) then return nil end
+    for bag = 0, tonumber(NUM_BAG_SLOTS) or 4 do
+        local okN, n = pcall(num, bag)
+        if okN then
+            for s = 1, tonumber(n) or 0 do
+                local ok, v = pcall(get, bag, s)
+                if ok and v == id then return bag, s end
+            end
+        end
+    end
+end
+
+local function FreeBagSlot()
+    local num, get, free = BagFn("GetContainerNumSlots"), BagFn("GetContainerItemID"), BagFn("GetContainerNumFreeSlots")
+    if not (num and get and free) then return nil end
+    for bag = 0, tonumber(NUM_BAG_SLOTS) or 4 do
+        local okF, _, fam = pcall(free, bag)
+        if okF and (tonumber(fam) or 0) == 0 then
+            local okN, n = pcall(num, bag)
+            if okN then
+                for s = 1, tonumber(n) or 0 do
+                    local ok, v = pcall(get, bag, s)
+                    if ok and v == nil then return bag, s end
+                end
+            end
+        end
+    end
+end
+
+local function TrinketBusy()
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return true end
+    if type(UnitIsDeadOrGhost) == "function" and UnitIsDeadOrGhost("player") then return true end
+    local casts = {}
+    if type(UnitCastingInfo) == "function" then casts[#casts + 1] = UnitCastingInfo end
+    if type(UnitChannelInfo) == "function" then casts[#casts + 1] = UnitChannelInfo end
+    for i = 1, #casts do
+        local ok, v = pcall(function() return casts[i]("player") ~= nil end)
+        if ok and v then return true end
+    end
+    return false
+end
+
+local function TrinketName(id, fallback)
+    local DG = DGRef()
+    if DG and DG.ItemName then
+        local ok, nm = pcall(DG.ItemName, id)
+        if ok and type(nm) == "string" and nm ~= "" and nm ~= L["暂时没有客户端数据"] then return nm end
+    end
+    if C_Item and C_Item.GetItemNameByID then
+        local ok, nm = pcall(C_Item.GetItemNameByID, id)
+        if ok and type(nm) == "string" and nm ~= "" then return nm end
+    end
+    return fallback
+end
+
+local function EquipTo(name, slot)
+    local C = rawget(_G, "C_Item")
+    local f = (type(C) == "table" and C.EquipItemByName) or rawget(_G, "EquipItemByName")
+    if f then pcall(f, name, slot) end
+end
+
+local function SwapSay()
+    if ns.ZoneOrb and ns.ZoneOrb.SaySwap then pcall(ns.ZoneOrb.SaySwap) end
+end
+
+local function SaveSwap()
+    local c = CFG()
+    if CT.slot then
+        c.carrotSwap = { CT.slot, CT.orig or false, CT.id }
+    else
+        c.carrotSwap = nil
+    end
+end
+
+function CT.DoEquip()
+    if TrinketBusy() then CT.wait = true; return false end
+    if CarrotOn() then return false end
+    if not FindInBags(CARROT_ID) then return false end
+    local slot = (InvID(13) == nil and 13) or (InvID(14) == nil and 14) or 14
+    CT.slot, CT.orig, CT.id = slot, InvID(slot), CARROT_ID
+    SaveSwap()
+    EquipTo(TrinketName(CARROT_ID, L["棍子上的胡萝卜"]), slot)
+    SwapSay()
+    Z.ScheduleSoft(0.3, true)
+    return true
+end
+
+function CT.DoRestore()
+    local slot, orig, id = CT.slot, CT.orig, CT.id
+    if not slot then return false end
+    if TrinketBusy() then CT.wait = true; return false end
+    CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
+    SaveSwap()
+    if InvID(slot) ~= id then return false end
+    if orig then
+        if not FindInBags(orig) then return false end
+        EquipTo(TrinketName(orig, L["原饰品"]), slot)
+    else
+        local bag, s = FreeBagSlot()
+        local pick = BagFn("PickupContainerItem")
+        if not (bag and pick and PickupInventoryItem) then return false end
+        PickupInventoryItem(slot)
+        pcall(pick, bag, s)
+        if ClearCursor then pcall(ClearCursor) end
+    end
+    SwapSay()
+    Z.ScheduleSoft(0.3, true)
+    return true
+end
+
+function CT.Sync(force)
+    local m = (IsMounted and IsMounted()) and true or false
+    if not force and m == CT.was and not CT.wait then return end
+    CT.was = m
+    if TrinketBusy() then CT.wait = true; return end
+    CT.wait = nil
+    if CT.slot and InvID(CT.slot) ~= CT.id then
+        CT.slot, CT.orig, CT.id = nil, nil, nil
+        SaveSwap()
+    end
+    if m then
+        if not InInst() and CFG().carrot ~= false and CFG().carrotAuto ~= false and not CT.slot and not CarrotOn() then CT.DoEquip() end
+    else
+        if CT.slot then CT.DoRestore() end
+    end
+end
+
+function CT.ToggleAuto()
+    local c = CFG()
+    if c.carrotAuto == false then
+        c.carrotAuto = true
+        CT.Sync(true)
+    else
+        c.carrotAuto = false
+        if CT.slot then CT.DoRestore() end
+    end
+    Z.ScheduleSoft(0.2, true)
+end
+
+function CT.ToggleMaster()
+    local c = CFG()
+    if c.carrot == false then
+        c.carrot = true
+        CT.Sync(true)
+    else
+        c.carrot = false
+        if CT.slot then CT.DoRestore() end
+    end
+    Z.ScheduleSoft(0.2, true)
+end
+
+function CT.ManualEquip()
+    return CT.DoEquip()
+end
+
+function CT.ManualRestore()
+    local c = CFG()
+    if c.carrotAuto ~= false then c.carrotAuto = false end
+    return CT.DoRestore()
+end
+
+local ownT, ownV = -1e9, false
+local function CarrotOwned()
+    if CarrotOn() then return true end
+    local nowT = (GetTime and GetTime()) or 0
+    if nowT - ownT < 2 then return ownV end
+    ownT = nowT
+    ownV = FindInBags(CARROT_ID) ~= nil
+    return ownV
+end
+
+function CT.Owned()
+    return CarrotOwned()
+end
+
+local carrotName
+local function CarrotNameCached()
+    if carrotName then return carrotName end
+    local DG = DGRef()
+    if DG and DG.ItemName then
+        local ok, nm = pcall(DG.ItemName, CARROT_ID)
+        if ok and type(nm) == "string" and nm ~= "" and nm ~= L["暂时没有客户端数据"] then carrotName = nm end
+    end
+    return carrotName or L["棍子上的胡萝卜"]
+end
+
+local function PMount(ctx)
+    if Z.IsIgnored(ItemKey("mount", CARROT_ID)) then return nil end
+    if CFG().carrot == false then return nil end
+    if InInst() then
+        if not CarrotOn() then return nil end
+        local swapped = (CT.slot and InvID(CT.slot) == CT.id) and true or false
+        local row = {
+            id = CARROT_ID, base = CARROT_ID,
+            ikey = ItemKey("mount", CARROT_ID), ikind = "mount",
+            name = CarrotNameCached(), icon = ItemIcon(CARROT_ID),
+            desc = L["副本里坐骑饰品不起作用，换回正常装备再开打"],
+            jumpTip = L["上马自动换上，下马自动换回"],
+        }
+        if swapped then
+            row.sub = string.format(L["副本中 · 换回「%s」"], TrinketName(CT.orig, L["原饰品"]))
+            row.mountAct = "restore"
+            row.autoOn = CFG().carrotAuto ~= false
+            row.autoKey = true
+        else
+            row.sub = L["副本中 · 建议换回正常饰品"]
+        end
+        return { kind = "mount", n = 1, keys = {}, list = { row }, title = L["坐骑"], text = "" }
+    end
+    if not CarrotOwned() then return nil end
+    local on = CFG().carrotAuto ~= false
+    local m = (IsMounted and IsMounted()) and true or false
+    local swapped = (CT.slot and InvID(CT.slot) == CT.id) and true or false
+    local sub, act
+    if swapped then
+        act = "restore"
+        if m then
+            if CT.orig then
+                sub = string.format(L["下马将换回「%s」"], TrinketName(CT.orig, L["原饰品"]))
+            else
+                sub = L["下马将摘回背包"]
+            end
+        else
+            sub = L["已换上 · 点换回摘下"]
+        end
+    elseif m then
+        if CarrotOn() then
+            sub = L["已装备 · 无需换装"]
+        elseif not on then
+            sub = L["自动换装已关"]
+            act = "equip"
+        elseif CT.wait then
+            sub = L["战斗中 · 脱战后自动换上"]
+            act = "equip"
+        else
+            sub = L["上马将自动换上"]
+            act = "equip"
+        end
+    else
+        if on then
+            sub = L["上马将自动换上"]
+        else
+            sub = L["自动换装已关"]
+        end
+    end
+    return {
+        kind = "mount", n = 1, keys = {},
+        list = {
+            {
+                id = CARROT_ID, base = CARROT_ID,
+                ikey = ItemKey("mount", CARROT_ID), ikind = "mount",
+                name = CarrotNameCached(),
+                icon = ItemIcon(CARROT_ID),
+                sub = sub,
+                desc = L["上马自动换上「棍子上的胡萝卜」，下马自动换回原饰品"],
+                mountAct = act, autoOn = on, autoKey = true,
+                jumpTip = L["上马自动换上，下马自动换回"],
+            },
+        },
+        title = L["坐骑"], text = "",
+    }
+end
+
+Z.Register("mount", PMount)
+
 local function PTent(ctx)
     local CW = ns.CampWatch
     if not (CW and CW.Card) then return nil end
@@ -1952,13 +2318,14 @@ function Z.Collect(ctx)
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
-    local order = { "collect", "turnin", "quest", "keyitem", "spell", "learn", "profcd", "talent", "buff", "tent" }
+    local order = { "collect", "turnin", "quest", "keyitem", "spell", "learn", "profcd", "talent", "buff", "mount", "tent" }
     for i = 1, #order do
         local kind = order[i]
         local on = c[kind]
         if kind == "learn" then on = c.spell end
         if kind == "collect" then on = (c.book or c.bag or c.torch or c.banner) end
         if kind == "buff" then on = (c.food or c.rested or c.camp or c.renew) end
+        if kind == "mount" then on = true end
         if on and providers[kind] then
             local ok, res = pcall(providers[kind], ctx)
             if ok and type(res) == "table" and (res.n or 0) > 0 then
@@ -2046,6 +2413,19 @@ function Z.Schedule(reason, attempt)
     return false
 end
 
+function Z.LoginCheck(spent)
+    local DG = DGRef()
+    if DG and DG.questDoneSet == nil and (spent or 0) < 2 then
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            C_Timer.After(0.1, function() Z.LoginCheck((spent or 0) + 0.1) end)
+        else
+            Z.Check("login", 0)
+        end
+        return
+    end
+    Z.Check("login", 0)
+end
+
 function Z.Check(reason, attempt)
     attempt = attempt or 0
     local c = CFG()
@@ -2094,13 +2474,13 @@ function Z.CheckNow(reason)
     return Z.Check(reason or "manual", 0)
 end
 
-local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], equip = L["饰品"], spell = L["技能"], learn = L["学习"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"], food = L["食物"], profcd = L["冷却"], rested = L["睡袋"], bag = L["睡袋"], torch = L["火炬"], banner = L["旗帜"], map = L["整张地图"] }
+local KIND_NAME = { collect = L["收集"], book = L["书籍"], turnin = L["书籍上交"], quest = L["任务"], keyitem = L["必备物品"], equip = L["饰品"], spell = L["技能"], learn = L["学习"], talent = L["天赋"], buff = L["增益"], camp = L["露营"], campren = L["到期"], tent = L["蹭帐篷"], food = L["食物"], profcd = L["冷却"], rested = L["睡袋"], bag = L["睡袋"], torch = L["火炬"], banner = L["旗帜"], mount = L["坐骑"], map = L["整张地图"] }
 function Z.KindName(kind)
     return KIND_NAME[kind] or L["条目"]
 end
 
 function Z.IconFor(kind, id)
-    if kind == "book" or kind == "collect" or kind == "turnin" or kind == "equip" then return ItemIcon(id) end
+    if kind == "book" or kind == "collect" or kind == "turnin" or kind == "equip" or kind == "mount" then return ItemIcon(id) end
     if kind == "talent" then return TalentIcon() end
     if kind == "quest" then return QuestIconState(id) end
     if kind == "rested" then
@@ -2165,6 +2545,12 @@ local frame = CreateFrame("Frame")
 
 ns.Init(function()
     CFG()
+    local savedSwap = CFG().carrotSwap
+    if type(savedSwap) == "table" and savedSwap[1] then
+        CT.slot = savedSwap[1]
+        CT.orig = (savedSwap[2] ~= false and savedSwap[2]) or nil
+        CT.id = savedSwap[3]
+    end
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     frame:RegisterEvent("ZONE_CHANGED")
@@ -2187,12 +2573,20 @@ ns.Init(function()
     pcall(frame.RegisterEvent, frame, "UPDATE_FACTION")
     frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
+    pcall(frame.RegisterEvent, frame, "PLAYER_MOUNT_DISPLAY_CHANGED")
+    pcall(frame.RegisterEvent, frame, "PLAYER_ALIVE")
+    pcall(frame.RegisterEvent, frame, "PLAYER_UNGHOST")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_STOP", "player")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_CHANNEL_STOP", "player")
+    pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_INTERRUPTED", "player")
     frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" then
             worldAt = (GetTime and GetTime()) or 0
             questCache.t = -1e9
-            Z.Check("login", 0)
+            CT.Sync(true)
+            Z.LoginCheck(0)
         elseif event == "UNIT_AURA" then
+            CT.Sync()
             Z.ScheduleSoft(5)
         elseif event == "PLAYER_UPDATE_RESTING" then
             Z.ScheduleSoft(0.5, true)
@@ -2209,6 +2603,7 @@ ns.Init(function()
             local EG = ns.ExploreModule
             if EG then EG._auto = nil end
             questCache.t = -1e9
+            qscan = nil
             Z.ScheduleSoft(0.6, true)
         elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "UPDATE_FACTION" then
             local nowT = (GetTime and GetTime()) or 0
@@ -2217,14 +2612,23 @@ ns.Init(function()
                 if type(InCombatLockdown) ~= "function" or not InCombatLockdown() then
                     argentCache.t = -1e9
                 end
+                CT.Sync(true)
                 Z.ScheduleSoft(0.8)
             end
         elseif event == "PLAYER_REGEN_ENABLED" then
+            CT.Sync(true)
             if pending then
                 pending = nil
                 Z.Check("regen", 0)
             end
             Z.ScheduleSoft(0.6)
+        elseif event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
+            CT.Sync(true)
+            Z.ScheduleSoft(0.3, true)
+        elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" then
+            CT.Sync(true)
+        elseif event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+            CT.Sync()
         elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_LEVEL_UP"
             or event == "PLAYER_SPECIALIZATION_CHANGED" or event == "TRAIT_CONFIG_UPDATED"
             or event == "ACTIVE_TALENT_GROUP_CHANGED" then
@@ -2234,7 +2638,7 @@ ns.Init(function()
         end
     end)
     if ns.ZoneOrb and ns.ZoneOrb.Init then ns.ZoneOrb.Init() end
-    Z.Check("login", 0)
+    Z.LoginCheck(0)
 end)
 
 local SIM_USAGE = "/dfhint 4 3 8 · /dfhint spells 8 · /dfhint off"

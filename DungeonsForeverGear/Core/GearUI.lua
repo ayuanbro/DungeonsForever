@@ -423,7 +423,9 @@ local function NamePass(r)
     local s = G.search
     if s == "" then return true end
     if not r.done then return false end
-    return r.name:lower():find(s, 1, true) ~= nil
+    if r.name:lower():find(s, 1, true) ~= nil then return true end
+    if tonumber(s) ~= nil and tostring(r[1]) == s then return true end
+    return false
 end
 
 local function IlvlInRange(r)
@@ -711,7 +713,15 @@ local SET_TIER_CLS = {
     [187] = "SHAMAN", [181] = "MAGE", [183] = "WARLOCK", [185] = "DRUID",
     [511] = "WARRIOR", [516] = "PALADIN", [515] = "HUNTER", [512] = "ROGUE", [514] = "PRIEST",
     [519] = "SHAMAN", [517] = "MAGE", [518] = "WARLOCK", [513] = "DRUID",
+    [1778] = "WARRIOR", [1673] = "PALADIN", [1669] = "HUNTER", [1676] = "ROGUE", [1675] = "PRIEST",
+    [1679] = "SHAMAN", [1671] = "MAGE", [1681] = "WARLOCK", [1667] = "DRUID",
 }
+local T05_EXTRA = {
+    [511] = 1778, [516] = 1673, [515] = 1669, [512] = 1676, [514] = 1675,
+    [519] = 1679, [517] = 1671, [518] = 1681, [513] = 1667,
+}
+local SET_EXTRA_ONLY = {}
+for _, esid in pairs(T05_EXTRA) do SET_EXTRA_ONLY[esid] = true end
 local SET_TIERS = {
     { key = "t0", label = "T0", ids = { 189, 188, 186, 184, 182, 187, 181, 183, 185 } },
     { key = "t05", label = "T0.5", ids = { 511, 516, 515, 512, 514, 519, 517, 518, 513 } },
@@ -754,9 +764,9 @@ local function AutoSetList()
     if GSD and type(GSD.sets) == "table" then
         local totals = GSD.total
         for sid, ids in pairs(GSD.sets) do
-            if type(ids) == "table" and #ids > 0 then
+            if type(ids) == "table" and #ids > 0 and not SET_EXTRA_ONLY[sid] then
                 local u = 0
-                for i = 1, math.min(#ids, 6) do
+                for i = 1, #ids do
                     local rec = recs[ids[i]]
                     if rec then
                         u = rec.u or 0
@@ -767,12 +777,18 @@ local function AutoSetList()
                 for _, a in ipairs(AUTO_ARMOR) do
                     if a.u ~= 0 and a.u == u then key = a.key break end
                 end
-                out[#out + 1] = {
+                local row = {
                     auto = true, sid = sid, ids = ids, armor = key, u = u,
                     n = (totals and totals[sid]) or #ids,
                     tier = SET_TIER_OF[sid] and SET_TIER_OF[sid].tier,
                     tord = SET_TIER_OF[sid] and SET_TIER_OF[sid].ord,
                 }
+                local esid = T05_EXTRA[sid]
+                local eids = esid and GSD.sets[esid]
+                if type(eids) == "table" and #eids > 0 then
+                    row.extras = { { sid = esid, ids = eids, n = (totals and totals[esid]) or #eids } }
+                end
+                out[#out + 1] = row
             end
         end
     end
@@ -825,8 +841,7 @@ local function ParseSetBonus(lines)
                     if p2 then cut = p2 + 1 end
                 end
                 local txt = cut and body:sub(cut):gsub("^%s+", "") or body
-                if txt == "" then return nil end
-                if n and n >= 2 and n <= 9 then out[n] = txt end
+                if txt ~= "" and n and n >= 2 and n <= 9 then out[n] = txt end
             elseif t:match("%S") and not t:match("^%s%s") then
                 break
             end
@@ -1058,6 +1073,20 @@ end
 
 local function SetsViewEntries()
     local out = {}
+    local function SplitSetParts(ids)
+        local n = #(ids or {})
+        if n <= 8 or n % 8 ~= 0 then return nil end
+        local sorted = {}
+        for i = 1, n do sorted[i] = ids[i] end
+        table.sort(sorted)
+        local parts = {}
+        for i = 1, n, 8 do
+            local part = {}
+            for k = i, math.min(i + 7, n) do part[#part + 1] = sorted[k] end
+            parts[#parts + 1] = part
+        end
+        return parts
+    end
     local function emitSet(set, idx, withItems)
         local skey = SetKeyOf(set, idx)
         out[#out + 1] = { kind = "set", set = set, skey = skey }
@@ -1074,6 +1103,16 @@ local function SetsViewEntries()
             end
         end
     end
+    local function emitBonus(sid, ids)
+        local bons = SetBonusOf({ sid = sid, ids = ids })
+        if type(bons) == "table" then
+            for n = 2, 9 do
+                if bons[n] then out[#out + 1] = { kind = "bonus", n = n, text = bons[n] } end
+            end
+        elseif bons == nil then
+            out[#out + 1] = { kind = "bonus", n = 0, text = L["正在读取套装效果…"], dim = true }
+        end
+    end
     local function emitAuto(s, withItems)
         local skey = "AUTOSET:" .. s.sid
         out[#out + 1] = { kind = "set", set = s, skey = skey, auto = s }
@@ -1081,13 +1120,27 @@ local function SetsViewEntries()
         for _, pid in ipairs(s.ids or {}) do
             out[#out + 1] = { id = pid }
         end
-        local bons = SetBonusOf(s)
-        if type(bons) == "table" then
-            for n = 2, 9 do
-                if bons[n] then out[#out + 1] = { kind = "bonus", n = n, text = bons[n] } end
+        emitBonus(s.sid, s.ids)
+        for _, ex in ipairs(s.extras or {}) do
+            local ids = ex.ids or {}
+            G.__asked = G.__asked or {}
+            for _, pid in ipairs(ids) do
+                if not recs[pid] and not G.__asked[pid] then
+                    G.__asked[pid] = true
+                    G.AskItem(pid)
+                end
             end
-        elseif bons == nil then
-            out[#out + 1] = { kind = "bonus", n = 0, text = L["正在读取套装效果…"], dim = true }
+            out[#out + 1] = { hdr = format(L["另一版 · %d 件"], #ids) }
+            local parts = SplitSetParts(ids)
+            if parts then
+                for pi, part in ipairs(parts) do
+                    out[#out + 1] = { kind = "bonus", n = 0, text = format(L["第 %d 组"], pi), dim = true }
+                    for _, pid in ipairs(part) do out[#out + 1] = { id = pid } end
+                end
+            else
+                for _, pid in ipairs(ids) do out[#out + 1] = { id = pid } end
+            end
+            emitBonus(ex.sid, ids)
         end
     end
     local hasRS = RS and type(RS.sets) == "table"
@@ -1592,7 +1645,19 @@ local function PaintRow(r)
         SetTextC(r.meta, meta)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
-        SetTextC(r.src, format(L["%d 件套"], set.auto and (set.n or #(set.ids or {})) or #(set.ids or {})))
+        local srcTxt
+        if set.auto then
+            local en = 0
+            for _, ex in ipairs(set.extras or {}) do en = en + #(ex.ids or {}) end
+            if en > 0 then
+                srcTxt = format(L["%d 件套 · 另一版 %d 件"], set.n or #(set.ids or {}), en)
+            else
+                srcTxt = format(L["%d 件套"], set.n or #(set.ids or {}))
+            end
+        else
+            srcTxt = format(L["%d 件套"], #(set.ids or {}))
+        end
+        SetTextC(r.src, srcTxt)
         r.src:SetTextColor(Unpack(C_GREY))
         r.__h = ROW_H
         return
@@ -2603,8 +2668,9 @@ local function BuildRow(parent)
             return
         end
         if not e.id then return end
-        if IsShiftKeyDown() and DG.InsertItemLink then
-            DG.InsertItemLink(e.id)
+        if IsShiftKeyDown() then
+            if DG.AHSearchItem and DG.AHSearchItem(e.id) then return end
+            if DG.InsertItemLink then DG.InsertItemLink(e.id) end
             return
         end
         if type(IsControlKeyDown) == "function" and IsControlKeyDown() and DG.TryOn then
@@ -2640,115 +2706,28 @@ local function BuildRow(parent)
     r.srcZone:SetHeight(30)
     r.srcZone:SetScript("OnEnter", function()
         local e = r.entry
-        if not e then return end
-        local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        local loc = qid and QuestLocOf(qid)
+        if not e or not e.id then return end
         GameTooltip:SetOwner(r.srcZone, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
-        if qid and ChainIndexOf(qid) then
-            GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
-            if type(loc) == "table" and loc[1] and loc[2] then
-                local mname = ""
-                if C_Map and C_Map.GetMapInfo then
-                    local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
-                    if ok and mi and mi.name then mname = mi.name end
-                end
-                GameTooltip:AddLine(mname .. format(" (%.1f, %.1f)", loc[2], loc[3]), 1, 1, 1, true)
-            end
-        elseif type(loc) == "table" and loc[1] and loc[2] then
-            GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
-            local mname = ""
-            if C_Map and C_Map.GetMapInfo then
-                local ok, mi = pcall(C_Map.GetMapInfo, loc[1])
-                if ok and mi and mi.name then mname = mi.name end
-            end
-            GameTooltip:AddLine(mname .. format(" (%.1f, %.1f)", loc[2], loc[3]), 1, 1, 1, true)
-        elseif e.inst and e.inst.id and ns.ShowDungeonDetail then
-            GameTooltip:AddLine(L["点击：打开该副本掉落详情"], 1, 0.82, 0, true)
-            if e.instName and e.instName ~= "" then
-                GameTooltip:AddLine(e.instName, 1, 1, 1, true)
-            end
-        else
-            local rents = e.id and GearRareEnts(e.id) or nil
-            if rents and #rents > 0 then
-                GameTooltip:AddLine(format(L["点击：查看稀有怪位置（%d 处刷新）"],
-                                           #rents), 1, 0.82, 0, true)
-            else
-                local vents = e.id and GearVendorEnts(e.id) or nil
-                if vents and #vents > 0 then
-                GameTooltip:AddLine(format(L["点击：查看商人位置（%d 位商人）"], #vents), 1, 0.82, 0, true)
-            else
-                local src = e.id and GD_SRC and GD_SRC[e.id]
-                local place = type(src) == "string" and select(2, src:match("^(.-)|(.*)$")) or nil
-                local mid = place and PlaceMapID(place)
-                local zname
-                if not mid and place then
-                    zname = place:match("^(.-)·") or place
-                    mid = PlaceZoneID(place)
-                end
-                if mid then
-                    GameTooltip:AddLine(format(L["点击：打开%s的地图"], zname or place), 1, 0.82, 0, true)
-                else
-                    return
-                end
-            end
-            end
-        end
+        GameTooltip:AddLine(L["点击：在搜索模块中查看来源"], 1, 0.82, 0, true)
         GameTooltip:Show()
     end)
     r.srcZone:SetScript("OnLeave", TipOff)
     r.srcZone:SetScript("OnClick", function()
         local e = r.entry
-        if not e then return end
-        local qid = e.id and GD_SRC_Q and GD_SRC_Q[e.id]
-        if qid and ChainIndexOf(qid) then
-            ns.PlaySound(1)
-            ChainPopup(qid)
-            return
-        end
-        local loc = qid and QuestLocOf(qid)
-        if type(loc) == "table" and loc[1] then
-            ns.PlaySound(1)
-            EnsureGD()
-            MarkQuest(qid, loc)
-            return
-        end
-        if e.inst and e.inst.id and ns.ShowDungeonDetail then
-            ns.PlaySound(1)
-            ns.ShowDungeonDetail(e.inst.id)
-            return
-        end
-        local rents = e.id and GearRareEnts(e.id) or nil
-        if rents and #rents > 0 then
-            ns.PlaySound(1)
-            if #rents == 1 and rents[1].loc then
-                GearMarkVendor(rents[1].loc)
-            else
-                G.VendorPickShow(r.srcZone, rents, L["选择要标记的稀有怪刷新点"])
+        if not e or not e.id then return end
+        if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+            local cf = DEFAULT_CHAT_FRAME
+            if cf and cf.AddMessage then
+                pcall(cf.AddMessage, cf, "|cffff7a66" .. L["搜索模块未启用，暂时无法跳转"] .. "|r")
             end
             return
         end
-        local vents = e.id and GearVendorEnts(e.id) or nil
-        if vents and #vents > 0 then
-            ns.PlaySound(1)
-            if #vents == 1 and vents[1].loc then
-                GearMarkVendor(vents[1].loc)
-            else
-                G.VendorPickShow(r.srcZone, vents)
-            end
-            return
-        end
-        local src = e.id and GD_SRC and GD_SRC[e.id]
-        local place = type(src) == "string" and select(2, src:match("^(.-)|(.*)$")) or nil
-        local mid = place and PlaceMapID(place)
-        if not mid and place then mid = PlaceZoneID(place) end
-        if mid then
-            ns.PlaySound(1)
-            if C_Map and C_Map.OpenWorldMap then
-                pcall(C_Map.OpenWorldMap, mid)
-            elseif OpenWorldMap then
-                pcall(OpenWorldMap, mid)
-            end
+        ns.PlaySound(1)
+        ns.OpenPage("QuestSearch")
+        local QS = ns.QuestSearchModule
+        if QS and QS.OpenAt then
+            QS.OpenAt(e.id, "item", e.name or tostring(e.id))
         end
     end)
     return r
@@ -3734,7 +3713,7 @@ function G.PaintPager()
     G.pgNext:ClearAllPoints()
     G.pgNext:SetPoint("LEFT", prev, "RIGHT", 8, 0)
     if G.cat == "SETS" then
-        local setN = RS and (RS.total or #(RS.sets or {})) or 0
+        local setN = ((RS and #(RS.sets or {})) or 0) + #AutoSetList()
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 套"], page, pages, setN))
     else
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 件"], page, pages, #(G.view or {})))

@@ -672,7 +672,7 @@ local function MakeRow(i)
         local sub = r.sub:GetText()
         if r.ikind == "turnin" then
             ItemTip(r, r.iid, r.ilabel, r.idesc or sub, L["点击在地图上定位上交 NPC"])
-        elseif r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" or r.ikind == "equip" then
+        elseif r.ikind == "book" or r.ikind == "collect" or r.ikind == "rested" or r.ikind == "equip" or r.ikind == "mount" then
             local desc = sub
             if r.idesc and r.idesc ~= "" then
                 desc = (sub ~= "" and (sub .. " · " .. r.idesc)) or r.idesc
@@ -770,6 +770,105 @@ local function ActPlace(btn, target, tipText, kind, value, h, inset, onRight)
     btn:Show()
     btn.usedNow = true
     return true
+end
+
+local MT_OFF_INK = { 0.23, 0.24, 0.27, 1 }
+local function MountChipHide(r, idx)
+    if type(r.mtChips) == "table" and r.mtChips[idx] then
+        r.mtChips[idx]:Hide()
+        if r.mtChips[idx].btn then r.mtChips[idx].btn:Hide() end
+    end
+end
+
+local function MountChip(r, idx, label, ink, tipTitle, tipDesc, fn)
+    if InCombatLockdown() then return nil end
+    if not (ns.hui and ns.hui.MakeSolidChip and ns.hui.PaintSolidChip) then return nil end
+    if not r.mtChips then r.mtChips = {} end
+    local c = r.mtChips[idx]
+    if not c then
+        c = ns.hui.MakeSolidChip(r, r:GetFrameLevel() + 3, 20)
+        local b = CreateFrame("Button", nil, r)
+        b:SetFrameLevel(c:GetFrameLevel() + 1)
+        b:SetScript("OnClick", function(self)
+            ns.PlaySound(1)
+            if self.chipFn then self.chipFn() end
+        end)
+        b:SetScript("OnEnter", function(self)
+            HoverOn()
+            if self.chipTip then Tip(self, self.chipTip, self.chipTipDesc) end
+        end)
+        b:SetScript("OnLeave", function()
+            HoverOff()
+            HideTip()
+        end)
+        c.btn = b
+        b:ClearAllPoints()
+        b:SetAllPoints(c)
+        r.mtChips[idx] = c
+    end
+    ns.hui.PaintSolidChip(c, label, ink, 40, 12)
+    c:Show()
+    local b = c.btn
+    b.chipFn = fn
+    b.chipTip = tipTitle
+    b.chipTipDesc = tipDesc
+    b:Show()
+    return c
+end
+
+local function MountRowChips(r, s)
+    if not (s and s.autoKey) then
+        MountChipHide(r, 1)
+        MountChipHide(r, 2)
+        return
+    end
+    local CT = ns.ZoneHint and ns.ZoneHint.MountSwap
+    if not CT then return end
+    local auto
+    if s.autoOn then
+        auto = MountChip(r, 2, L["自动"], ns.hui.ACCENT, L["自动换装：开"], L["点击关闭；骑着马关闭会当场换回原饰品"], function()
+            CT.ToggleAuto()
+            O.Refresh()
+        end)
+    else
+        auto = MountChip(r, 2, L["自动"], MT_OFF_INK, L["自动换装：关"], L["点击恢复自动换上"], function()
+            CT.ToggleAuto()
+            O.Refresh()
+        end)
+    end
+    if auto then
+        auto:ClearAllPoints()
+        auto:SetPoint("TOPRIGHT", r, "TOPRIGHT", -32, -4)
+    end
+    if s.mountAct == "restore" then
+        local c1 = MountChip(r, 1, L["换回"], ns.hui.ACCENT, L["换回"], L["点击立即换回原饰品"], function()
+            CT.ManualRestore()
+            O.Refresh()
+        end)
+        if c1 then
+            c1:ClearAllPoints()
+            if auto then
+                c1:SetPoint("TOPRIGHT", auto, "TOPLEFT", -4, 0)
+            else
+                c1:SetPoint("TOPRIGHT", r, "TOPRIGHT", -32, -4)
+            end
+        end
+    elseif s.mountAct == "equip" then
+        local c1 = MountChip(r, 1, L["换上"], ns.hui.ACCENT, L["换上"], L["点击立即换上「棍子上的胡萝卜」"], function()
+            CT.ManualEquip()
+            O.Refresh()
+        end)
+        if c1 then
+            c1:ClearAllPoints()
+            if auto then
+                c1:SetPoint("TOPRIGHT", auto, "TOPLEFT", -4, 0)
+            else
+                c1:SetPoint("TOPRIGHT", r, "TOPRIGHT", -32, -4)
+            end
+        end
+    else
+        MountChipHide(r, 1)
+    end
 end
 
 FoodMenuClose = function()
@@ -1109,6 +1208,7 @@ local function Layout(res)
                 else
                     if r.actChip then r.actChip:Hide() end
                 end
+                MountRowChips(r, s)
                 r.ikey = s.ikey
                 r.ikind = s.ikind or it.kind
                 r.iid = s.base or s.id
@@ -2009,6 +2109,54 @@ function O.Init()
     ttBtn:SetScript("OnLeave", HideTip)
     SyncTentText()
 
+    local mtHeadY = ColNext(3)
+    local mtHeadX = ColX(3)
+    local mtHead = opts:CreateFontString(nil, "OVERLAY")
+    mtHead:SetFont(ns.FONT, 14, "")
+    mtHead:SetPoint("TOPLEFT", opts, "TOPLEFT", mtHeadX, mtHeadY - 4)
+    mtHead:SetText(L["坐骑"])
+    mtHead:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
+    mtHead:Hide()
+    local mtRowY = ColNext(3)
+    local mtLbl = opts:CreateFontString(nil, "OVERLAY")
+    mtLbl:SetFont(ns.FONT, 14, "")
+    mtLbl:SetPoint("TOPLEFT", opts, "TOPLEFT", mtHeadX, mtRowY - 4)
+    mtLbl:SetText(L["胡萝卜提醒"])
+    mtLbl:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    mtLbl:Hide()
+    local mtCb = CreateFrame("CheckButton", nil, opts)
+    mtCb:SetSize(36, 20)
+    mtCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", mtHeadX + 132, mtRowY + 1)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(mtCb) end
+    mtCb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local CT = ns.ZoneHint and ns.ZoneHint.MountSwap
+        if CT and CT.ToggleMaster then CT.ToggleMaster() end
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+        if self.SetChecked then self:SetChecked(c.carrot ~= false) end
+        O.Refresh()
+    end)
+    mtCb:SetScript("OnEnter", function()
+        Tip(mtCb, L["胡萝卜提醒"], L["关闭后不显示胡萝卜状态卡，上马也不再自动换装；我们换上的会在下马时换回"])
+    end)
+    mtCb:SetScript("OnLeave", HideTip)
+    mtCb:Hide()
+    optCbs.carrot = mtCb
+    local function SyncMountOpts()
+        local CT = ns.ZoneHint and ns.ZoneHint.MountSwap
+        local owned = (CT and CT.Owned and CT.Owned()) and true or false
+        if owned then
+            mtHead:Show()
+            mtLbl:Show()
+            mtCb:Show()
+            if mtCb.SetChecked then mtCb:SetChecked(ns.ZoneHint.CFG().carrot ~= false) end
+        else
+            mtHead:Hide()
+            mtLbl:Hide()
+            mtCb:Hide()
+        end
+    end
+
     ColHead(4, L["窗口"])
     OptRow(4, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
     OptRow(4, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"])
@@ -2075,6 +2223,7 @@ function O.Init()
             end
             SyncSize()
             SyncTentText()
+            SyncMountOpts()
             PlaceOpts()
             opts:Show()
         end
@@ -2303,6 +2452,41 @@ function O.Init()
     if panel.title then panel.title:SetText("") end
     cards, heads, subRows = {}, {}, {}
     panel:EnableMouse(false)
+end
+
+local swapBox = nil
+function O.SaySwap()
+    if not orb then return end
+    if not swapBox then
+        swapBox = CreateFrame("Frame", nil, UIParent)
+        swapBox:SetHeight(32)
+        if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
+            ns.hui.SkinPopup(swapBox, 8, "both", ns.hui.layer.L1)
+        end
+        local fs = swapBox:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(ns.FONT, 14, "")
+        fs:SetPoint("CENTER", swapBox, "CENTER", 0, 0)
+        fs:SetTextColor(ACC[1], ACC[2], ACC[3])
+        fs:SetText(L["换装成功"])
+        swapBox.fs = fs
+        swapBox:Hide()
+        swapBox:SetScript("OnUpdate", function(self, el)
+            self.swT = (self.swT or 0) + (tonumber(el) or 0)
+            if self.swT >= 1.5 then
+                self:Hide()
+            elseif self.swT > 0.7 then
+                self:SetAlpha(1 - (self.swT - 0.7) / 0.8)
+            end
+        end)
+    end
+    local w = (swapBox.fs:GetStringWidth() or 60) + 30
+    if w < 70 then w = 70 end
+    swapBox:SetWidth(w)
+    swapBox:ClearAllPoints()
+    swapBox:SetPoint("BOTTOM", orb, "TOP", 0, 10)
+    swapBox:SetAlpha(1)
+    swapBox.swT = 0
+    swapBox:Show()
 end
 
 function O.Refresh()

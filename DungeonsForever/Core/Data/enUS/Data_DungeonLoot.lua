@@ -1606,10 +1606,6 @@ ns.DungeonLoot = {
         } },
         { "Obsidian Sentinel", "Obsidian Sentinel", "Lv 42", "7023", {
             { 8053, nil, false },
-            { 274430, nil, true },
-            { 274428, nil, true },
-            { 274425, nil, true },
-            { 274485, nil, true },
             { 251400, nil, true },
         } },
         { "Ancient Stone Keeper", "Ancient Stone Keeper", "Lv 44", "7206", {
@@ -1891,29 +1887,29 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "Overseer Wrex", "", "255391", {
+        { "Overseer Wrex", "Overseer Wrex", "Lv 50", "255391", {
             { 276734, nil, true },
             { 276733, nil, true },
             { 276732, nil, true },
         } },
-        { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "", "255997", {
+        { "Tidemistress Ca'zass", "Tidemistress Ca'zass", "Lv 49", "255997", {
             { 273883, nil, true },
             { 276736, nil, true },
             { 276735, nil, true },
             { 276737, nil, true },
         } },
-        { "Katerina the Cleaner", "Katerina the Cleaner", "", "257016", {
+        { "Katerina the Cleaner", "Katerina the Cleaner", "Lv 52", "257016", {
             { 276739, nil, true },
             { 276738, nil, true },
             { 276740, nil, true },
         } },
-        { "The Questioner", "The Questioner", "", "256236", {
+        { "The Questioner", "The Questioner", "Lv 51", "256236", {
             { 274029, nil, true },
             { 276742, nil, true },
             { 276743, nil, true },
             { 276741, nil, true },
         } },
-        { "Blazeroar", "Blazeroar", "", "255702", {
+        { "Blazeroar", "Blazeroar", "Lv 53", "255702", {
             { 276890, nil, true },
             { 276744, nil, true },
             { 276745, nil, true },
@@ -2500,6 +2496,9 @@ ns.DungeonLoot = {
             { 280085, nil, true },
             { 280086, nil, true },
         } },
+        { "Sabella No-Eyes", "Sabella No-Eyes", "Rare", "269151", {
+            { 280084, nil, true },
+        } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 287032, nil, true },
             { 251453, nil, true },
@@ -2509,6 +2508,8 @@ ns.DungeonLoot = {
             { 287029, nil, true },
             { 287030, nil, true },
             { 287033, nil, true },
+            { 287031, nil, true },
+            { 287035, nil, true },
         } },
         { "Plans", "Pattern", "Chest or object", "", {
             { 252893, nil, true },

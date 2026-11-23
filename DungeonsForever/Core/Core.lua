@@ -721,14 +721,20 @@ boot:SetScript("OnEvent", function(self, event, name)
     self:UnregisterEvent("ADDON_LOADED")
     DB()
     initsDrained = true
-    for _, fn in ipairs(loadedFuncs) do
+    local idx = 1
+    local function step()
+        local fn = loadedFuncs[idx]
+        if not fn then return end
+        idx = idx + 1
         local ok, err = xpcall(fn, function(e)
             return tostring(e) .. "\n" .. debugstack(2)
         end)
         if not ok then
             print("|cffff5040[无限副本手册] 初始化回调出错（已跳过，不影响后续模块）：|r\n" .. tostring(err))
         end
+        C_Timer.After(0, step)
     end
+    step()
     end)
 end)
 

@@ -122,6 +122,7 @@ local FILTERS = {
     { id = "craft", label = L["制造"] },
     { id = "quest", label = L["任务"] }, { id = "boss", label = L["副本"] },
     { id = "rare", label = L["稀有"] }, { id = "vendor", label = L["商人"] },
+    { id = "pvp", label = L["PvP"] },
     { id = "other", label = L["其他"] },
 }
 
@@ -1382,6 +1383,13 @@ local function CatKind(id)
     local src = CatSrcOf(id)
     local kind, place = string.match(src, "^(.-)|(.*)$")
     if not kind then kind = src end
+    if place and (place == "PvP 军需官" or place == "PvP 軍需官" or place == "PvP vendors"
+        or place == "阿拉希盆地" or place == "Arathi Basin"
+        or string.find(place, "奥特兰克山谷", 1, true)
+        or string.find(place, "奧特蘭克山谷", 1, true)
+        or string.find(place, "Alterac Valley", 1, true)) then
+        return "pvp"
+    end
     if kind == "首领掉落" or kind == "首領掉落" or kind == "副本掉落"
         or kind == "多个首领" or kind == "多個首領"
         or kind == "Boss drop" or kind == "Dungeon drop" or kind == "Several bosses" then
@@ -1476,9 +1484,6 @@ BG.INST_ALIAS = {
     ["希利苏斯·斯古恩男爵"] = "silithus",
     ["希利苏斯·卡苏姆男爵"] = "silithus",
     ["希利苏斯·大元帅维拉希斯"] = "silithus",
-    ["奥特兰克山谷·森林之王伊弗斯"] = "av",
-    ["奥特兰克山谷"] = "av",
-    ["奧特蘭克山谷"] = "av",
 }
 
 BG.INST_BOSS = {
@@ -1506,7 +1511,6 @@ BG.INST_EXTRA = {
     { key = "azuregos", name = "蓝龙", nameEn = "Azuregos", nameTw = "藍龍", group = "world" },
     { key = "kazzak", name = "卡扎克", nameEn = "Lord Kazzak", nameTw = "卡扎克", group = "world" },
     { key = "silithus", name = "安其拉开门首领", nameEn = "Ahn'Qiraj War Leaders", nameTw = "安其拉開門首領", group = "world" },
-    { key = "av", name = "奥特兰克山谷首领", nameEn = "Alterac Valley Bosses", nameTw = "奧特蘭克山谷首領", group = "world" },
     { key = "unavail", name = "未实装装备", nameEn = "Not Implemented", nameTw = "未實裝裝備", group = "raid" },
 }
 
@@ -1828,15 +1832,20 @@ local function LoadFilterPrefs()
     BG.fOneOnly = (s.fOneOnly == true)
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
-    if s.fSrcVer ~= 3 then
-        s.fSrcVer = 3
-        local ss = s.fSrcSet
-        if ss == nil then
-            ss = {}
-            for _, f in ipairs(FILTERS) do ss[f.id] = true end
+    if s.fSrcVer ~= 4 then
+        if s.fSrcVer ~= 3 then
+            local ss = s.fSrcSet
+            if ss == nil then
+                ss = {}
+                for _, f in ipairs(FILTERS) do ss[f.id] = true end
+            end
+            ss.other = nil
+            s.fSrcSet = ss
         end
-        ss.other = nil
-        s.fSrcSet = ss
+        if type(s.fSrcSet) == "table" and s.fSrcSet.pvp == nil then
+            s.fSrcSet.pvp = true
+        end
+        s.fSrcVer = 4
     end
     BG.srcSet = {}
     for _, f in ipairs(FILTERS) do
@@ -2393,6 +2402,7 @@ local function EnchTip(owner, e)
 end
 
 local function LinkToChat(itemID)
+    if DG and DG.AHSearchItem and DG.AHSearchItem(itemID) then return end
     if DG and DG.InsertItemLink then
         DG.InsertItemLink(itemID)
         return
@@ -2633,7 +2643,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 24
+BG.AUTO_GEN_REV = 30
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -2886,6 +2896,20 @@ function BG.WarnEmpty()
         h.fs:SetTextColor(Unpack(C_GOLD))
         BG.PaintAutoProg(nil)
     end)
+end
+
+function BG.JumpSearch(id, kind)
+    if not (id and kind) then return end
+    if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+        local msg = L["搜索模块未启用，暂时无法跳转"]
+        if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            pcall(DEFAULT_CHAT_FRAME.AddMessage, DEFAULT_CHAT_FRAME, "|cffff7a66" .. msg .. "|r")
+        end
+        return
+    end
+    ns.OpenPage("QuestSearch")
+    local QS = ns.QuestSearchModule
+    if QS and QS.OpenAt then QS.OpenAt(id, kind, tostring(id)) end
 end
 
 local function AutoJobCancel()
@@ -3292,7 +3316,8 @@ end
 BG.CHIP_INK_SRC = {
     craft = { 0.95, 0.70, 0.38 }, quest = { 0.50, 0.80, 0.98 },
     boss = { 0.94, 0.52, 0.50 }, rare = { 0.76, 0.60, 0.96 },
-    vendor = { 0.50, 0.84, 0.62 }, other = { 0.70, 0.72, 0.76 },
+    vendor = { 0.50, 0.84, 0.62 }, pvp = { 0.72, 0.30, 0.38 },
+    other = { 0.70, 0.72, 0.76 },
 }
 
 function BG.PaintSrcChips(r, set)
@@ -3825,8 +3850,8 @@ function FillBwRow(r)
         r.chip2:Hide()
         r.chip3:Hide()
         r.wishBt:Hide()
-        r.pinBt:Hide()
-        r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+        r.detBt:Hide()
+        r.__detQid = nil
         r.__nmMiss = nil
         r.__painted = true
         return
@@ -3843,7 +3868,7 @@ function FillBwRow(r)
     r.name:SetText(nm)
     r.name:SetTextColor(Unpack(QColor(ItemQuality(sp, row.item, row.q))))
     local st = row.cat and CatSrcText(row.item) or SrcText(row.src)
-    r.__pinNpc, r.__pinLoc, r.__pinQid = nil, nil, nil
+    r.__detQid = nil
     local qid = nil
     if row.src and row.src.t == "quest" and row.src.q then
         qid = tonumber(row.src.q)
@@ -3854,38 +3879,9 @@ function FillBwRow(r)
         local qn, qok = DG.QuestName(qid)
         if not qok then BG.needNames = true; r.__nmMiss = true end
         if row.cat and qok then st = L["任务奖励"] .. " · " .. qn end
-        local sn = DG.QuestStartNpc and DG.QuestStartNpc(qid) or nil
-        local npc = sn and sn[1] or nil
-        local sl = ns.DungeonQuestStartLoc and ns.DungeonQuestStartLoc[qid] or nil
-        local loc = nil
-        if sl and (not npc or tonumber(sl[1]) == tonumber(npc)) then
-            npc = sl[1]
-            if sl[3] and sl[4] and sl[5] then loc = { sl[3], sl[4], sl[5] } end
-        end
-        if not loc then
-            local gs = ns.GearQuestStart and ns.GearQuestStart[qid] or nil
-            if gs then
-                npc = gs[1]
-                loc = { gs[2], gs[3], gs[4] }
-            elseif sn and sn[3] and sn[4] and sn[5] then
-                loc = { sn[3], sn[4], sn[5] }
-            end
-        end
-        if npc and (loc or (ns.NPCLoc and ns.NPCLoc[npc])) then
-            r.__pinNpc, r.__pinLoc = npc, loc
-        end
-        r.__pinQid = qid
+        r.__detQid = qid
     end
-    local showPin = r.__pinNpc ~= nil
-    if not showPin and r.__pinQid then
-        if ns.GearChainIndexOf and ns.GearChainIndexOf(r.__pinQid) then
-            showPin = true
-        else
-            local qloc = ns.GearQuestLocOf and ns.GearQuestLocOf(r.__pinQid) or nil
-            showPin = type(qloc) == "table" and qloc[1] ~= nil
-        end
-    end
-    r.pinBt:SetShown(showPin)
+    r.detBt:Show()
     r.src:SetText(st)
     r.src:SetTextColor(Unpack(C_GREY))
     r.eqTag:SetShown(BG.bwEquipped == row.item)
@@ -5374,49 +5370,23 @@ local function BuildBrowser(parent)
             GameTooltip:Show()
         end)
         r.wishBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        r.pinBt = CreateFrame("Button", nil, r)
-        r.pinBt:SetSize(13.75, 13.75)
-        r.pinBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", 2, 4.75)
-        r.pinBt:EnableMouse(true)
-        r.pinBt.tex = r.pinBt:CreateTexture(nil, "ARTWORK")
-        r.pinBt.tex:SetAllPoints()
-        r.pinBt.tex:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\Pins\\EntryPin")
-        r.pinBt:Hide()
-        r.pinBt:SetScript("OnClick", function(self)
+        r.detBt = NewButton(r, L["查看详情"], 64, 18, 12)
+        r.detBt:SetPushedTextOffset(0, 0)
+        r.detBt:SetPoint("BOTTOMRIGHT", r.wishBt, "BOTTOMLEFT", -2, 2)
+        r.detBt:SetFrameLevel((r:GetFrameLevel() or 0) + 3)
+        SetButtonSelected(r.detBt, false)
+        r.detBt:SetScript("OnClick", function(self)
             local row = self:GetParent()
             if not row then return end
-            local qid = row.__pinQid
-            if qid and ns.GearMarkQuestSmart then
-                local hasChain = ns.GearChainIndexOf and ns.GearChainIndexOf(qid)
-                if hasChain or not row.__pinNpc then
-                    ns.PlaySound(1)
-                    ns.GearMarkQuestSmart(qid)
-                    return
-                end
-            end
-            if row.__pinNpc then
-                DG.MarkNPC(row.__pinNpc, row.__pinLoc)
+            local item = row.__row and row.__row.item
+            if row.__detQid then
                 ns.PlaySound(1)
+                BG.JumpSearch(row.__detQid, "quest")
+            elseif item then
+                ns.PlaySound(1)
+                BG.JumpSearch(item, "item")
             end
         end)
-        r.pinBt:SetScript("OnEnter", function(self)
-            local row = self:GetParent()
-            if row and row.__pinNpc and DG.ShowNpcTip then
-                DG.ShowNpcTip(self, row.__pinNpc, row.__pinLoc)
-                return
-            end
-            local qid = row and row.__pinQid
-            if not (qid and ns.GearChainIndexOf) then return end
-            GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:ClearLines()
-            if ns.GearChainIndexOf(qid) then
-                GameTooltip:AddLine(L["点击：查看任务链"], 1, 0.82, 0, true)
-            else
-                GameTooltip:AddLine(L["点击：在地图上标记"], 1, 0.82, 0, true)
-            end
-            GameTooltip:Show()
-        end)
-        r.pinBt:SetScript("OnLeave", function() GameTooltip:Hide() end)
         r:SetScript("OnEnter", function(self)
             if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
             local row = self.__row
@@ -5478,7 +5448,7 @@ local function BuildBrowser(parent)
     pop:SetPoint("TOPRIGHT", parent, "TOPLEFT", -8, -40)
     if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
     BG.filterPop = pop
-    BG.FILTER_W, BG.FILTER_H = 170, 354
+    BG.FILTER_W, BG.FILTER_H = 170, 382
     BG.INST_W, BG.INST_H = 232, 400
     pop:SetSize(BG.FILTER_W, BG.FILTER_H)
 
@@ -5602,7 +5572,7 @@ local function BuildBrowser(parent)
     end
 
     local ib = NewButton(va, "", 154, 24, 12)
-    ib:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -294)
+    ib:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -322)
     ib.lbl = ib:GetFontString()
     if ib.lbl then ib.lbl:Hide() end
     local ibL = MakeFS(ib, 14, C_TEXT, "LEFT")
@@ -5619,7 +5589,7 @@ local function BuildBrowser(parent)
     BG.instBtn, BG.instBtnLbl = ib, ibR
 
     local gb = NewButton(va, L["生成 BiS 方案"], 154, 24, 14)
-    gb:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -322)
+    gb:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -350)
     gb.lbl = gb:GetFontString()
     SetButtonSelected(gb, false)
     gb:SetScript("OnClick", function()
