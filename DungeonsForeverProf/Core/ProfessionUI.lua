@@ -6843,6 +6843,15 @@ function PD.PickNav()
             bt.__lv:Hide()
             bt:GetFontString():SetTextColor(Unpack(sel and C_GOLD or C_DIM))
         end
+        if ns.WIDE_UI and ns.FitFS then
+            -- 英文专业名较长：名字缩字让出右侧技能值
+            -- Long English profession names: shrink the name to leave room for the skill value
+            local fs = bt:GetFontString()
+            local lvW = lv and ((bt.__lv:GetStringWidth() or 0) + 6) or 0
+            fs:SetWidth(0)
+            ns.FullText(fs, bt.__name)
+            ns.FitFS(fs, (bt:GetWidth() or PD.NAV_W) - (5 + PD.NAV_ICON + 5) - 6 - lvW, 11)
+        end
         bt.__icon:SetDesaturated(not sel and not lv)
     end
     for _, slug in ipairs(PD.navOrder or {}) do
@@ -17021,8 +17030,16 @@ function PD.RowsFormulaShop(rows, data, foldKey, represented)
         local acquisitionCost=selected=="acquire" and
             ((type(entry.cost)=="number" and entry.cost>0 and (money(entry.cost).." · ") or "")
                 ..L["获取或兑换总成本未确认"])
+        local nmW = (PD.splitLW or PD.COL_LW) - 130
+        if ns.WIDE_UI and PD.TextW then
+            -- 英文徽章较宽：名字宽度按实际徽章宽度让位，避免压住右侧价格
+            -- English badges are wider: size the name around the real badge widths so it stays clear of the price
+            nmW = (PD.splitLW or PD.COL_LW) - 120 - (PD.TextW(tag or "", 11) + 16)
+                - (chipText and (PD.TextW(chipText, 11) + 18) or 0)
+            if nmW < 60 then nmW = 60 end
+        end
         rows[#rows + 1] = {kind = "row", h = PD.ROW_H, col = 1, it = id and {id} or nil,
-            text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, (PD.splitLW or PD.COL_LW) - 130),
+            text = PD.Fit(id and DG.ItemName(id) or L["未知图纸"], 13, nmW),
             chip = chipText and {text = chipText} or nil,
             links = links,
             tag = {text = tag, color = PD.TAG_INK[tagKind]}, right = format("×%d", count),
