@@ -122,6 +122,7 @@ local FILTERS = {
     { id = "craft", label = L["制造"] },
     { id = "quest", label = L["任务"] }, { id = "boss", label = L["副本"] },
     { id = "rare", label = L["稀有"] }, { id = "vendor", label = L["商人"] },
+    { id = "pvp", label = L["PvP"] },
     { id = "other", label = L["其他"] },
 }
 
@@ -1374,6 +1375,13 @@ local function CatKind(id)
     local src = CatSrcOf(id)
     local kind, place = string.match(src, "^(.-)|(.*)$")
     if not kind then kind = src end
+    if place and (place == "PvP 军需官" or place == "PvP 軍需官" or place == "PvP vendors"
+        or place == "阿拉希盆地" or place == "Arathi Basin"
+        or string.find(place, "奥特兰克山谷", 1, true)
+        or string.find(place, "奧特蘭克山谷", 1, true)
+        or string.find(place, "Alterac Valley", 1, true)) then
+        return "pvp"
+    end
     if kind == "首领掉落" or kind == "首領掉落" or kind == "副本掉落"
         or kind == "多个首领" or kind == "多個首領"
         or kind == "Boss drop" or kind == "Dungeon drop" or kind == "Several bosses" then
@@ -1468,9 +1476,6 @@ BG.INST_ALIAS = {
     ["希利苏斯·斯古恩男爵"] = "silithus",
     ["希利苏斯·卡苏姆男爵"] = "silithus",
     ["希利苏斯·大元帅维拉希斯"] = "silithus",
-    ["奥特兰克山谷·森林之王伊弗斯"] = "av",
-    ["奥特兰克山谷"] = "av",
-    ["奧特蘭克山谷"] = "av",
 }
 
 BG.INST_BOSS = {
@@ -1498,7 +1503,6 @@ BG.INST_EXTRA = {
     { key = "azuregos", name = "蓝龙", nameEn = "Azuregos", nameTw = "藍龍", group = "world" },
     { key = "kazzak", name = "卡扎克", nameEn = "Lord Kazzak", nameTw = "卡扎克", group = "world" },
     { key = "silithus", name = "安其拉开门首领", nameEn = "Ahn'Qiraj War Leaders", nameTw = "安其拉開門首領", group = "world" },
-    { key = "av", name = "奥特兰克山谷首领", nameEn = "Alterac Valley Bosses", nameTw = "奧特蘭克山谷首領", group = "world" },
     { key = "unavail", name = "未实装装备", nameEn = "Not Implemented", nameTw = "未實裝裝備", group = "raid" },
 }
 
@@ -1820,15 +1824,20 @@ local function LoadFilterPrefs()
     BG.fOneOnly = (s.fOneOnly == true)
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv) or nil
-    if s.fSrcVer ~= 3 then
-        s.fSrcVer = 3
-        local ss = s.fSrcSet
-        if ss == nil then
-            ss = {}
-            for _, f in ipairs(FILTERS) do ss[f.id] = true end
+    if s.fSrcVer ~= 4 then
+        if s.fSrcVer ~= 3 then
+            local ss = s.fSrcSet
+            if ss == nil then
+                ss = {}
+                for _, f in ipairs(FILTERS) do ss[f.id] = true end
+            end
+            ss.other = nil
+            s.fSrcSet = ss
         end
-        ss.other = nil
-        s.fSrcSet = ss
+        if type(s.fSrcSet) == "table" and s.fSrcSet.pvp == nil then
+            s.fSrcSet.pvp = true
+        end
+        s.fSrcVer = 4
     end
     BG.srcSet = {}
     for _, f in ipairs(FILTERS) do
@@ -2607,7 +2616,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 29
+BG.AUTO_GEN_REV = 30
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -3280,7 +3289,8 @@ end
 BG.CHIP_INK_SRC = {
     craft = { 0.95, 0.70, 0.38 }, quest = { 0.50, 0.80, 0.98 },
     boss = { 0.94, 0.52, 0.50 }, rare = { 0.76, 0.60, 0.96 },
-    vendor = { 0.50, 0.84, 0.62 }, other = { 0.70, 0.72, 0.76 },
+    vendor = { 0.50, 0.84, 0.62 }, pvp = { 0.72, 0.30, 0.38 },
+    other = { 0.70, 0.72, 0.76 },
 }
 
 function BG.PaintSrcChips(r, set)
@@ -5376,7 +5386,7 @@ local function BuildBrowser(parent)
     pop:SetPoint("TOPRIGHT", parent, "TOPLEFT", -8, -40)
     if ns.hui and ns.hui.SkinShadow then ns.hui.SkinShadow(pop) end
     BG.filterPop = pop
-    BG.FILTER_W, BG.FILTER_H = 170, 354
+    BG.FILTER_W, BG.FILTER_H = 170, 382
     BG.INST_W, BG.INST_H = 232, 400
     pop:SetSize(BG.FILTER_W, BG.FILTER_H)
 
@@ -5500,7 +5510,7 @@ local function BuildBrowser(parent)
     end
 
     local ib = NewButton(va, "", 154, 24, 12)
-    ib:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -294)
+    ib:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -322)
     ib.lbl = ib:GetFontString()
     if ib.lbl then ib.lbl:Hide() end
     local ibL = MakeFS(ib, 14, C_TEXT, "LEFT")
@@ -5517,7 +5527,7 @@ local function BuildBrowser(parent)
     BG.instBtn, BG.instBtnLbl = ib, ibR
 
     local gb = NewButton(va, L["生成 BiS 方案"], 154, 24, 14)
-    gb:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -322)
+    gb:SetPoint("TOPLEFT", va, "TOPLEFT", 8, -350)
     gb.lbl = gb:GetFontString()
     SetButtonSelected(gb, false)
     gb:SetScript("OnClick", function()

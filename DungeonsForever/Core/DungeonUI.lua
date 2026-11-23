@@ -116,6 +116,20 @@ local function FSH(fs, dflt)
     return dflt or 14
 end
 
+local function FitName(fs)
+    if not (fs and fs.SetFont and fs.GetWidth) then return end
+    local mw = fs:GetWidth()
+    if type(mw) ~= "number" or mw <= 0 then return end
+    local face, _, flags = Fnt(14)
+    fs:SetFont(face, 14, flags)
+    if FSW(fs) <= mw then return end
+    for s = 13, 11, -1 do
+        local f2, _, g2 = Fnt(s)
+        fs:SetFont(f2, s, g2)
+        if FSW(fs) <= mw then return end
+    end
+end
+
 local function NewButton(parent, text, w, h, size)
     local bt = ns.CreateButton(parent)
     bt:SetSize(w, h)
@@ -5373,6 +5387,7 @@ function DG.PaintItemChip(c, itemID)
     if not (c and c.name and itemID) then return end
     local nm, hasName = DG.ItemName(itemID)
     c.name:SetText(nm)
+    FitName(c.name)
     if hasName then
         local qr, qg, qb = DG.QColor(DG.QualOf(itemID))
         if qr then
@@ -5643,6 +5658,7 @@ function DG.SweepMissingNames()
                         local nm = DG.HarvestTipName(it[1])
                         if nm and c.name then
                             c.name:SetText(nm)
+                            FitName(c.name)
                             local col = DG.__tipColor
                             if col then
                                 c.name:SetTextColor(col[1] or 1, col[2] or 1, col[3] or 1)
@@ -7329,7 +7345,13 @@ end
 
 function DG.ApplyChipBadge(c)
     if not (c and c.badge) then return end
-    if not c.__q then c.badge:Hide() return end
+    local full = (c:GetWidth() or 0) - 54
+    if full < 40 then full = 40 end
+    if c.sub then c.sub:SetWidth(full) end
+    if not c.__q then
+        c.badge:Hide()
+        return
+    end
     local have, need = DG.ItemObjectiveProgress(c.__q, c.__it and c.__it[1])
     if have then
         c.badge:SetText(format("%d/%d", have, need))
@@ -7339,6 +7361,7 @@ function DG.ApplyChipBadge(c)
             c.badge:SetTextColor(Unpack(C_GREY))
         end
         c.badge:Show()
+        if c.sub then c.sub:SetWidth(full - 50) end
     else
         c.badge:Hide()
     end
@@ -7651,6 +7674,7 @@ DG.Q_BADGE_BUY_BG = { 0.16, 0.38, 0.62, 1 }
 DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_BADGE_PROF_BG = { 0.62, 0.36, 0.18, 1 }
 DG.Q_BADGE_ELITE_BG = { 0.85, 0.45, 0.10, 1 }
+DG.Q_BADGE_T05_BG = { 0.36, 0.24, 0.55, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceOK(qid)
@@ -8034,6 +8058,11 @@ function DG.IsEliteQuest(id)
     return (ex and ex.elite == true) or false
 end
 
+function DG.IsT05Quest(id)
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
+    return (ex and ex.t05 == true) or false
+end
+
 function DG.QuestList(d)
     local alias = ns.DungeonQuestAlias and ns.DungeonQuestAlias[d.id]
     if alias then
@@ -8151,7 +8180,7 @@ function DG.QuestProgress(d)
         local q = list[i]
         local qid = type(q) == "table" and q[1] or nil
         local side = type(q) == "table" and q[2] or nil
-        if type(qid) == "number" and not opt[qid]
+        if type(qid) == "number" and not opt[qid] and not DG.IsT05Quest(qid)
             and (not side or side == "" or side == ps)
             and DG.QuestClassOK(qid) and DG.QuestRaceOK(qid) then
             if not DG.QuestRepeat(qid) then
@@ -8721,6 +8750,7 @@ function U:RenderDungeonQuests()
             r.shareB = DG.MakeBadge(r, DG.Q_BADGE_SHARE_BG)
             r.raceB = DG.MakeBadge(r, DG.Q_BADGE_RACE_BG)
             r.profB = DG.MakeBadge(r, DG.Q_BADGE_PROF_BG)
+            r.t05B = DG.MakeBadge(r, DG.Q_BADGE_T05_BG)
             r.meta = MakeFS(r, DG.Q_FS_META, C_GREY, "RIGHT")
             r.meta:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -(DG.Q_ROW_H - DG.Q_FS_META) / 2 - 1)
             r:SetScript("OnEnter", function(self)
@@ -8801,6 +8831,11 @@ function U:RenderDungeonQuests()
                 local bmax = DG.Q_X_LOC - 4
                 local bx = DG.Q_X_NAME + FSW(r.name) + DG.Q_BADGE_GAP
                 local ci = 0
+                if hasName and DG.IsT05Quest(q[1]) then
+                    bx = DG.PlaceBadge(r.t05B, bx, L["T0.5"], bmax)
+                else
+                    r.t05B:Hide()
+                end
                 if hasName and DG.IsOptQuest(q[1]) then
                     bx = DG.PlaceBadge(r.optB, bx, L["可选"], bmax)
                 else
@@ -10800,7 +10835,6 @@ function U:RenderQuestDetail()
             local nw = colW - 46 - 8
             if questID then
                 r.__q = questID
-                nw = nw - 46 - 4
             else
                 r.__q = nil
             end
@@ -10812,6 +10846,7 @@ function U:RenderQuestDetail()
             end
             local inm, iok = DG.ItemName(iid)
             r.name:SetText(inm)
+            FitName(r.name)
             r.sub:SetText(DG.ItemMeta(iid) or "")
             if iok then
                 local qr, qg, qb = DG.QColor(DG.QualOf(iid))

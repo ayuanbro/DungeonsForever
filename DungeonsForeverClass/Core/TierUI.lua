@@ -994,7 +994,7 @@ function PREP.BuildCards()
         local c = PREP.cards[i]
         if not c then
             c = CreateFrame("Button", nil, PREP.lc)
-            c:SetSize(PREP_W, 92)
+            c:SetSize(PREP_W, 64)
             PrepCardBG(c, 2, true)
             c.no = MakeFS(c, 14, C_GOLD, "LEFT")
             c.no:SetPoint("TOPLEFT", c, "TOPLEFT", 12, -10)
@@ -1010,15 +1010,6 @@ function PREP.BuildCards()
             c.zone:SetWordWrap(false)
             c.lv = MakeFS(c, 14, C_GREY, "RIGHT")
             c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -36)
-            c.rew = {}
-            for k = 1, 4 do
-                local b = PrepMakeItem(c, 18)
-                b:EnableMouseWheel(true)
-                b:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
-                b:SetPoint("TOPLEFT", c, "TOPLEFT", 34, -58 - (k - 1) * 24)
-                b.nm:SetFont(ns.FONT, 14, "")
-                c.rew[k] = b
-            end
             c:EnableMouseWheel(true)
             c:SetScript("OnMouseWheel", function(_, delta) PREP.LeftWheel(delta) end)
             c:SetScript("OnClick", function(self)
@@ -1042,38 +1033,7 @@ function PREP.BuildCards()
 end
 
 local PREP_CARD_GAP = 8
-
-local function PrepLayoutCard(c, rw)
-    c.no:ClearAllPoints()
-    c.no:SetPoint("TOPLEFT", c, "TOPLEFT", 12, -10)
-    c.st:ClearAllPoints()
-    c.st:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -10)
-    c.zone:ClearAllPoints()
-    c.zone:SetPoint("TOPLEFT", c, "TOPLEFT", 32, -36)
-    c.lv:ClearAllPoints()
-    c.lv:SetPoint("TOPRIGHT", c, "TOPRIGHT", -12, -36)
-    local rx = 32
-    local by = -60
-    local rows = 1
-    for k = 1, 4 do
-        local b = c.rew[k]
-        local id = rw[k]
-        if id then
-            local w = PrepPlaceItem(b, id, c)
-            if rx > 32 and rx + w > PREP_W - 6 then
-                rx = 32
-                by = by - 24
-                rows = rows + 1
-            end
-            b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", c, "TOPLEFT", rx, by)
-            rx = rx + w + 10
-        else
-            b:Hide()
-        end
-    end
-    return rows
-end
+local PREP_CARD_H = 64
 
 local function PrepVisible(d, side)
     local h, a = false, false
@@ -1134,14 +1094,10 @@ function PREP.PaintCards()
         local st = PREP.StateOf(d)
         c.st:SetText(PrepStateText(st))
         c.st:SetTextColor(PrepStateColor(st))
-        local rw = (PREP.side == "A" and d.rewA) or d.rew or {}
-        c:SetHeight(90)
-        local rows = PrepLayoutCard(c, rw)
-        local h = 60 + (rows - 1) * 24 + 24 + 8
-        c:SetHeight(h)
+        c:SetHeight(PREP_CARD_H)
         c:ClearAllPoints()
         c:SetPoint("TOPLEFT", PREP.lc, "TOPLEFT", 0, -y)
-        y = y + h + PREP_CARD_GAP
+        y = y + PREP_CARD_H + PREP_CARD_GAP
     end
     for k = #vis + 1, #(PREP.cards or {}) do
         PREP.cards[k].__idx = nil

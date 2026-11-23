@@ -2844,7 +2844,7 @@ ns.DungeonLoot = {
             { 18370, 8.7, false },
             { 18372, 9.5, false },
         } },
-        { "Prince Tortheldrin", "託塞德林王子", "61 級", "11486", {
+        { "Prince Tortheldrin", "托塞德林王子", "61 級", "11486", {
             { 18382, 24, false },
             { 18373, 9.5, false },
             { 18375, 17, false },
@@ -3248,7 +3248,7 @@ ns.DungeonLoot = {
             { 280009, nil, true },
             { 280011, nil, true },
         } },
-        { "Tor'Rel", "託瑞爾", "", "261811", {
+        { "Tor'Rel", "托瑞爾", "", "261811", {
             { 280014, nil, true },
             { 280013, nil, true },
             { 280012, nil, true },

@@ -2736,7 +2736,7 @@ end
 NP.Init = Init
 
 ns.Init(function()
-    if IsLoggedIn and IsLoggedIn() then Init() end
+    if IsLoggedIn and IsLoggedIn() then C_Timer.After(1.5, function() pcall(Init) end) end
     if EventUtil and EventUtil.ContinueOnAddOnLoaded then
         EventUtil.ContinueOnAddOnLoaded('Blizzard_PlayerSpells', function() Init() end)
     end
