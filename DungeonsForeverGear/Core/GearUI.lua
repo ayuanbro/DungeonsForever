@@ -657,7 +657,15 @@ local SET_TIER_CLS = {
     [187] = "SHAMAN", [181] = "MAGE", [183] = "WARLOCK", [185] = "DRUID",
     [511] = "WARRIOR", [516] = "PALADIN", [515] = "HUNTER", [512] = "ROGUE", [514] = "PRIEST",
     [519] = "SHAMAN", [517] = "MAGE", [518] = "WARLOCK", [513] = "DRUID",
+    [1778] = "WARRIOR", [1673] = "PALADIN", [1669] = "HUNTER", [1676] = "ROGUE", [1675] = "PRIEST",
+    [1679] = "SHAMAN", [1671] = "MAGE", [1681] = "WARLOCK", [1667] = "DRUID",
 }
+local T05_EXTRA = {
+    [511] = 1778, [516] = 1673, [515] = 1669, [512] = 1676, [514] = 1675,
+    [519] = 1679, [517] = 1671, [518] = 1681, [513] = 1667,
+}
+local SET_EXTRA_ONLY = {}
+for _, esid in pairs(T05_EXTRA) do SET_EXTRA_ONLY[esid] = true end
 local SET_TIERS = {
     { key = "t0", label = "T0", ids = { 189, 188, 186, 184, 182, 187, 181, 183, 185 } },
     { key = "t05", label = "T0.5", ids = { 511, 516, 515, 512, 514, 519, 517, 518, 513 } },
@@ -700,9 +708,9 @@ local function AutoSetList()
     if GSD and type(GSD.sets) == "table" then
         local totals = GSD.total
         for sid, ids in pairs(GSD.sets) do
-            if type(ids) == "table" and #ids > 0 then
+            if type(ids) == "table" and #ids > 0 and not SET_EXTRA_ONLY[sid] then
                 local u = 0
-                for i = 1, math.min(#ids, 6) do
+                for i = 1, #ids do
                     local rec = recs[ids[i]]
                     if rec then
                         u = rec.u or 0
@@ -713,12 +721,18 @@ local function AutoSetList()
                 for _, a in ipairs(AUTO_ARMOR) do
                     if a.u ~= 0 and a.u == u then key = a.key break end
                 end
-                out[#out + 1] = {
+                local row = {
                     auto = true, sid = sid, ids = ids, armor = key, u = u,
                     n = (totals and totals[sid]) or #ids,
                     tier = SET_TIER_OF[sid] and SET_TIER_OF[sid].tier,
                     tord = SET_TIER_OF[sid] and SET_TIER_OF[sid].ord,
                 }
+                local esid = T05_EXTRA[sid]
+                local eids = esid and GSD.sets[esid]
+                if type(eids) == "table" and #eids > 0 then
+                    row.extras = { { sid = esid, ids = eids, n = (totals and totals[esid]) or #eids } }
+                end
+                out[#out + 1] = row
             end
         end
     end
@@ -771,8 +785,7 @@ local function ParseSetBonus(lines)
                     if p2 then cut = p2 + 1 end
                 end
                 local txt = cut and body:sub(cut):gsub("^%s+", "") or body
-                if txt == "" then return nil end
-                if n and n >= 2 and n <= 9 then out[n] = txt end
+                if txt ~= "" and n and n >= 2 and n <= 9 then out[n] = txt end
             elseif t:match("%S") and not t:match("^%s%s") then
                 break
             end
@@ -1004,6 +1017,20 @@ end
 
 local function SetsViewEntries()
     local out = {}
+    local function SplitSetParts(ids)
+        local n = #(ids or {})
+        if n <= 8 or n % 8 ~= 0 then return nil end
+        local sorted = {}
+        for i = 1, n do sorted[i] = ids[i] end
+        table.sort(sorted)
+        local parts = {}
+        for i = 1, n, 8 do
+            local part = {}
+            for k = i, math.min(i + 7, n) do part[#part + 1] = sorted[k] end
+            parts[#parts + 1] = part
+        end
+        return parts
+    end
     local function emitSet(set, idx, withItems)
         local skey = SetKeyOf(set, idx)
         out[#out + 1] = { kind = "set", set = set, skey = skey }
@@ -1020,6 +1047,16 @@ local function SetsViewEntries()
             end
         end
     end
+    local function emitBonus(sid, ids)
+        local bons = SetBonusOf({ sid = sid, ids = ids })
+        if type(bons) == "table" then
+            for n = 2, 9 do
+                if bons[n] then out[#out + 1] = { kind = "bonus", n = n, text = bons[n] } end
+            end
+        elseif bons == nil then
+            out[#out + 1] = { kind = "bonus", n = 0, text = L["正在读取套装效果…"], dim = true }
+        end
+    end
     local function emitAuto(s, withItems)
         local skey = "AUTOSET:" .. s.sid
         out[#out + 1] = { kind = "set", set = s, skey = skey, auto = s }
@@ -1027,13 +1064,27 @@ local function SetsViewEntries()
         for _, pid in ipairs(s.ids or {}) do
             out[#out + 1] = { id = pid }
         end
-        local bons = SetBonusOf(s)
-        if type(bons) == "table" then
-            for n = 2, 9 do
-                if bons[n] then out[#out + 1] = { kind = "bonus", n = n, text = bons[n] } end
+        emitBonus(s.sid, s.ids)
+        for _, ex in ipairs(s.extras or {}) do
+            local ids = ex.ids or {}
+            G.__asked = G.__asked or {}
+            for _, pid in ipairs(ids) do
+                if not recs[pid] and not G.__asked[pid] then
+                    G.__asked[pid] = true
+                    G.AskItem(pid)
+                end
             end
-        elseif bons == nil then
-            out[#out + 1] = { kind = "bonus", n = 0, text = L["正在读取套装效果…"], dim = true }
+            out[#out + 1] = { hdr = format(L["另一版 · %d 件"], #ids) }
+            local parts = SplitSetParts(ids)
+            if parts then
+                for pi, part in ipairs(parts) do
+                    out[#out + 1] = { kind = "bonus", n = 0, text = format(L["第 %d 组"], pi), dim = true }
+                    for _, pid in ipairs(part) do out[#out + 1] = { id = pid } end
+                end
+            else
+                for _, pid in ipairs(ids) do out[#out + 1] = { id = pid } end
+            end
+            emitBonus(ex.sid, ids)
         end
     end
     local hasRS = RS and type(RS.sets) == "table"
@@ -1538,7 +1589,19 @@ local function PaintRow(r)
         SetTextC(r.meta, meta)
         SetTextC(r.req, "")
         SetTextC(r.ilvl, "")
-        SetTextC(r.src, format(L["%d 件套"], set.auto and (set.n or #(set.ids or {})) or #(set.ids or {})))
+        local srcTxt
+        if set.auto then
+            local en = 0
+            for _, ex in ipairs(set.extras or {}) do en = en + #(ex.ids or {}) end
+            if en > 0 then
+                srcTxt = format(L["%d 件套 · 另一版 %d 件"], set.n or #(set.ids or {}), en)
+            else
+                srcTxt = format(L["%d 件套"], set.n or #(set.ids or {}))
+            end
+        else
+            srcTxt = format(L["%d 件套"], #(set.ids or {}))
+        end
+        SetTextC(r.src, srcTxt)
         r.src:SetTextColor(Unpack(C_GREY))
         r.__h = ROW_H
         return
@@ -2549,8 +2612,9 @@ local function BuildRow(parent)
             return
         end
         if not e.id then return end
-        if IsShiftKeyDown() and DG.InsertItemLink then
-            DG.InsertItemLink(e.id)
+        if IsShiftKeyDown() then
+            if DG.AHSearchItem and DG.AHSearchItem(e.id) then return end
+            if DG.InsertItemLink then DG.InsertItemLink(e.id) end
             return
         end
         if type(IsControlKeyDown) == "function" and IsControlKeyDown() and DG.TryOn then
@@ -3593,7 +3657,7 @@ function G.PaintPager()
     G.pgNext:ClearAllPoints()
     G.pgNext:SetPoint("LEFT", prev, "RIGHT", 8, 0)
     if G.cat == "SETS" then
-        local setN = RS and (RS.total or #(RS.sets or {})) or 0
+        local setN = ((RS and #(RS.sets or {})) or 0) + #AutoSetList()
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 套"], page, pages, setN))
     else
         G.pgTotal:SetText(format(L["第 %d / %d 页 · 共 %d 件"], page, pages, #(G.view or {})))

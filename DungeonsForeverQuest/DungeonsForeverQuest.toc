@@ -15,4 +15,5 @@
 ## Dependencies: DungeonsForever
 
 Core\Data_QuestRewards.lua
+Core\Data_QuestExtra.lua
 Core\QuestSearchUI.lua

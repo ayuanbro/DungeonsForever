@@ -11260,50 +11260,9 @@ function PD.AHWindowShown()
     return false
 end
 
-local function AHNativeBox()
-    local f = _G.AuctionHouseFrame
-    local bar = f and f.SearchBar
-    if bar and bar.EditBox then return bar.EditBox, bar end
-    local b = _G.AuctionFrameBrowse
-    if b then
-        if b.SearchBar and b.SearchBar.EditBox then return b.SearchBar.EditBox, b.SearchBar end
-        if b.SearchBox then
-            if b.SearchBox.EditBox then return b.SearchBox.EditBox, b.SearchBox end
-            if b.SearchBox.editBox then return b.SearchBox.editBox, b.SearchBox end
-        end
-    end
-    return nil
-end
-
-local function AHApplyNative(name, eb, bar)
-    eb:SetText(name)
-    if type(eb.ClearFocus) == "function" then pcall(eb.ClearFocus, eb) end
-    if type(bar.OnSearchTextChanged) == "function" then pcall(bar.OnSearchTextChanged, bar) end
-    if type(bar.OnEnterPressed) == "function" then pcall(bar.OnEnterPressed, bar) end
-    if type(_G.SearchBoxTemplate_OnTextChanged) == "function" then pcall(_G.SearchBoxTemplate_OnTextChanged, bar) end
-    return true
-end
-
 function PD.AHSearch(name)
     if type(name) ~= "string" or name == "" then return false end
-    if not PD.AHWindowShown() then return false end
-    local ok, done = pcall(function()
-        local A = _G.Auctionator
-        local v1 = A and A.API and A.API.v1
-        if v1 and type(v1.MultiSearchExact) == "function" then
-            v1.MultiSearchExact("DungeonsForever", { name })
-            return true
-        end
-        local eb, bar = AHNativeBox()
-        if not eb then return false end
-        return AHApplyNative(name, eb, bar)
-    end)
-    if ok and done == true then return true end
-    local eb, bar = AHNativeBox()
-    if eb and bar then
-        local ok2 = pcall(AHApplyNative, name, eb, bar)
-        if ok2 then return true end
-    end
+    if DG and type(DG.AHSearchName) == "function" then return DG.AHSearchName(name) end
     return false
 end
 

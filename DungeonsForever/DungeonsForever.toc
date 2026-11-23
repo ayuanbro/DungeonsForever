@@ -10,7 +10,7 @@
 ## Notes-enUS: Dungeon handbook: dungeon list / details / maps / loot / quests / guides (profession page on Forever server only)
 ## IconTexture: Interface\AddOns\DungeonsForever\Media\Brand\DungeonsForever.blp
 ## Author: 圆圆
-## Version: 2.1.127
+## Version: 2.1.128
 ## SavedVariables: DungeonsForeverDB
 ## OptionalDeps: EllesmereUI, DF_CNLocale
 ## LoadOnDemand: 0
@@ -81,6 +81,7 @@ Core\Data\Data_DungeonQuestFlow.lua
 Core\LootFilter.lua
 Core\DungeonLevelSync.lua
 Core\DungeonUI.lua
+Core\AHSearch.lua
 Core\TipLines.lua
 Core\MapAreaDraw.lua
 Core\MapUI.lua

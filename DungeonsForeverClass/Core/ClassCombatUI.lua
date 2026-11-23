@@ -2306,6 +2306,7 @@ function CB.ModClick(bt, button)
     local ctrl = type(IsControlKeyDown) == "function" and IsControlKeyDown()
     if not shift and not ctrl then return false end
     if shift then
+        if DG and DG.AHSearchItem and DG.AHSearchItem(it[1]) then return true end
         if DG and DG.InsertItemLink then
             DG.InsertItemLink(it[1])
             return true

@@ -2808,10 +2808,14 @@ function TT.Render()
         TT.HideRank()
         TT.HideSpec()
         TT.__mode = "prep"
+        if TT.scroll then TT.scroll:Hide() end
+        if TT.sbarTrack then TT.sbarTrack:Hide() end
+        if TT.sbarThumb then TT.sbarThumb:Hide() end
         RenderPrep()
         return
     end
     if TT.HidePrep then TT.HidePrep() end
+    if TT.scroll then TT.scroll:Show() end
     local specMode = TT.PaintNav()
     TT.__mode = specMode and "spec" or "rank"
     PY()

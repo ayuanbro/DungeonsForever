@@ -2385,6 +2385,7 @@ local function EnchTip(owner, e)
 end
 
 local function LinkToChat(itemID)
+    if DG and DG.AHSearchItem and DG.AHSearchItem(itemID) then return end
     if DG and DG.InsertItemLink then
         DG.InsertItemLink(itemID)
         return

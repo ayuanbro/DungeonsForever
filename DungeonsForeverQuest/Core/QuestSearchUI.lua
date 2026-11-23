@@ -58,6 +58,33 @@ local strlower, strfind, strsub, tostr = string.lower, string.find, string.sub, 
 
 local QS = {}
 ns.QuestSearchModule = QS
+QS.__cli = {}
+QS.__try = {}
+
+function QS.ExtraName(id)
+    local x = ns.QuestExtra and ns.QuestExtra[id]
+    if type(x) == "table" then
+        local nm = x[1]
+        if type(nm) == "string" and nm ~= "" then return nm end
+    end
+    local n = QS.__cli[id]
+    if type(n) == "string" and n ~= "" then return n end
+    return nil
+end
+
+function QS.ExtraZone(id)
+    local x = ns.QuestExtra and ns.QuestExtra[id]
+    local z = type(x) == "table" and x[3] or nil
+    if type(z) == "string" and z ~= "" then return z end
+    return nil
+end
+
+function QS.ClientQuestName(id)
+    if not (DG and type(DG.QuestName) == "function") then return nil end
+    local ok, n = pcall(DG.QuestName, id)
+    if ok and type(n) == "string" and n ~= "" then return n end
+    return nil
+end
 
 local function QDB()
     local ql = _G.QuestieLoader
@@ -139,6 +166,7 @@ local function NameOf(id, kind)
         local ok, v = pcall(fn, id, "name")
         if ok and type(v) == "string" and v ~= "" then name = v end
     end
+    if not name and kind == "quest" then name = QS.ExtraName(id) end
     if not name and kind == "npc" then
         local b = BossNpcTable()[id]
         if b then name = b.name or b.nameEn end
@@ -166,6 +194,8 @@ end
 local function QuestLevelOf(id)
     local lv = tonumber(FieldOf(id, "quest", "level")) or 0
     if lv > 0 then return lv end
+    local x = ns.QuestExtra and ns.QuestExtra[id]
+    if type(x) == "table" and type(x[2]) == "number" and x[2] > 0 then return x[2] end
     if DG and type(DG.QuestLevel) == "function" then
         local ok, v = pcall(DG.QuestLevel, id)
         if ok then lv = tonumber(v) or 0 end
@@ -244,8 +274,9 @@ local function InsertChatLink(link)
     return false
 end
 
-local function ItemToChat(id)
+local function ItemShift(id)
     if type(id) ~= "number" then return false end
+    if DG and type(DG.AHSearchItem) == "function" and DG.AHSearchItem(id) then return true end
     local link
     if DG and type(DG.ItemLink) == "function" then
         local ok, v = pcall(DG.ItemLink, id)
@@ -309,6 +340,9 @@ local function SortIds(ids, kind, exactId)
             if ea ~= eb then return ea end
         end
         if kind == "quest" then
+            local ea = QS.ExtraName(a) and 1 or 0
+            local eb = QS.ExtraName(b) and 1 or 0
+            if ea ~= eb then return ea > eb end
             local la = QuestLevelOf(a)
             local lb = QuestLevelOf(b)
             if la ~= lb then return la < lb end
@@ -317,6 +351,49 @@ local function SortIds(ids, kind, exactId)
         if na ~= nb then return na < nb end
         return a < b
     end)
+end
+
+function QS.ClientName(id)
+    local nm = QS.ClientQuestName(id)
+    if not nm then return nil end
+    QS.__cli[id] = nm
+    NCACHE["quest:" .. id] = nm
+    return nm
+end
+
+function QS.ClientPush(id)
+    for i = 1, #RES.quest do
+        if RES.quest[i] == id then return true end
+    end
+    RES.quest[#RES.quest + 1] = id
+    SortIds(RES.quest, "quest", nil)
+    COUNT.quest = #RES.quest
+    return true
+end
+
+function QS.ClientProbe(id)
+    if QS.__try[id] then
+        if QS.ClientName(id) then QS.ClientPush(id) end
+        return
+    end
+    QS.__try[id] = true
+    if QS.ClientName(id) then
+        QS.ClientPush(id)
+        return
+    end
+    if not (C_Timer and type(C_Timer.After) == "function") then return end
+    local delays = { 0.8, 2, 4 }
+    for i = 1, #delays do
+        C_Timer.After(delays[i], function()
+            if QS.__cli[id] then return end
+            if not QS.ClientName(id) then return end
+            if QS.kind ~= "quest" then return end
+            if not (QS.page and QS.page:IsShown()) then return end
+            if tonumber(QS.text or "") ~= id then return end
+            QS.ClientPush(id)
+            QS.PaintList()
+        end)
+    end
 end
 
 function QS.DoSearch(text)
@@ -359,6 +436,70 @@ function QS.DoSearch(text)
                 end
             end
         end
+        if kind == "quest" then
+            local seen = {}
+            for i = 1, #ids do seen[ids[i]] = true end
+            local function TryExtra(id, nm)
+                if seen[id] then return end
+                if byId then
+                    if strfind(tostr(id), q, 1, true) then
+                        seen[id] = true
+                        ids[#ids + 1] = id
+                    end
+                    return
+                end
+                if type(nm) ~= "string" or nm == "" then return end
+                local ln = strlower(nm)
+                local hit
+                if strict then
+                    hit = (ln == q)
+                else
+                    hit = strfind(ln, q, 1, true) and true or false
+                end
+                if hit then
+                    seen[id] = true
+                    ids[#ids + 1] = id
+                end
+            end
+            local qx = ns.QuestExtra
+            if type(qx) == "table" then
+                for id, x in pairs(qx) do
+                    if type(id) == "number" then
+                        TryExtra(id, type(x) == "table" and x[1] or nil)
+                    end
+                end
+            end
+            for id, nm in pairs(QS.__cli) do
+                if type(id) == "number" then TryExtra(id, nm) end
+            end
+            local qn
+            local qx2 = ns.QuestExtra
+            if type(qx2) == "table" then
+                for id, x in pairs(qx2) do
+                    if type(x) == "table" and type(x[1]) == "string" then
+                        qn = qn or {}
+                        qn[x[1]] = true
+                    end
+                end
+            end
+            if qn and #ids > 0 and type(C_QuestLog) == "table"
+                and type(C_QuestLog.GetTitleForQuestID) == "function" then
+                local keep = {}
+                for i = 1, #ids do
+                    local id = ids[i]
+                    local drop = false
+                    if not qx2[id] and not QS.__cli[id] then
+                        local nm = NameOf(id, "quest")
+                        if nm and qn[nm] then
+                            local ok2, cn = pcall(C_QuestLog.GetTitleForQuestID, id)
+                            if not (ok2 and type(cn) == "string" and cn ~= "") then drop = true end
+                        end
+                    end
+                    if not drop then keep[#keep + 1] = id end
+                end
+                ids = keep
+            end
+        end
         if #ids > 0 then SortIds(ids, kind, exactId) end
         RES[kind] = ids
         COUNT[kind] = #ids
@@ -393,6 +534,10 @@ function QS.DoSearch(text)
             SortIds(RES.npc, "npc", exactId)
             COUNT.npc = #RES.npc
         end
+    end
+    if byId and COUNT.quest == 0 and exactId and exactId >= 1000
+        and exactId == math.floor(exactId) and exactId <= 9999999 then
+        QS.ClientProbe(exactId)
     end
     return true
 end
@@ -656,7 +801,7 @@ local function RowSub(rec)
         local lv = QuestLevelOf(rec.id)
         local lvTxt = L["等级 ?"]
         if lv > 0 then lvTxt = string.format(L["等级 %d"], lv) end
-        local zone = ZoneName(FieldOf(rec.id, "quest", "zoneOrSort"))
+        local zone = ZoneName(FieldOf(rec.id, "quest", "zoneOrSort")) or QS.ExtraZone(rec.id)
         local s = lvTxt
         if zone then s = s .. " · " .. zone end
         return s
@@ -735,6 +880,10 @@ local function QuestTagOf(qid)
             local ok, v = pcall(cq.GetQuestTagInfo, qid)
             if ok and type(v) == "table" then tag = tonumber(v.tagID) end
         end
+    end
+    if not tag or tag == 0 then
+        local x = ns.QuestExtra and ns.QuestExtra[qid]
+        if type(x) == "table" and type(x[5]) == "number" and x[5] > 0 then tag = x[5] end
     end
     local style = tag and QUEST_TAG[tag] or nil
     if not style then
@@ -859,7 +1008,7 @@ local function MakeRow(parent)
     r.schip:Hide()
     r:SetScript("OnClick", function()
         if IsShiftKeyDown() and r.rec then
-            if r.rec.kind == "item" and ItemToChat(r.rec.id) then return end
+            if r.rec.kind == "item" and ItemShift(r.rec.id) then return end
             if r.rec.kind == "quest" and QuestToChat(r.rec.id) then return end
         end
         QS.sel = r.rec
@@ -959,7 +1108,7 @@ local function BuildSearchCard(page)
 
     QS.tabNote = MakeFS(card, 12, C_SUB, "LEFT")
     QS.tabNote:SetPoint("LEFT", QS.tab.host, "RIGHT", 12, 0)
-    QS.tabNote:SetText(L["仅作为 Quest 数据库搜索入口"])
+    QS.tabNote:SetText(L["任务数据含本地补录与客户端"])
 end
 
 local function BuildListCard(page)
@@ -1178,12 +1327,19 @@ local function InkHex(c)
     return HEX_GOLD
 end
 
+local ItemTip
+
 local function NpcRow(i)
     local r = DET.npcRows[i]
     if r then return r end
     r = CreateFrame("Button", nil, DET.child)
     r:SetSize(DETAIL_W - 2 * PAD, 26)
     r:SetFrameLevel((DET.child:GetFrameLevel() or 1) + 2)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(18, 18)
+    r.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    if hui and hui.RoundIcon then hui.RoundIcon(r.icon) end
+    r.icon:Hide()
     r.name = MakeFS(r, 14, C_MAIN, "LEFT")
     r.name:SetWordWrap(false)
     r.name:SetPoint("LEFT", r, "LEFT", 0, 0)
@@ -1191,6 +1347,9 @@ local function NpcRow(i)
     r.pos = MakeFS(r, 12, C_SUB, "LEFT")
     r.pos:SetWordWrap(false)
     r.pos:SetPoint("LEFT", r.name, "RIGHT", 10, 0)
+    r.price = MakeFS(r, 12, C_MAIN, "RIGHT")
+    r.price:SetWordWrap(false)
+    r.price:Hide()
     r.btn = NewButton(r, L["地图"], 56, 24, 14)
     r.btn:SetPoint("RIGHT", r, "RIGHT", 0, 0)
     if r.btn.SetPushedTextOffset then r.btn:SetPushedTextOffset(0, 0) end
@@ -1200,7 +1359,7 @@ local function NpcRow(i)
     if SetTip then SetTip(r.btn, L["在世界地图标记该位置"]) end
     r:SetScript("OnClick", function()
         if IsShiftKeyDown() and r.linkId then
-            if r.linkKind == "item" and ItemToChat(r.linkId) then return end
+            if r.linkKind == "item" and ItemShift(r.linkId) then return end
             if r.linkKind == "quest" and QuestToChat(r.linkId) then return end
         end
         if r.onClick then
@@ -1209,11 +1368,13 @@ local function NpcRow(i)
         end
         if r.linkId and r.linkKind then QS.GoTo(r.linkId, r.linkKind) end
     end)
-    r:SetScript("OnEnter", function()
+    r:SetScript("OnEnter", function(self)
         if (r.linkId or r.onClick) and r.ink and r.hoverOK ~= false then r.name:SetTextColor(1, 1, 1) end
+        if r.tipItem and ItemTip then ItemTip(self, r.tipItem) end
     end)
     r:SetScript("OnLeave", function()
         if r.ink then r.name:SetTextColor(Unpack(r.ink)) end
+        if r.tipItem then GameTooltip:Hide() end
     end)
     DET.npcRows[i] = r
     return r
@@ -1317,8 +1478,12 @@ local function QuestCardRow(qid, ind, facPre)
             sub = (ZoneName(p.zone) or "") .. string.format(" %.1f,%.1f", p.x, p.y)
         end
     end
-    if sub == "" then sub = ZoneName(FieldOf(qid, "quest", "zoneOrSort")) or L["未知区域"] end
+    if sub == "" then sub = ZoneName(FieldOf(qid, "quest", "zoneOrSort")) or QS.ExtraZone(qid) or L["未知区域"] end
     local needLv = tonumber(FieldOf(qid, "quest", "requiredLevel")) or 0
+    if needLv <= 0 then
+        local x = ns.QuestExtra and ns.QuestExtra[qid]
+        if type(x) == "table" and type(x[6]) == "number" then needLv = x[6] end
+    end
     if needLv > 0 then sub = sub .. " · " .. string.format(L["%d 级可接"], needLv) end
     r.sub:SetText((facPre or "") .. sub)
 
@@ -1701,13 +1866,37 @@ local function Line(o)
     local right = o.map and 66 or 0
     r.linkId, r.linkKind = o.id, o.kind
     r.onClick = o.onClick
+    r.tipItem = o.tipItem
     r.hoverOK = o.plain ~= false
     r.zoneId, r.x, r.y = o.zone, o.x, o.y
     local rw = DetW()
     r:SetSize(rw, 26)
-    local avail = rw - ind - right - 6
+    local left = ind
+    if o.icon then
+        r.icon:SetTexture(o.icon)
+        r.icon:ClearAllPoints()
+        r.icon:SetPoint("LEFT", r, "LEFT", ind, 0)
+        r.icon:Show()
+        left = ind + 18 + 6
+    else
+        r.icon:Hide()
+    end
+    local priceW = 0
+    if o.price then
+        r.price:SetText(o.price)
+        r.price:SetTextColor(Unpack(o.priceInk or C_MAIN))
+        r.price:ClearAllPoints()
+        r.price:SetPoint("RIGHT", r, "RIGHT", -2, 0)
+        r.price:Show()
+        local pw = r.price:GetStringWidth()
+        if type(pw) ~= "number" or pw <= 0 then pw = 60 end
+        priceW = pw + 12
+    else
+        r.price:Hide()
+    end
+    local avail = rw - left - right - 6 - priceW
     r.name:ClearAllPoints()
-    r.name:SetPoint("LEFT", r, "LEFT", ind, 0)
+    r.name:SetPoint("LEFT", r, "LEFT", left, 0)
     r.name:SetText(o.text or "")
     local nw = r.name:GetStringWidth()
     if type(nw) ~= "number" or nw <= 0 then nw = 60 end
@@ -2656,6 +2845,10 @@ local function PaintQuestDetail(rec)
 
     local lv = QuestLevelOf(id)
     local needLv = tonumber(FieldOf(id, "quest", "requiredLevel")) or 0
+    if needLv <= 0 then
+        local x = ns.QuestExtra and ns.QuestExtra[id]
+        if type(x) == "table" and type(x[6]) == "number" then needLv = x[6] end
+    end
 
     local descText = TextOf(qrec.Description)
     if descText == "" then descText = apiDesc end
@@ -2703,6 +2896,14 @@ local function PaintQuestDetail(rec)
         else
             local rs = RaceStr(rmask)
             if rs then fac = rs end
+        end
+    else
+        local x = ns.QuestExtra and ns.QuestExtra[id]
+        local side = type(x) == "table" and x[4] or nil
+        if side == "A" then
+            fac, facInk = L["联盟专属"], DG and DG.C_FAC_A or nil
+        elseif side == "H" then
+            fac, facInk = L["部落专属"], DG and DG.C_FAC_H or nil
         end
     end
     local facTxt = fac
@@ -2965,7 +3166,7 @@ local function ItemIcon(id)
     return nil
 end
 
-local function ItemTip(self, id)
+ItemTip = function(self, id)
     if not id then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     local link = DG and type(DG.ItemLink) == "function" and select(2, pcall(DG.ItemLink, id)) or nil
@@ -3026,7 +3227,7 @@ local function PaintItemDetail(rec)
         DET.itemBtn:SetScript("OnEnter", function(self) ItemTip(self, DET.itemId) end)
         DET.itemBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
         DET.itemBtn:SetScript("OnClick", function()
-            if IsShiftKeyDown() and DET.itemId and ItemToChat(DET.itemId) then return end
+            if IsShiftKeyDown() and DET.itemId and ItemShift(DET.itemId) then return end
         end)
         DET.itemBtn:SetScript("OnMouseWheel", function(self, delta)
             local cur = DET.scroll:GetVerticalScroll() or 0
@@ -3082,6 +3283,8 @@ local function PaintItemDetail(rec)
 
     Begin()
     R.y = -86 - ICON_SZ - 14
+    local RA = ns.ProfRouteAuto
+    local money = (RA and type(RA.MoneyStrTip) == "function") and RA.MoneyStrTip or nil
     local crafts = CraftOfItem(id)
     if crafts then
         for ci = 1, #crafts do
@@ -3110,12 +3313,50 @@ local function PaintItemDetail(rec)
                         if type(inm) ~= "string" or inm == "" then
                             inm = string.format(L["条目 #%d"], mid)
                         end
-                        Line({
+                        local row = {
                             id = mid, kind = "item", ink = C_MAIN, indent = 16,
                             text = inm, sub = "×" .. cnt,
-                        })
+                            icon = ItemIcon(mid) or "Interface\\Icons\\INV_Misc_QuestionMark",
+                            tipItem = mid,
+                        }
+                        if money then
+                            local p = RA.MatPriceOf and RA.MatPriceOf(mid) or nil
+                            if p then
+                                row.price = money(p * cnt)
+                            else
+                                row.price = "—"
+                                row.priceInk = C_SUB
+                            end
+                        end
+                        Line(row)
                     end
                 end
+            end
+            if money then
+                local cost, unpriced = nil, 0
+                if type(c.mats) == "table" and #c.mats > 0 and type(RA.MatListCost) == "function" then
+                    local okc, total, miss = pcall(RA.MatListCost, c.mats)
+                    if okc then
+                        cost, unpriced = tonumber(total), tonumber(miss) or 0
+                    end
+                end
+                local costTxt = "—"
+                if cost and cost > 0 and unpriced < #(c.mats or {}) then
+                    costTxt = (unpriced > 0 and "≈" or "") .. money(cost)
+                end
+                R.y = R.y - 4
+                Line({ text = L["制造总成本"], indent = 16, price = costTxt })
+                local sell = RA.NPCSellPriceOf and RA.NPCSellPriceOf(id) or nil
+                Line({ text = L["卖商人价格"], indent = 16, price = sell and money(sell) or "—" })
+                local ah = RA.AHPriceOf and RA.AHPriceOf(id) or nil
+                Line({ text = L["拍卖行价格"], indent = 16, price = ah and money(ah) or "—" })
+                local netTxt, netInk = "—", nil
+                if ah and cost and cost > 0 then
+                    local net = math.floor(ah * 0.95) - cost
+                    netTxt = money(net)
+                    if net < 0 then netInk = { 1, 0.42, 0.38 } end
+                end
+                Line({ text = L["收益（扣除5%）"], indent = 16, price = netTxt, priceInk = netInk })
             end
         end
     end
@@ -3234,6 +3475,13 @@ end
 function QS.PaintDetail()
     if not DET.card then return end
     local rec = QS.sel
+    local key = rec and (rec.kind .. ":" .. tostring(rec.id)) or ""
+    local keepV = 0
+    if rec and key == DET.paintKey and DET.scroll then
+        local v = DET.scroll:GetVerticalScroll() or 0
+        if type(v) == "number" and v > 0 then keepV = v end
+    end
+    DET.paintKey = key
     for i = 1, #DET.chips do DET.chips[i]:Hide() end
     if not rec then
         DET.sig = nil
@@ -3293,10 +3541,15 @@ function QS.PaintDetail()
         DET.sig = nil
         PaintPlaceDetail(rec)
     end
+    if keepV > 0 then
+        local maxV = math.max(0, (DET.child:GetHeight() or 0) - (DET.scroll:GetHeight() or 0))
+        DET.scroll:SetVerticalScroll(math.min(keepV, maxV))
+    end
 end
 
 function QS.GoTo(id, kind, fromItem)
     if not id or not kind then return end
+    DET.paintKey = nil
     if DET.modelFail and DET.modelFail ~= id then DET.modelFail = nil end
     QS.sel = { id = id, kind = kind }
     QS.fromItem = tonumber(fromItem) or nil
