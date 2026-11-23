@@ -1884,29 +1884,29 @@ ns.DungeonLoot = {
         } },
     },
     ["alcaz_prison"] = {
-        { "Overseer Wrex", "监工雷克斯", "", "255391", {
+        { "Overseer Wrex", "监工雷克斯", "50 级", "255391", {
             { 276734, nil, true },
             { 276733, nil, true },
             { 276732, nil, true },
         } },
-        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "", "255997", {
+        { "Tidemistress Ca'zass", "海潮主母卡扎斯", "49 级", "255997", {
             { 273883, nil, true },
             { 276736, nil, true },
             { 276735, nil, true },
             { 276737, nil, true },
         } },
-        { "Katerina the Cleaner", "清道夫卡特琳娜", "", "257016", {
+        { "Katerina the Cleaner", "清道夫卡特琳娜", "52 级", "257016", {
             { 276739, nil, true },
             { 276738, nil, true },
             { 276740, nil, true },
         } },
-        { "The Questioner", "质问者", "", "256236", {
+        { "The Questioner", "质问者", "51 级", "256236", {
             { 274029, nil, true },
             { 276742, nil, true },
             { 276743, nil, true },
             { 276741, nil, true },
         } },
-        { "Blazeroar", "烈焰咆哮者", "", "255702", {
+        { "Blazeroar", "烈焰咆哮者", "53 级", "255702", {
             { 276890, nil, true },
             { 276744, nil, true },
             { 276745, nil, true },

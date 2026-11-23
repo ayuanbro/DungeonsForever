@@ -2980,6 +2980,22 @@ function PD.CullRowsSettle()
         end
     end
     PD.FlushPendingRows()
+    if PD.tab == "recipe" and not PD.setOpen and PD.__recipeTotal
+       and (PD.__recipeShow or 0) < PD.__recipeTotal then
+        local sc2, ch2 = PD.scroll, PD.child
+        if sc2 and sc2.GetVerticalScroll and sc2.GetHeight
+           and ch2 and ch2.GetHeight then
+            local v2 = sc2:GetVerticalScroll()
+            local vh2 = sc2:GetHeight()
+            local chH = ch2:GetHeight()
+            if type(v2) == "number" and type(vh2) == "number" and vh2 > 0
+               and type(chH) == "number" and v2 + vh2 >= chH - vh2 then
+                PD.__recipeShow = math.min(PD.__recipeTotal,
+                    (PD.__recipeShow or PD.capNow or 40) + math.max(40, PD.SyncRows() * 3))
+                PD.RequestRender()
+            end
+        end
+    end
 end
 
 function PD.SideRow(idx)
@@ -13409,6 +13425,7 @@ function PD.RowsRecipe(rows)
         PD.RenderProgressStart(nil)
     end
     local realN, maxW = PD.ScanRecipe()
+    PD.__recipeTotal = realN
     local list
     if realN then
         if PD.__renderProg then PD.__renderProg.total = #(d.rows or {}) end
@@ -13451,7 +13468,7 @@ function PD.RowsRecipe(rows)
         return
     end
     local trunc = 0
-    if realN > cap then trunc = realN - cap end
+    if realN > PD.RECIPE_CAP then trunc = realN - PD.RECIPE_CAP end
     if realN > 0 then
         rows[#rows + 1] = { kind = "rechead", h = 26, col = 1, noTip = true, noHover = true }
     end
@@ -19600,6 +19617,7 @@ function PD.Render()
                    .. "|" .. tostring(PD.shopGroup) .. "|" .. tostring(PD.subTab)
         if pk ~= PD.__pageKey then
             PD.__pageKey = pk
+            PD.__recipeShow = nil
             PD.gcOpen = {}
             for _, rr in pairs(PD.rows) do PD.WipeRow(rr) end
             if PD.sideRows then
@@ -19644,7 +19662,11 @@ function PD.Render()
     elseif PD.tab == "moonwell" then
         PD.wantMoonBoard = true
     elseif PD.tab == "recipe" then
-        PD.capNow = PD.RECIPE_CAP
+        if PD.searchQ and PD.searchQ ~= "" then
+            PD.capNow = PD.RECIPE_CAP
+        else
+            PD.capNow = PD.__recipeShow or PD.SyncRows()
+        end
         tool, handler = PD.RecipeTool(RGet(PD.cur))
         PD.RowsRecipe(rows)
     elseif PD.tab == "crate" or PD.tab == "plunder" or PD.tab == "writ" then
@@ -19865,10 +19887,22 @@ function PD.RequestRows(rows)
     end
 end
 
+local function InterruptRecipePaint()
+    if PD.tab == "recipe" and ns.ProfPaint and ns.ProfPaint.Active("Profession") then
+        ns.ProfPaint.Cancel("Profession")
+        PD.__pend = false
+        PD.__pendQuiet = nil
+        PD.__rdLast = nil
+        PD.__recipeShow = nil
+        if PD.__renderProg then PD.RenderProgressEnd() end
+    end
+end
+
 function PD.Show(slug)
     if type(slug) ~= "string" then return end
     ns.OpenPerf.Begin("专业·" .. tostring(slug))
     PD.HideVendorPick()
+    InterruptRecipePaint()
     if slug ~= PD.cur then
         PD.__planShown = nil
         PD.__planPending = nil
@@ -19894,6 +19928,7 @@ function PD.SetTab(key)
     PD.subTabSlug = nil
     if PD.mgrBtn then PD.mgrBtn:Hide() end
     PD.ResetItemNameMemo()
+    InterruptRecipePaint()
     if not (PD.avail and PD.avail[key]) then return end
     local wasCrate = (PD.tab == "crate" or PD.tab == "writ")
     local nowCrate = (key == "crate" or key == "writ")
@@ -20019,6 +20054,12 @@ function PD.RequestRender()
             PD.__pend = false
             PD.__quietRender = PD.__pendQuiet
             PD.__pendQuiet = nil
+            PD.RequestRender()
+            return
+        end
+        if PD.tab == "recipe" and not PD.setOpen and PD.__recipeTotal
+           and (PD.__recipeShow or 0) < PD.__recipeTotal then
+            PD.__recipeShow = PD.__recipeTotal
             PD.RequestRender()
         end
     end)
