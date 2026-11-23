@@ -7410,9 +7410,10 @@ function DG.GainsSegs(q)
     if money then
         local go, si, co = math.floor(money / 10000), math.floor((money % 10000) / 100), money % 100
         local ms = ""
-        if go > 0 then ms = ms .. go .. L["金"] end
-        if si > 0 then ms = ms .. si .. L["银"] end
-        if co > 0 or ms == "" then ms = ms .. co .. L["铜"] end
+        local sp = ns.WIDE_UI and " " or ""
+        if go > 0 then ms = ms .. go .. sp .. L["金"] end
+        if si > 0 then ms = ms .. (ms ~= "" and sp or "") .. si .. sp .. L["银"] end
+        if co > 0 or ms == "" then ms = ms .. (ms ~= "" and sp or "") .. co .. sp .. L["铜"] end
         seg[#seg + 1] = ms
     end
     if g and g.rep and #g.rep > 0 then
@@ -8468,7 +8469,7 @@ end
 
 -- 英文客户端：阵营/总览/列表按钮总宽不变，重新分配给更长的英文标签 {x, 宽}
 -- English UI: same total width for Faction/Overview/List buttons, redistributed for longer labels {x, width}
-DG.Q_BTN_EN = { { 0, 80 }, { 84, 80 }, { 168, 66 }, { 238, 38 } }
+DG.Q_BTN_EN = { { 0, 86 }, { 90, 86 }, { 180, 62 }, { 246, 34 } }
 
 function U:RenderDungeonQuests()
     local d = U.dungeonDetailCur
@@ -8872,7 +8873,17 @@ function U:RenderDungeonQuests()
                 end
                 local stag = DG.Q_STATUS_TAG[st]
                 if st == "todo" and DG.QuestPreLocked(q[1]) then stag = L["前置未完成"] end
+                -- 英文状态较长：列表行用短词，完整状态在右侧详情
+                -- English statuses are long: short words in list rows; full status shows in the detail pane
+                if ns.WIDE_UI then
+                    if st == "ready" then stag = L["待上交"]
+                    elseif st == "todo" and DG.QuestPreLocked(q[1]) then stag = L["缺前置"] end
+                end
                 r.meta:SetText(hasName and (stag or "") or L["暂时没有客户端数据"])
+                if ns.WIDE_UI and ns.FitFS then
+                    r.meta:SetWidth(0)
+                    ns.FitFS(r.meta, 92, 10)
+                end
                 r.__metaCol = hasName and col or C_DARKGREY
                 r.meta:SetTextColor(Unpack(r.__metaCol))
                 r.meta:Show()
