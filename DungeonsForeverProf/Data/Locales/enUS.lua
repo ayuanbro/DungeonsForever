@@ -36,7 +36,7 @@ ns.Data.locales.enUS = ns.Data._freeze({
     [273097] = "Blueprint: Rock Garden",
     [273106] = "Blueprint: Greenhouse",
     [274947] = "Scroll of Frostbolt",
-    [277651] = "Bundle of Lost Tomes",
+    [277651] = "Bundle of Scrolls",
     [281015] = "Scroll: DOST OREM",
   },
   npc = {
@@ -90,9 +90,6 @@ ns.Data.locales.enUS = ns.Data._freeze({
   },
   quest = {
     [5384] = "Kirtonos the Herald",
-    [78150] = "Friend of the Library",
-    [79536] = "Greater Friend of the Library",
-    [82208] = "Archivist of the Library",
     [91920] = "Alchemy Mastery Unlock I",
     [92110] = "Alchemy Mastery Unlock II",
     [94004] = "Craftsman's Writ: Elixir of Ogre's Strength",

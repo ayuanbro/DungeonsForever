@@ -27,7 +27,7 @@ Data._freeze = _freeze
 Data.meta = _freeze({
   branch = "forever",
   contractVersion = 1,
-  fingerprint = "sha256:e0e3c1bfefece3c329a35964377081461f85351763ce4fd77f914271d646920d",
+  fingerprint = "sha256:44edb0e199ae9f371855dbc2f6eec87fc9422916bda4a099cc2faa9c14f76366",
   foreverBuild = "1.60.1.71037",
 })
 

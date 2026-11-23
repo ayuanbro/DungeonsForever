@@ -41,49 +41,6 @@ ns.Data._loaders["systems"] = function()
         itemID = 277651,
         sampleCount = 17,
       },
-      libraryBooks = {
-        {
-          bookKey = "book:203754",
-          index = 1,
-          itemIDs = { 203754 },
-          objectID = 203754,
-          uiMapID = 1455,
-          x = 75.7,
-          y = 10.5,
-        },
-        {
-          bookKey = "book:203755",
-          index = 2,
-          itemIDs = { 203755 },
-          objectID = 203755,
-          uiMapID = 1455,
-          x = 22.4,
-          y = 48.1,
-        },
-      },
-      libraryQuests = {
-        {
-          booksRequired = 10,
-          questID = 78150,
-          reqLevel = 20,
-          rewardItemIDs = { 277203, 277204 },
-          rewardMode = "choose-one",
-        },
-        {
-          booksRequired = 20,
-          questID = 79536,
-          reqLevel = 30,
-          rewardItemIDs = { 277240 },
-          rewardMode = "choose-one",
-        },
-        {
-          booksRequired = 25,
-          questID = 82208,
-          reqLevel = 40,
-          rewardItemIDs = { 277254 },
-          rewardMode = "all",
-        },
-      },
       tiers = {
         {
           greySkill = 30,

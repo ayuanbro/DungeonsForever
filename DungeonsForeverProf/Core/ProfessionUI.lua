@@ -8207,74 +8207,6 @@ end
 local C_ALLIANCE = { 0.40, 0.80, 0.94 }
 local C_HORDE = { 1.00, 0.30, 0.25 }
 
-function PD.PushLibraryCards(rows, library)
-    if type(library) ~= "table" then return end
-    local ds = getDS()
-    local quests = library.libraryQuests or library.quests
-    if quests and #quests > 0 then
-        PushHead(rows, L["书籍上交"], 1)
-        local cards = {}
-        for _, quest in ipairs(quests) do
-            local qid = quest.questID or quest.quest
-            local qname = quest.name or (qid and ds and ds.QuestName and ds.QuestName(qid))
-            local card = PD.GuideReference({ kind = "quest", id = qid, name = qname })
-            if card then
-                local text = { format(L["所需书籍：%s"], tostring(quest.booksRequired or "—")) }
-                local reqLv = quest.reqLevel or quest.requiredLevel
-                if reqLv then text[#text + 1] = L["角色等级"] .. ": " .. tostring(reqLv) end
-                local rewards = {}
-                for _, ref in ipairs(quest.rewardRefs or {}) do
-                    local reward = PD.GuideReference(ref)
-                    if reward then rewards[#rewards + 1] = reward.name end
-                end
-                if #rewards == 0 then
-                    for _, id in ipairs(quest.rewardItemIDs or quest.rewards or {}) do
-                        rewards[#rewards + 1] = PD.ItemName(id) .. " (#" .. tostring(id) .. ")"
-                    end
-                end
-                if #rewards > 0 then
-                    local label = quest.rewardMode == "choose-one" and L["奖励（任选一项）"] or L["奖励（选取方式未公布）"]
-                    text[#text + 1] = label .. ": " .. table.concat(rewards, " · ")
-                end
-                card.tx = table.concat(text, "\n")
-                cards[#cards + 1] = card
-            end
-        end
-        PD.PushCardRow(rows, cards)
-        PushGap(rows, PD.OV_GUT, 1)
-    end
-    local books = library.libraryBooks or library.books
-    if books and #books > 0 then
-        PushHead(rows, L["书籍"], 1)
-        local cards = {}
-        for _, book in ipairs(books) do
-            local text = {}
-            local bname = book.name or (book.objectID and ds and ds.ObjectName and ds.ObjectName(book.objectID)) or book.bookKey or "—"
-            if book.container and book.container ~= "" then text[#text + 1] = format(L["容器：%s"], book.container) end
-            local zn = book.zone
-            if (not zn or zn == "") and book.uiMapID then zn = PD.MapName(book.uiMapID, nil) end
-            if zn and zn ~= "" then text[#text + 1] = zn end
-            local coords = book.coordinates
-            if (not coords or coords == "") and book.x and book.y then
-                coords = format("%.1f, %.1f", book.x, book.y)
-            end
-            if coords and coords ~= "" then text[#text + 1] = coords end
-            local url = book.sourceURL or library.sourceURL
-            local items = book.itemIDs or book.items
-            cards[#cards + 1] = {
-                name = bname,
-                tx = table.concat(text, "\n"),
-                it = items and #items > 0 and items or nil,
-                tags = url and L["点击查看来源链接"] or nil,
-                tipLines = url and { { L["点击查看来源链接"] }, { url } } or nil,
-                act = url and function() PD.ShowGuideSource(url) end or nil,
-            }
-        end
-        PD.PushCardRow(rows, cards)
-        PushGap(rows, PD.OV_GUT, 1)
-    end
-end
-
 function PD.RowsComprOverview(rows)
     local ds = getDS()
     local comp = ds and ds.Comprehension and ds.Comprehension()
@@ -8325,7 +8257,6 @@ function PD.RowsComprOverview(rows)
         PD.PushCardRow(rows, list)
         PushGap(rows, PD.OV_GUT, 1)
     end
-    PD.PushLibraryCards(rows, comp)
 end
 
 local RACE_SLUG = {
