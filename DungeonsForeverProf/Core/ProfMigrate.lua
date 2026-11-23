@@ -37,7 +37,34 @@ function M.UpgradePricing()
     return count
 end
 
+function M.WipeLegacyRuns()
+    local prof=ns.ProfDB().prof
+    if type(prof)~="table" or prof.legacyRunsWiped==1 then return 0 end
+    local removed=0
+    for _,entry in pairs(prof.track or {}) do
+        if type(entry)=="table" and type(entry.runs)=="table" then
+            local gone={}
+            for id,run in pairs(entry.runs) do
+                if type(run)=="table" and run.status~="active" then
+                    gone[id]=true;entry.runs[id]=nil;removed=removed+1
+                end
+            end
+            for slug,source in pairs(type(entry.continuation)=="table" and entry.continuation or {}) do
+                if type(source)=="table" and source.sourcePlanID and gone[source.sourcePlanID] then entry.continuation[slug]=nil end
+            end
+            for _,contracts in pairs(type(entry.endedContracts)=="table" and entry.endedContracts or {}) do
+                for signature,id in pairs(type(contracts)=="table" and contracts or {}) do
+                    if gone[id] then contracts[signature]=true end
+                end
+            end
+        end
+    end
+    prof.legacyRunsWiped=1
+    return removed
+end
+
 function M.Run()
+    M.WipeLegacyRuns()
     M.UpgradePricing()
     local prof = ns.ProfDB().prof
     if type(prof) ~= "table" then return 0, 0 end
@@ -75,7 +102,7 @@ function M.Run()
     prof.migratedFrom = STAMP
     return dropped, flipped
 end
-if type(IsLoggedIn)=="function" and IsLoggedIn() then M.UpgradePricing() end
+if type(IsLoggedIn)=="function" and IsLoggedIn() then M.Run() end
 
 local watch = type(CreateFrame) == "function" and CreateFrame("Frame") or nil
 if watch then

@@ -15699,6 +15699,22 @@ function PD.CraftLogCost(slug)
     slug = slug or PD.cur
     local run = T and (T.GetRun(slug) or T.GetHistory(slug)[1])
     if not run then return 0, 0, 0 end
+    if run.compact then
+        local unknown = false
+        local total, casts, planned = 0, 0, 0
+        for _, st in ipairs(run.compact.steps or {}) do
+            local made = tonumber(st[5]) or 0
+            local want = tonumber(st[4]) or 0
+            local cost = tonumber(st[6])
+            if made > 0 and (cost == nil or st[7] or want <= 0) then unknown = true end
+            cost = cost or 0
+            if want > 0 and made > 0 and cost > 0 then total = total + cost * made / want end
+            casts = casts + made
+            planned = planned + want
+        end
+        if unknown then return nil, casts, planned end
+        return math.floor(total + 0.5), casts, planned
+    end
     local plan = T.GetPlan(slug,run.planID)
     if not plan then return nil, 0, 0 end
     local steps = plan.executionSteps or plan.steps

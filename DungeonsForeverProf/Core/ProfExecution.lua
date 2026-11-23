@@ -372,7 +372,7 @@ local function pruneArchived(slug)
     repeat
         local list={}
         for id,r in pairs(c.runs) do
-            if r.slug==slug and r.status~="active" and readablePlan(r) then
+            if r.slug==slug and r.status~="active" and (r.compact or readablePlan(r)) then
                 list[#list+1]={id=id,run=r,at=tonumber(r.archivedAt or r.updatedAt) or 0}
             end
         end
@@ -459,6 +459,17 @@ function XP.GetSummary(slug,planID)
     if planID then run=XP.Get(slug,planID) else run=XP.GetRun(slug) end
     if not run and not planID then run=XP.GetHistory(slug)[1] end
     if not run then return end
+    if run.compact then
+        local comp=run.compact
+        local total=comp.total or #comp.steps
+        return {planID=run.planID,status=run.status,archiveReason=run.archiveReason,
+            current=run.currentIndex or 1,total=total,done=min(total,(run.currentIndex or 1)-1),
+            planned=comp.planned or 0,casts=run.attemptsDone or 0,skill=skill(slug),
+            target=comp.target,startSkill=run.startSkill or comp.startSkill,
+            finished=run.finished or run.archiveReason=="completed" or run.status=="done",
+            stale=comp.stale,staleReason=comp.staleReason,
+            learningBlocked=run.learningBlocked,learningBlockReason=run.learningBlockReason}
+    end
     local plan=readablePlan(run)
     if not plan then return nil,"historyUnreadable" end
     local list=steps(plan);local planned=0
@@ -531,6 +542,28 @@ local function releaseSourceReferences(run)
         if plan.executionOptions then plan.executionOptions.executionSourcePlanID=nil end
     end
 end
+local function compactRun(run)
+    if type(run)~="table" or run.compact then return end
+    local plan=readablePlan(run)
+    run.plan=nil
+    if not plan then return end
+    local list=steps(plan)
+    local comp={steps={},total=#list,target=plan.target or plan.targetSkill,
+        startSkill=plan.startSkill or plan.start,planned=0,
+        stale=plan.stale or nil,staleReason=plan.staleReason or nil}
+    for i,seg in ipairs(list) do
+        local want=tonumber(seg[4]) or 0
+        local p=seg.segmentID~=nil and run.progress and run.progress[seg.segmentID] or nil
+        local entry={tonumber(seg[3]) or 0,tonumber(seg[1]) or 0,tonumber(seg[2]) or 0,want,p and (tonumber(p.casts) or 0) or 0}
+        local cost=tonumber(seg.cost)
+        if cost then entry[6]=cost;if seg.unpriced then entry[7]=true end end
+        comp.steps[i]=entry
+        comp.planned=comp.planned+want
+    end
+    run.compact=comp
+    run.progress=nil;run.materialLedger=nil;run.supplements=nil;run.completionDue=nil
+    creditCaches[run]=nil
+end
 local function archive(c,slug,reason)
     local run=c.runs[c.active[slug]]
     if run then
@@ -560,15 +593,17 @@ function XP.End(slug,reason)
     if job then
         job.cancelled=true;job.state.inFlight=false;job.state.status="cancelled";jobs[run.planID]=nil
     end
+    local readable=readablePlan(run)
     archive(c,slug,reason or "ended")
     run.status="archived";run.archivedAt=run.archivedAt or now();run.archiveReason=reason or "ended"
     run.endedAt=run.endedAt or now();run.completionDue=nil
-    c.continuation[slug]=readablePlan(run) and {sourcePlanID=run.planID} or nil
+    c.continuation[slug]=readable and {sourcePlanID=run.planID} or nil
     if run.originSignature then
         c.endedContracts[slug]=c.endedContracts[slug] or {};c.endedContracts[slug][run.originSignature]=run.planID
     end
     if c.trackingSlug==slug then c.trackingSlug=nil end
     changed(run,"ended")
+    compactRun(run)
     pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end
     return run
@@ -665,7 +700,7 @@ function XP.Bind(slug,result,opts)
     if not ready(normalized) then return nil,"pending" end
     local learnable,learningReason=XP.ValidateLearning(normalized,slug,steps(normalized)[1])
     if not learnable then return nil,learningReason end
-    if existing then archive(c,slug,"replace") end
+    if existing then archive(c,slug,"replace");compactRun(existing) end
     c.nextID=(c.nextID or 0)+1
     local planID=normalized.planID or normalized.executionPlanID or (character()..":track:"..c.nextID)
     if c.runs[planID] then planID=planID..":"..c.nextID end
@@ -1408,7 +1443,7 @@ function XP.PrepareRecalculate(slug)
     local source=c.continuation[slug]
     local preparing={hadActive=run~=nil and run.status=="active" or previous and previous.hadActive or false,
         sourcePlanID=run and run.planID or previous and previous.sourcePlanID or source and source.sourcePlanID,inventory=copy(seed)}
-    if run then archive(c,slug,"recalculate");changed(run) end
+    if run then archive(c,slug,"recalculate");compactRun(run);changed(run) end
     c.preparing[slug]=preparing;referencesChanged();pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end;return seed,preparing.sourcePlanID
 end
