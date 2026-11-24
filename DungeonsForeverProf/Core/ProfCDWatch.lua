@@ -249,15 +249,23 @@ end
 local function liveCD(spell)
     local api = C_Spell
     if type(api) == "table" and type(api.GetSpellCooldown) == "function" then
-        local ok, sc = pcall(api.GetSpellCooldown, spell)
-        if ok and type(sc) == "table" then
-            local st, du = sc.startTime, sc.duration
-            if type(st) == "number" and type(du) == "number" and st > 0 and du > 0 then
-                local left = st + du - clock()
-                if left > 0 then return left, du end
-                return nil
+        local ok, left, du = pcall(function()
+            local sc = api.GetSpellCooldown(spell)
+            if type(sc) ~= "table" then return nil end
+            local d = sc.duration
+            local l = sc.timeUntilEndOfStartRecovery
+            if type(l) ~= "number" then
+                local st = sc.startTime
+                local g = clock()
+                if type(st) == "number" and type(d) == "number" and st <= g + 60 then
+                    l = st + d - g
+                end
             end
-        end
+            if type(l) ~= "number" or l <= 0 then return nil end
+            if type(d) ~= "number" or d <= 0 then d = l end
+            return l, d
+        end)
+        if ok and type(left) == "number" and left > 0 then return left, du end
     end
     local tr = C_TradeSkillUI
     if type(tr) == "table" and type(tr.GetRecipeCooldown) == "function" then
@@ -265,6 +273,44 @@ local function liveCD(spell)
         if ok and type(sec) == "number" and sec > 0 then return sec, sec end
     end
     return nil
+end
+
+local function baseDur(spell)
+    local f = _G.GetSpellBaseCooldown
+    if type(f) ~= "function" then return nil end
+    local ok, ms = pcall(f, spell)
+    if ok and type(ms) == "number" and ms > 0 then return ms / 1000 end
+    return nil
+end
+
+local function repairExisting()
+    local db = store()
+    local key = W.CharKey()
+    local l = list()
+    local t = now()
+    for spell, by in pairs(db) do
+        local rec = type(by) == "table" and by[key] or nil
+        if type(rec) == "table" and W.Enabled(spell) then
+            local left, dur = liveCD(spell)
+            if type(left) == "number" and left > 0 then
+                local slug = type(l[spell]) == "string" and l[spell] or rec.prof
+                if type(slug) == "string" then W.Record(spell, slug, left, dur) end
+            else
+                local api = C_Spell
+                if type(api) == "table" and type(api.GetSpellCooldown) == "function" then
+                    local ok, sc = pcall(api.GetSpellCooldown, spell)
+                    if ok and type(sc) == "table" and type(sc.duration) == "number" and sc.duration == 0 then
+                        local base = baseDur(spell)
+                        if base and type(rec.d) == "number" and rec.d > base * 3 then
+                            rec.u = t
+                            rec.d = base
+                            rec.s = t - base
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 function W.Mark(spell, slug)
@@ -448,6 +494,7 @@ end
 function W.ScanAll()
     migrate()
     ensureEvents()
+    repairExisting()
     local list_ = allSlugs()
     local i, hits = 0, 0
     local function step()

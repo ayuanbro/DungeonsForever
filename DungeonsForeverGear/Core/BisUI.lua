@@ -2578,6 +2578,9 @@ local function PaintDoll()
             ns.hui.HuiCardState(cell, (sel or cell:IsMouseOver()) and "hover" or "norm")
         end
         cell.dot:SetShown(not empty and BG.cur[dkey] ~= nil)
+        if cell.detBt then
+            cell.detBt:SetShown((not empty) and cell.IsMouseOver and cell:IsMouseOver() and true or false)
+        end
     end
     if BG.oneHandTg then
         local show = BG.OneOnlyShown()
@@ -4737,17 +4740,53 @@ local function MakeCell(parent, w, slotLabel, mirror)
         c.ench:SetPoint("TOPRIGHT", c, "TOPRIGHT", -46, -26)
         c.ench:SetJustifyH("RIGHT")
     end
+    c.detBt = NewButton(c, L["查看详情"], 32, 32, 11)
+    c.detBt:SetPushedTextOffset(0, 0)
+    c.detBt:SetFrameLevel((c:GetFrameLevel() or 0) + 6)
+    SetButtonSelected(c.detBt, false)
+    local dbbg = c.detBt:CreateTexture(nil, "BORDER")
+    dbbg:SetAllPoints()
+    dbbg:SetColorTexture(0, 0, 0, 0.80)
+    c.detBt.__bg = dbbg
+    local dfs = c.detBt:GetFontString()
+    if dfs then
+        dfs:SetPoint("CENTER", 0, 0)
+        dfs:SetSize(30, 30)
+        dfs:SetJustifyH("CENTER")
+        dfs:SetJustifyV("MIDDLE")
+        dfs:SetWordWrap(true)
+        dfs:SetTextColor(1, 1, 1, 1)
+    end
+    c.detBt:SetAllPoints(c.icon)
+    c.detBt:Hide()
+    c.detBt:SetScript("OnClick", function()
+        local sp = SpecRec()
+        local id = CurItem(sp, c.__key)
+        if not id then return end
+        if c.__key == "off" and BG.MainDisp(sp) == "two-hand" then return end
+        ns.PlaySound(1)
+        BG.JumpSearch(id, "item")
+    end)
+    c.detBt:SetScript("OnLeave", function()
+        if not (c.IsMouseOver and c:IsMouseOver()) then c.detBt:Hide() end
+    end)
     c:SetScript("OnEnter", function(self)
         if self.__huiCard then ns.hui.HuiCardState(self, "hover") end
         local sp = SpecRec()
         local id = CurItem(sp, self.__key)
         if id and not (self.__key == "off" and BG.MainDisp(sp) == "two-hand") then
             ItemTip(self, id)
+            if self.detBt then self.detBt:Show() end
+        elseif self.detBt then
+            self.detBt:Hide()
         end
     end)
     c:SetScript("OnLeave", function(self)
         if self.__huiCard then ns.hui.HuiCardState(self, self.__sel and "hover" or "norm") end
-        TipOff()
+        if not (self.IsMouseOver and self:IsMouseOver()) then
+            TipOff()
+            if self.detBt then self.detBt:Hide() end
+        end
     end)
     return c
 end
