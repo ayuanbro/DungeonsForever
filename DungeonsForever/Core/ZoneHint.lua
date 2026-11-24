@@ -63,7 +63,10 @@ local function CFG()
     if tonumber(c.tentText) == nil then c.tentText = 1 end
     if c.carrot == nil then c.carrot = true end
     if c.carrot == false and c.carrotAuto == nil then c.carrotAuto = false; c.carrot = true end
-    if c.carrotAuto == nil then c.carrotAuto = true end
+    if c.carrotAutoInit ~= 2 then
+        c.carrotAutoInit = 2
+        c.carrotAuto = false
+    end
     if c.voice == nil then c.voice = false end
     if c.voiceInit ~= 2 then
         c.voiceInit = 2
