@@ -3962,15 +3962,11 @@ function M.GotoQuest(qid, inWorld)
         if M.curId and ns.ShowDungeonDetail then ns.ShowDungeonDetail(M.curId) end
     end
     if not U then return end
-    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
-    local qsd = (type(row) == "table") and row[2] or nil
-    if (qsd == "A" or qsd == "H") and U.dungeonQSide ~= qsd then U.dungeonQSide = qsd end
-    U.dungeonQView = "list"
-    U.dungeonQFlow = nil
-    U.dungeonQuestSel = qid
-    U.dungeonQListKey = nil
     if U.SetDungeonTab then
         pcall(U.SetDungeonTab, U, "quest")
+    end
+    if U.SelectDungeonQuest then
+        U:SelectDungeonQuest(qid)
     elseif U.RenderDungeonQuests then
         U:RenderDungeonQuests()
     end
@@ -5216,9 +5212,10 @@ local function wpPinAcquire(canvas)
                 end
             end
             if not dk then return end
-            U.dungeonQuestSel = qid
             if ns.ShowDungeonDetail then ns.ShowDungeonDetail(dk) end
             if U.SetDungeonTab then U:SetDungeonTab("quest") end
+            if U.SelectDungeonQuest then U:SelectDungeonQuest(qid) end
+            M.QuestScrollTo(qid)
             ns.PlaySound(1)
         end)
     end

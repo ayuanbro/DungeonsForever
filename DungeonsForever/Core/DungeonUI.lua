@@ -5954,6 +5954,28 @@ function U:SetQuestSide(key)
     ns.PlaySound(1)
 end
 
+function U:SelectDungeonQuest(qid)
+    if not qid then return end
+    local row = DG.QuestRowByID and DG.QuestRowByID(qid)
+    local side = (type(row) == "table") and row[2] or nil
+    if side ~= "A" and side ~= "H" then
+        local ext = ns.EnsureDungeonQuestExtInfo and ns.EnsureDungeonQuestExtInfo() or nil
+        local info = (type(ext) == "table") and ext[qid] or nil
+        side = (type(info) == "table") and info.side or nil
+    end
+    U.dungeonQView = "list"
+    U.dungeonQFlow = nil
+    U.dungeonQDetExt = nil
+    if side == "A" or side == "H" then U.dungeonQSide = side end
+    if U.dungeonQFilter == "todo" and DG.QuestDone and DG.QuestDone(qid) then
+        U.dungeonQFilter = "all"
+    end
+    U.dungeonQuestSel = qid
+    U.dungeonQListKey = nil
+    U.dungeonQDetKey = nil
+    U:RenderDungeonQuests()
+end
+
 function U:ShowDungeonDetail(d)
     if not U.dungeonBuilt then return end
     DG.EnsureDetailBuilt()
