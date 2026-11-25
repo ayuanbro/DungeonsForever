@@ -2663,7 +2663,7 @@ local function BuildRow(parent)
         if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
             local cf = DEFAULT_CHAT_FRAME
             if cf and cf.AddMessage then
-                pcall(cf.AddMessage, cf, "|cffff7a66" .. L["搜索模块未启用，暂时无法跳转"] .. "|r")
+                pcall(cf.AddMessage, cf, "|cffff7a66" .. ns.NotifySearchDown() .. "|r")
             end
             return
         end

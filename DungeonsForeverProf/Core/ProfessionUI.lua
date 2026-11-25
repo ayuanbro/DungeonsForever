@@ -12878,38 +12878,100 @@ PD.__curCntMemo = {}
 
 function PD.CurCounts(d)
     local m = PD.__curCntMemo
-    local c = m[d]
+    local rev = 0
+    local E = ns.ProfEconomy
+    if E and E.ClientStore then
+        local okS, store = pcall(E.ClientStore)
+        if okS and type(store) == "table" then rev = tonumber(store.clientInputRevision) or 0 end
+    end
+    local sig = tostring(PD.qualityKey) .. "|" .. tostring(PD.lvLo) .. "|" .. tostring(PD.lvHi) .. "|" .. tostring(rev)
+    local pool = m[d]
+    if not pool then pool = {} m[d] = pool end
+    local c = pool[sig]
     if c then return c end
     c = {}
+    local nipSet = ns.ProfRecipeNIP
+    local function baseVis(spell)
+        local ok, v = pcall(PD.RecipeVisible, spell)
+        if ok then return v end
+        return true
+    end
     for _, r in ipairs(d.rows or {}) do
-        local ks = PD.CurKeysOfFid(r[13] and r[13][1])
-        if ks then
-            for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+        if PD.QualityHit(r[2]) and PD.LvRowHit(r) then
+            local isNip = nipSet and nipSet[r[1]]
+            local base
+            if not isNip then base = baseVis(r[1]) end
+            local sk = PD.SrcBucketOf(r)
+            if sk and ((sk == PD.SRC_NIP_KEY) or (not r.nip)) then
+                local okb
+                if isNip then okb = (sk == PD.SRC_NIP_KEY) else okb = base end
+                if okb then c[sk] = (c[sk] or 0) + 1 end
+            end
+            if not r.nip then
+                local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+                if ks then
+                    for k in pairs(ks) do
+                        local okb
+                        if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                        if okb then c[k] = (c[k] or 0) + 1 end
+                    end
+                end
+            end
         end
-        local sk = PD.SrcBucketOf(r)
-        if sk then c[sk] = (c[sk] or 0) + 1 end
     end
     if not (d.rows and #d.rows > 0) then
         for _, e in ipairs(d.enchants or {}) do
-            local ek = PD.EnchBucketOf(e)
-            if ek then c[ek] = (c[ek] or 0) + 1 end
-            local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
-            if ks then
-                for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+            if PD.LvStartHit(e[5]) then
+                local isNip = nipSet and nipSet[e[14]]
+                local base
+                if not isNip then base = baseVis(e[14]) end
+                local ek = PD.EnchBucketOf(e)
+                if ek then
+                    local okb
+                    if isNip then okb = (ek == PD.SRC_NIP_KEY) else okb = base end
+                    if okb then c[ek] = (c[ek] or 0) + 1 end
+                end
+                local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
+                if ks then
+                    for k in pairs(ks) do
+                        local okb
+                        if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                        if okb then c[k] = (c[k] or 0) + 1 end
+                    end
+                end
             end
         end
     end
     for _, row in ipairs(d.crafted or {}) do
         local fid = tonumber(row[9])
-        local ks = PD.CurKeysOfFid(fid)
-        for key in pairs(ks or {}) do c[key] = (c[key] or 0) + 1 end
-        local bucket = PD.SrcBucketOf({nip=row.nip,[13]=fid and {fid}})
-        if bucket then c[bucket] = (c[bucket] or 0) + 1 end
+        if PD.QualityHit(row[2]) and PD.LvStartHit(row[4]) then
+            local isNip = nipSet and nipSet[row[1]]
+            local base
+            if not isNip then base = baseVis(row[1]) end
+            local ks = PD.CurKeysOfFid(fid)
+            if ks then
+                for k in pairs(ks) do
+                    local okb
+                    if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                    if okb then c[k] = (c[k] or 0) + 1 end
+                end
+            end
+            local bucket = PD.SrcBucketOf({nip=row.nip,[13]=fid and {fid}})
+            if bucket then
+                local okb
+                if isNip then okb = (bucket == PD.SRC_NIP_KEY) else okb = base end
+                if okb then c[bucket] = (c[bucket] or 0) + 1 end
+            end
+        end
     end
     if d.favor and #d.favor > 0 then
-        c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
+        local fn = 0
+        for _, f in ipairs(d.favor) do
+            if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) then fn = fn + 1 end
+        end
+        if fn > 0 then c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + fn end
     end
-    m[d] = c
+    pool[sig] = c
     return c
 end
 
@@ -12935,8 +12997,28 @@ function PD.CurName(id)
     return fb, ic
 end
 
-local function RecipeCounts(list, spellIndex, groupIndex)
+local function RecipeCounts(list, spellIndex, groupIndex, kind)
     local n, groups = 0, {}
+    if kind == "enchant" then
+        local nip = ns.ProfRecipeNIP
+        for _, e in ipairs(list or {}) do
+            local spell = e[spellIndex]
+            local vis
+            if nip and nip[spell] then
+                vis = false
+            else
+                local ok, v = pcall(PD.RecipeVisible, spell)
+                vis = ok and v or true
+            end
+            if vis and PD.LvStartHit(e[5]) then
+                n = n + 1
+                local key = tostring(e[groupIndex] or "")
+                if key == "" then key = L["其他"] end
+                groups[key] = (groups[key] or 0) + 1
+            end
+        end
+        return n, groups
+    end
     for _, r in ipairs(list or {}) do
         if (not r.nip) and not (ns.ProfRecipeNIP and ns.ProfRecipeNIP[r[spellIndex]]) then
             n = n + 1
@@ -12974,7 +13056,7 @@ function PD.RecipeTypeItems(d)
     local items = {}
     if not d then return items end
     local rowsN, rowGroups = RecipeCounts(d.rows, 1, 4)
-    local enchN, enchantGroups = RecipeCounts(d.enchants, 14, 3)
+    local enchN, enchantGroups = RecipeCounts(d.enchants, 14, 3, "enchant")
     if rowsN > 0 then
         items[#items + 1] = { v = "all", text = format(L["全部 %d"], rowsN) }
         for _, g in ipairs(d.groups or {}) do
@@ -13150,7 +13232,7 @@ function PD.RecipeTool(d)
     if d.rows and #d.rows > 0 then
         total = RecipeCounts(d.rows, 1, 4)
     else
-        total = RecipeCounts(d.enchants, 14, 3)
+        total = RecipeCounts(d.enchants, 14, 3, "enchant")
     end
     local tool = {}
     local allOn = (PD.moneyKey == nil and PD.toolKey == "all" and PD.qualityKey == nil) or false
@@ -13416,6 +13498,53 @@ function PD.ScanRecipe()
     return n, maxW
 end
 
+function PD.RecipeFullCount(d)
+    if not d then return 0 end
+    local key = PD.toolKey
+    local n = 0
+    if PD.moneyKey ~= nil then
+        for _, e in ipairs(d.enchants or {}) do
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        for _, c in ipairs(d.crafted or {}) do
+            local fid = tonumber(c[9])
+            if PD.RowCurHit({nip=c.nip,[13]=fid and {fid}}) and PD.QualityHit(c[2])
+               and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then n = n + 1 end
+        end
+        if PD.moneyKey == PD.FAVOR_CURID then
+            for _, f in ipairs(d.favor or {}) do
+                if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) then n = n + 1 end
+            end
+        end
+        return n
+    end
+    if key == "__enchant" then
+        for _, e in ipairs(d.enchants or {}) do
+            if PD.EnchCurHit(e, nil) and PD.RecipeVisible(e[14]) and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        return n
+    end
+    if d.enchants and #d.enchants > 0 and not (d.rows and #d.rows > 0)
+       and key ~= "__crafted" and key ~= "__rest" then
+        local want
+        if key ~= "all" then want = tostring(key) end
+        for _, e in ipairs(d.enchants or {}) do
+            local g = tostring(e[3] or "")
+            if g == "" then g = L["其他"] end
+            if ((not want) or g == want) and PD.EnchCurHit(e, nil) and PD.RecipeVisible(e[14])
+               and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        return n
+    end
+    if key == "__crafted" then
+        for _, c in ipairs(d.crafted or {}) do
+            if PD.QualityHit(c[2]) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then n = n + 1 end
+        end
+        return n
+    end
+    return n
+end
+
 function PD.RowsRecipe(rows)
     local d = RGet(PD.cur)
     if not d and PD.cur=="first-aid" then
@@ -13443,7 +13572,11 @@ function PD.RowsRecipe(rows)
         PD.RenderProgressStart(nil)
     end
     local realN, maxW = PD.ScanRecipe()
-    PD.__recipeTotal = realN
+    local fullN
+    if not realN and not (d.rows and #d.rows > 0) and not (PD.searchQ and PD.searchQ ~= "") then
+        fullN = PD.RecipeFullCount(d)
+    end
+    PD.__recipeTotal = fullN or realN
     local list
     if realN then
         if PD.__renderProg then PD.__renderProg.total = #(d.rows or {}) end

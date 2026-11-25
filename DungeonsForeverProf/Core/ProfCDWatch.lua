@@ -65,7 +65,7 @@ local function todoOns()
     return p.cdTodoOn
 end
 
-local TODO_DEF = { [17187] = true, [1317279] = true }
+local TODO_DEF = { [17187] = true, [1317279] = true, [18560] = true }
 
 function W.TodoOn(spell)
     local v = todoOns()[spell]

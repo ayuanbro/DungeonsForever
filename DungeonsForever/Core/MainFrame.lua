@@ -59,6 +59,68 @@ ns.MainFrame = f
 ns.TalentSimFrame = f
 
 do
+    local toast
+    local toastText
+
+    function ns.ShowTopToast(text)
+        if not f then return end
+        if type(text) ~= "string" or text == "" then return end
+        if not toast then
+            toast = CreateFrame("Frame", nil, f, "BackdropTemplate")
+            toast:SetHeight(28)
+            toast:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 10, 8)
+            toast:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -10, 8)
+            toast:SetFrameLevel(f:GetFrameLevel() + 200)
+            toast:EnableMouse(false)
+            toast:SetAlpha(0)
+            local amber = { 0.30, 0.21, 0.06, 0.97 }
+            if ns.hui and ns.hui.BuildRoundedBG then
+                ns.hui.BuildRoundedBG(toast, 8, amber, "both", true)
+            else
+                toast:SetBackdrop({
+                    bgFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeFile = "Interface\\Buttons\\WHITE8x8",
+                    edgeSize = 1,
+                })
+                toast:SetBackdropColor(amber[1], amber[2], amber[3], amber[4])
+                toast:SetBackdropBorderColor(1, 0.82, 0.35, 0.9)
+            end
+            toastText = toast:CreateFontString(nil, "OVERLAY")
+            toastText:SetFont(ns.FONT, 13, "")
+            toastText:SetPoint("LEFT", toast, "LEFT", 16, 0)
+            toastText:SetPoint("RIGHT", toast, "RIGHT", -16, 0)
+            toastText:SetJustifyH("CENTER")
+            toastText:SetTextColor(1, 0.90, 0.62)
+            toast:SetScript("OnUpdate", function(self, elapsed)
+                local target = (self.__fadingOut and 0) or 1
+                local a = self:GetAlpha() or 0
+                local d = elapsed / 0.28
+                if a < target then
+                    a = math.min(target, a + d)
+                elseif a > target then
+                    a = math.max(target, a - d)
+                end
+                self:SetAlpha(a)
+            end)
+        end
+        toast.__ver = (toast.__ver or 0) + 1
+        local ver = toast.__ver
+        toast.__fadingOut = false
+        toastText:SetText(text)
+        toast:SetAlpha(0)
+        toast:Show()
+        C_Timer.After(5, function()
+            if toast.__ver ~= ver then return end
+            toast.__fadingOut = true
+            C_Timer.After(0.4, function()
+                if toast.__ver ~= ver then return end
+                toast:Hide()
+            end)
+        end)
+    end
+end
+
+do
     if ns.hui and ns.hui.SkinPopup then
         ns.hui.SkinPopup(f, 8, nil, ns.hui.layer and ns.hui.layer.L0 or nil)
     else
@@ -923,7 +985,6 @@ settingsBtn:SetScript("OnClick", function()
         if ns.LootFilterUI and ns.LootFilterUI.CloseConfig then ns.LootFilterUI:CloseConfig() end
         if ns.CloseExploreMapSettings then ns.CloseExploreMapSettings() end
         if ns.CloseQuestPinSettings then ns.CloseQuestPinSettings() end
-        if ns.CloseBisSettings then ns.CloseBisSettings() end
     end
     if show and ns.QuickBar then ns.QuickBar:SyncSettings() end
     if show then BuildTipCard() end
@@ -934,7 +995,7 @@ settingsBtn:SetScript("OnClick", function()
     SyncSettingsGlyph()
 end)
 
-local ENH_CARD_H = 110
+local ENH_CARD_H = 130
 
 settingsPop = CreateFrame("Frame", nil, f, "BackdropTemplate")
 settingsPop:SetFrameLevel(512)
@@ -1139,6 +1200,18 @@ local mapToggle
 local instanceMapToggle
 local zoneToggle
 local legacyToggle
+local bgArrowToggle
+local bgArrowScope
+
+local function BagScopeShort()
+    local s = ns.BagArrow and ns.BagArrow.Scope and ns.BagArrow.Scope() or nil
+    if s == "all" then
+        return L["任一专精"]
+    elseif s == "manual" then
+        return L["跟随选择"]
+    end
+    return L["当前天赋"]
+end
 
 local function SpellBlocked()
     return (ns.SpellTabsTaken and ns.SpellTabsTaken()) and true or false
@@ -1170,6 +1243,25 @@ local function SyncEnhCard()
     end
     if legacyToggle then
         legacyToggle:SetChecked((ns.LegacyEnhOn and ns.LegacyEnhOn()) and true or false)
+    end
+    if bgArrowToggle then
+        local on = (ns.BagArrow and ns.BagArrow.On and ns.BagArrow.On()) and true or false
+        bgArrowToggle:SetChecked(on)
+        if ns.BagArrow then
+            bgArrowToggle:Enable()
+            bgArrowToggle:SetAlpha(1)
+        else
+            bgArrowToggle:Disable()
+            bgArrowToggle:SetAlpha(0.4)
+        end
+    end
+    if bgArrowScope then
+        if ns.BagArrow then
+            bgArrowScope:Show()
+        else
+            bgArrowScope:Hide()
+        end
+        if bgArrowScope.lbl then bgArrowScope.lbl:SetText(BagScopeShort()) end
     end
 end
 
@@ -1254,6 +1346,16 @@ function BuildEnhCard()
     zoneToggle = EnhCell(card, 113, -58, L["地图待办"], L["进入地图时在屏幕左侧显示待办角标"])
     legacyToggle = EnhCell(card, 2, -82, L["传承点增强"], L["在原生传承界面增加推荐加点卡片与方案页"])
     instanceMapToggle = EnhCell(card, 113, -82, L["副本内地图"], L["进入副本后用手册地图替换原生副本地图，关闭则保留原生副本地图"])
+    bgArrowToggle = EnhCell(card, 2, -106, L["背包提升箭头"], L["在背包/银行物品图标上显示相对当前配装的提升箭头"])
+    bgArrowScope = ns.CreateButton(card)
+    do
+        local afs = bgArrowScope:GetFontString()
+        if afs then afs:SetFont(ns.FONT, 14, "") end
+    end
+    bgArrowScope:SetSize(92, 24)
+    bgArrowScope:SetPushedTextOffset(0, 0)
+    bgArrowScope:SetPoint("TOPLEFT", card, "TOPLEFT", 113, -104)
+    bgArrowScope.lbl = bgArrowScope:GetFontString()
 
     spellToggle:SetScript("OnClick", function(self)
         if SpellBlocked() then return end
@@ -1298,6 +1400,31 @@ function BuildEnhCard()
         self:SetChecked(nv)
         if ns.SetLegacyEnh then ns.SetLegacyEnh(nv) end
         SyncEnhCard()
+    end)
+    bgArrowToggle:SetScript("OnClick", function(self)
+        if not (ns.BagArrow and ns.BagArrow.SetOn and ns.BagArrow.On) then return end
+        ns.PlaySound(1)
+        local nv = not ns.BagArrow.On()
+        self:SetChecked(nv)
+        ns.BagArrow.SetOn(nv)
+        SyncEnhCard()
+    end)
+    bgArrowScope:SetScript("OnClick", function()
+        if not (ns.BagArrow and ns.BagArrow.CycleScope) then return end
+        ns.PlaySound(1)
+        ns.BagArrow.CycleScope()
+        SyncEnhCard()
+    end)
+    bgArrowScope:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(L["作用范围"], 1, 1, 1, true)
+        local full = (ns.BisModule and ns.BisModule.ArrowScopeText and ns.BisModule.ArrowScopeText()) or BagScopeShort()
+        GameTooltip:AddLine(full, 0.78, 0.80, 0.84, true)
+        GameTooltip:Show()
+    end)
+    bgArrowScope:SetScript("OnLeave", function()
+        GameTooltip:Hide()
     end)
     SyncEnhCard()
 end
@@ -1621,7 +1748,6 @@ function ns.OpenTipSettings()
     if ns.LootFilterUI and ns.LootFilterUI.CloseConfig then ns.LootFilterUI:CloseConfig() end
     if ns.CloseExploreMapSettings then ns.CloseExploreMapSettings() end
     if ns.CloseQuestPinSettings then ns.CloseQuestPinSettings() end
-    if ns.CloseBisSettings then ns.CloseBisSettings() end
     if ns.QuickBar then ns.QuickBar:SyncSettings() end
     BuildTipCard()
     BuildAppearanceCard()

@@ -15,6 +15,7 @@ local function DB()
         db.ui.bagCleanup = b
     end
     if b.on == nil then b.on = true end
+    if b.hideEmpty == nil then b.hideEmpty = true end
     if tonumber(b.minFree) == nil then b.minFree = 10 end
     if b.confirm == nil then b.confirm = true end
     if type(b.keep) ~= "table" then b.keep = {} end

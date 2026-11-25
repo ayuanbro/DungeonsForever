@@ -89,6 +89,23 @@ function ns.ModuleOn(tabKey)
     return ns.AddonLoaded(m.addon)
 end
 
+function ns.QuestSearchDownText()
+    local L = ns.L
+    if not ns.AddonLoaded("DungeonsForeverQuest") then
+        return L["无法跳转到搜索：搜索模块（DungeonsForeverQuest）未启用，请在插件列表中启用后再试"]
+    end
+    if not ns.QuestieOn() then
+        return L["无法跳转到搜索：本功能依赖 Questie 任务插件（含 QuestieDB），请安装并启用后再试"]
+    end
+    return L["搜索模块未启用，暂时无法跳转"]
+end
+
+function ns.NotifySearchDown()
+    local t = ns.QuestSearchDownText()
+    if ns.ShowTopToast then ns.ShowTopToast(t) end
+    return t
+end
+
 function ns.ModuleDesc(tabKey)
     return ns.MODULE_BY_TAB[tabKey]
 end

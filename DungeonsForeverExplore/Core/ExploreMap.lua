@@ -1033,6 +1033,7 @@ function ns.ExploreMapRefresh()
     local size = (c.pinSize or 20) / scale
 
     local pinLevel = math.max((canvas:GetFrameLevel() or 0) + 7000, artTopLevel() + 1)
+    if ns.MapPinLevel then pinLevel = ns.MapPinLevel(pinLevel) end
     local subMap = isSubMap(disp)
     local showHere = c.showPins == true
         and (c.showZonePins ~= false or not subMap)
@@ -1142,7 +1143,9 @@ function ns.ExploreMapRefresh()
                 p.dotEdge:ClearAllPoints()
                 p.dotEdge:SetPoint("CENTER", p, "TOPRIGHT", -di, -di)
                 p:SetPoint("CENTER", canvas, "TOPLEFT", flat[i] / 100 * w, -flat[i + 1] / 100 * h)
-                p:SetFrameLevel(canvas:GetFrameLevel() + 7005)
+                local glvl = canvas:GetFrameLevel() + 7005
+                if ns.MapPinLevel then glvl = ns.MapPinLevel(glvl) end
+                p:SetFrameLevel(glvl)
                 p:Show()
                 graves[#graves + 1] = p
             end

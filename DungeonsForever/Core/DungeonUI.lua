@@ -7705,6 +7705,7 @@ DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_BADGE_PROF_BG = { 0.62, 0.36, 0.18, 1 }
 DG.Q_BADGE_ELITE_BG = { 0.85, 0.45, 0.10, 1 }
 DG.Q_BADGE_T05_BG = { 0.36, 0.24, 0.55, 1 }
+DG.Q_BADGE_NOREC_BG = { 0.55, 0.07, 0.07, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceOK(qid)
@@ -8091,6 +8092,11 @@ end
 function DG.IsT05Quest(id)
     local ex = ns.EnsureDungeonQuestExtInfo()[id]
     return (ex and ex.t05 == true) or false
+end
+
+function DG.IsNoRecQuest(id)
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
+    return (ex and ex.norec == true) or false
 end
 
 function DG.QuestList(d)
@@ -8781,6 +8787,7 @@ function U:RenderDungeonQuests()
             r.raceB = DG.MakeBadge(r, DG.Q_BADGE_RACE_BG)
             r.profB = DG.MakeBadge(r, DG.Q_BADGE_PROF_BG)
             r.t05B = DG.MakeBadge(r, DG.Q_BADGE_T05_BG)
+            r.norecB = DG.MakeBadge(r, DG.Q_BADGE_NOREC_BG)
             r.meta = MakeFS(r, DG.Q_FS_META, C_GREY, "RIGHT")
             r.meta:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -(DG.Q_ROW_H - DG.Q_FS_META) / 2 - 1)
             r:SetScript("OnEnter", function(self)
@@ -8861,6 +8868,11 @@ function U:RenderDungeonQuests()
                 local bmax = DG.Q_X_LOC - 4
                 local bx = DG.Q_X_NAME + FSW(r.name) + DG.Q_BADGE_GAP
                 local ci = 0
+                if hasName and DG.IsNoRecQuest(q[1]) then
+                    bx = DG.PlaceBadge(r.norecB, bx, L["不推荐"], bmax)
+                else
+                    r.norecB:Hide()
+                end
                 if hasName and DG.IsT05Quest(q[1]) then
                     bx = DG.PlaceBadge(r.t05B, bx, L["T0.5"], bmax)
                 else

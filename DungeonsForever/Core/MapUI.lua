@@ -5255,6 +5255,33 @@ local function wpCfg()
     return c
 end
 
+function M.PinsLayer()
+    return wpCfg().layer
+end
+
+function M.SetPinsLayer(v)
+    local c = wpCfg()
+    c.layer = (v == "below") and "below" or "above"
+    c.layerVer = 2
+    if M.SyncWorldQuestPins then pcall(M.SyncWorldQuestPins) end
+    if ns.MapWorldModule and ns.MapWorldModule.RefreshPins then pcall(ns.MapWorldModule.RefreshPins) end
+    if ns.ExploreMapRefresh then pcall(ns.ExploreMapRefresh) end
+    if ns.SyncQuestPinIcon then pcall(ns.SyncQuestPinIcon) end
+    return c.layer
+end
+
+function M.TogglePinsLayer()
+    return M.SetPinsLayer(M.PinsLayer() == "above" and "below" or "above")
+end
+
+function ns.MapPinLevel(natural)
+    if type(natural) ~= "number" then return natural end
+    if M.PinsLayer() ~= "above" and natural > WP_LAYER_BELOW then
+        return WP_LAYER_BELOW
+    end
+    return natural
+end
+
 local wpDlvCache
 local function wpDlv()
     if wpDlvCache then return wpDlvCache end
@@ -5788,7 +5815,7 @@ local function wpCreatePanel()
             { "below", L["Questie 之下"] },
         },
             function() return wpCfg().layer end,
-            function(v) wpCfg().layer = v end)
+            function(v) M.SetPinsLayer(v) end)
         syncers[#syncers + 1] = function() row:sync() end
     end
     f.syncAll = function()
