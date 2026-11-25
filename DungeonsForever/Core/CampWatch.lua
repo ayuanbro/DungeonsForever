@@ -176,12 +176,19 @@ local function CdText(rem)
     return string.format(L["冷却 %d 分钟"], m)
 end
 
+local function Ignored(kind, id)
+    local Z = ns.ZoneHint
+    if not (Z and Z.IsIgnored) then return false end
+    local key = (Z.ItemKey and Z.ItemKey(kind, id)) or (kind .. ":" .. tostring(id))
+    return Z.IsIgnored(key) == true
+end
+
 function C.Rows()
     local st = C.State()
     if not st or Dead() then return nil end
     local c = CFG()
     local out = {}
-    if c.camp ~= false and st.near and not st.boosted then
+    if c.camp ~= false and st.near and not st.boosted and not Ignored("camp", NEARBY) then
         local own = OwnTent()
         local cd = own and (C.TentCd() or 0) or 0
         local row = {
@@ -204,7 +211,7 @@ function C.Rows()
         end
         out[#out + 1] = row
     end
-    if c.renew ~= false and st.boosted and st.rem and st.rem <= RENEW_SECS then
+    if c.renew ~= false and st.boosted and st.rem and st.rem <= RENEW_SECS and not Ignored("campren", BOOSTED) then
         local mins = math.floor(st.rem / 60)
         if mins < 1 then mins = 1 end
         out[#out + 1] = {
