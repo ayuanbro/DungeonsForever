@@ -7303,7 +7303,10 @@ function DG.QuestObjectiveList(id)
     local out = {}
     for _, o in ipairs(list) do
         if type(o) == "table" and type(o.text) == "string" and o.text ~= "" then
-            out[#out + 1] = { o.text, tonumber(o.numFilled) or 0, tonumber(o.numRequired) or 0 }
+            local need = tonumber(o.numRequired) or 0
+            local done = tonumber(o.numFulfilled)
+            if done == nil then done = (o.finished and need) or 0 end
+            out[#out + 1] = { o.text, done, need }
         end
     end
     if #out == 0 then return nil end
@@ -7630,7 +7633,12 @@ function DG.ShowQuestTip(owner, q)
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and (" #" .. en[1]) or ""
+            GameTooltip:AddLine(L["结束："] .. label .. " " .. nm .. idp, 0.75, 0.75, 0.75, true)
+        elseif en then
             local txt = (en[2] and en[2] ~= "" and en[2]) or ""
             if en[1] then txt = (txt ~= "" and (txt .. " #" .. en[1]) or ("#" .. en[1])) end
             if (not en[1]) and DG.Q_END_OBJ[q[1]] == true and txt ~= "" then
@@ -9058,6 +9066,11 @@ DG.Q_END_OBJ = {
     [2953] = true,
     [3373] = true,
     [7761] = true,
+}
+
+DG.Q_END_INSTANCE = {
+    [5463] = true,
+    [8945] = true,
 }
 
 function DG.TriggerItemName(s)
@@ -10520,7 +10533,14 @@ function U:RenderQuestDetail()
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and format(" #%d", en[1]) or ""
+            local f = takeKv()
+            f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. label .. " " .. nm .. idp)
+            put(f, 24)
+        elseif en then
             local enid, ename, emap, ex, ey, ezone = en[1], en[2], en[3], en[4], en[5], en[6]
             local endObj = (not enid) and DG.Q_END_OBJ[q[1]] == true
             local txt

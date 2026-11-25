@@ -564,6 +564,7 @@ local function compactRun(run)
     run.progress=nil;run.materialLedger=nil;run.supplements=nil;run.completionDue=nil
     creditCaches[run]=nil
 end
+local inventoryFromPlan
 local function archive(c,slug,reason)
     local run=c.runs[c.active[slug]]
     if run then
@@ -594,10 +595,12 @@ function XP.End(slug,reason)
         job.cancelled=true;job.state.inFlight=false;job.state.status="cancelled";jobs[run.planID]=nil
     end
     local readable=readablePlan(run)
+    local continuationInventory
+    if readable then continuationInventory=select(1,inventoryFromPlan(run,slug)) end
     archive(c,slug,reason or "ended")
     run.status="archived";run.archivedAt=run.archivedAt or now();run.archiveReason=reason or "ended"
     run.endedAt=run.endedAt or now();run.completionDue=nil
-    c.continuation[slug]=readable and {sourcePlanID=run.planID} or nil
+    c.continuation[slug]=readable and {sourcePlanID=run.planID,inventory=continuationInventory} or nil
     if run.originSignature then
         c.endedContracts[slug]=c.endedContracts[slug] or {};c.endedContracts[slug][run.originSignature]=run.planID
     end
@@ -1410,14 +1413,7 @@ function XP.VerifyOutput(slug,id,item,total)
     invalidateCredits(run)
     XP.Sync(slug);changed(run);return true
 end
-function XP.GetContinuation(slug)
-    local c=db();local run=XP.GetRun(slug)
-    if not run then
-        local source=c.preparing[slug] or c.continuation[slug];run=source and c.runs[source.sourcePlanID]
-        if not run and source and source.sourcePlanID then return nil,"historyUnreadable" end
-    end
-    if not run then return {} end
-    if not readablePlan(run) then return nil,"historyUnreadable" end
+inventoryFromPlan=function(run,slug)
     local items={}
     for _,seg in ipairs(steps(run.plan)) do
         local rec=recipe(seg,slug)
@@ -1436,13 +1432,24 @@ function XP.GetContinuation(slug)
     end
     return inventory
 end
+function XP.GetContinuation(slug)
+    local c=db();local run=XP.GetRun(slug);local source
+    if not run then
+        source=c.preparing[slug] or c.continuation[slug]
+        if type(source)=="table" and type(source.inventory)=="table" then return copy(source.inventory) end
+        run=source and c.runs[source.sourcePlanID]
+    end
+    if not run then return {} end
+    if not readablePlan(run) then return {} end
+    return inventoryFromPlan(run,slug)
+end
 function XP.PrepareRecalculate(slug)
     local c=db();local run=XP.GetRun(slug);local seed,reason=XP.GetContinuation(slug)
     if not seed then return nil,nil,reason or "historyUnreadable" end
     local previous=c.preparing[slug]
     local source=c.continuation[slug]
     local preparing={hadActive=run~=nil and run.status=="active" or previous and previous.hadActive or false,
-        sourcePlanID=run and run.planID or previous and previous.sourcePlanID or source and source.sourcePlanID,inventory=copy(seed)}
+        sourcePlanID=run and run.planID or previous and previous.sourcePlanID or (source and type(source.inventory)=="table" and source.sourcePlanID) or nil,inventory=copy(seed)}
     if run then archive(c,slug,"recalculate");compactRun(run);changed(run) end
     c.preparing[slug]=preparing;referencesChanged();pruneArchived(slug)
     if XP.RefreshObservation then XP.RefreshObservation() end;return seed,preparing.sourcePlanID

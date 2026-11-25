@@ -1922,6 +1922,7 @@ ns.DungeonLoot = {
             { 287023, nil, true },
             { 287024, nil, true },
             { 287025, nil, true },
+            { 287026, nil, true },
         } },
     },
     ["sunken_temple"] = {

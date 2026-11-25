@@ -7935,7 +7935,7 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { PD.ScanSnapshotText(true)
             or L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4 }
     end
-    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
+    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 and PD.RecoveryDisplayOn(s) then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         local netTxt = format(L["预计回血 %s · 净成本 %s"],
             PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net))
@@ -7950,6 +7950,12 @@ function PD.PaintLvTiles()
             costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请打开拍卖行完成一次完整扫描后重新计算。"], s.recoveryMissing),
                                           0.95, 0.75, 0.4 }
         end
+    elseif type(s.total) == "number" and not s.referenceOnly and not PD.RecoveryDisplayOn(s)
+        and (s.planVersion == 2 or s.auto == false) then
+        local vendorRec = PD.VendorRecoveryOf(s)
+        local vendorNet = (s.purchaseTotal or s.total or 0) - vendorRec
+        costLines[#costLines + 1] = { format(L["按卖店价估算：回收 %s · 净成本 %s"],
+            PD.RecoveryMoney(vendorRec), PD.RecoveryMoney(vendorNet)), 0.55, 0.85, 0.6 }
     end
     if s.auctionDepthComplete==false then
         costLines[#costLines+1]={L["单价按方案估算，未用逐档行情"],0.7,0.7,0.7}
@@ -8049,13 +8055,13 @@ function PD.PaintLvTiles()
         end
         PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
     end
-    if PD.autoPage ~= "log" and s.residualMass then
+    if PD.autoPage ~= "log" and s.residualMass and PD.RecoveryDisplayOn(s) then
         costLines[#costLines + 1] = { L["拍卖产物按七折估值，NPC卖价不打折。"], 0.7, 0.7, 0.7 }
     end
     if PD.autoPage ~= "log" and s.recoveryOptimized and s.profitPriorityLimit then
         costLines[#costLines + 1] = { L["盈利优先每配方最多20次；多余产物仍计入预计回血。"], 0.7, 0.7, 0.7 }
     end
-    if PD.autoPage ~= "log" and s.recoveryEstimated then
+    if PD.autoPage ~= "log" and s.recoveryEstimated and PD.RecoveryDisplayOn(s) then
         costLines[#costLines + 1] = { L["回血暂按历史数据估算；重新计算可更新。"], 0.95, 0.75, 0.4 }
     end
     if ns.IsForever and PD.ScanModeAdvice() then
@@ -8072,18 +8078,30 @@ function PD.PaintLvTiles()
         if tiles[k].__use then n = n + 1 end
     end
     PD.PlaceCards(n > 0 and n or 1)
-    if PD.autoPage ~= "log" and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
-        local recNet = s.netTotal or ((s.total or 0) - s.recoveryTotal)
-        local netTxt
-        if recNet < 0 then
-            netTxt = format(L["净赚 %s"], PD.MoneyBrief(-recNet))
-        else
-            netTxt = format(L["净成本 %s"], PD.MoneyBrief(recNet))
-        end
+    if PD.autoPage ~= "log" and type(s.total) == "number" and not s.referenceOnly then
+        local recTotal = tonumber(s.recoveryTotal) or 0
         if PD.autoPage == "recovery" then
+            local recNet = s.netTotal or ((s.total or 0) - recTotal)
+            local netTxt = recNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+                or format(L["净成本 %s"], PD.MoneyBrief(recNet))
             PD.SetSub(format(L["成本 %s · %s"], PD.MoneyBrief(s.total or 0), netTxt))
+        elseif PD.RecoveryDisplayOn(s) then
+            if recTotal > 0 then
+                local recNet = s.netTotal or ((s.total or 0) - recTotal)
+                local netTxt = recNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+                    or format(L["净成本 %s"], PD.MoneyBrief(recNet))
+                PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(recTotal), netTxt))
+            else
+                PD.SetSub(nil)
+            end
+        elseif s.planVersion == 2 or s.auto == false then
+            local vendorRec = PD.VendorRecoveryOf(s)
+            local vendorNet = (s.purchaseTotal or s.total or 0) - vendorRec
+            local netTxt = vendorNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-vendorNet))
+                or format(L["净成本 %s"], PD.MoneyBrief(vendorNet))
+            PD.SetSub(format(L["卖店 %s · %s"], PD.MoneyBrief(vendorRec), netTxt))
         else
-            PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(s.recoveryTotal), netTxt))
+            PD.SetSub(nil)
         end
     else
         PD.SetSub(nil)
@@ -14357,6 +14375,21 @@ function PD.CopyRecoverySummary(src)
     s.recoveryFeePercent = src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
     s.saleOutputs = src.saleOutputs
     s.purchaseTotal = src.purchaseTotal or src.total
+    s.recoveryEnabled = src.recoveryEnabled
+end
+
+function PD.RecoveryDisplayOn(s)
+    return PD.Setting("recoveryEnabled", s and s.slug or nil) and true or false
+end
+
+function PD.VendorRecoveryOf(s)
+    local total = 0
+    for _, e in ipairs(s and s.saleOutputs or {}) do
+        local n = tonumber(e.count) or 0
+        local npc = tonumber(e.npcUnit)
+        if n > 0 and npc and npc > 0 then total = total + n * npc end
+    end
+    return total
 end
 
 function PD.RecoverySummaryText(src)
@@ -18173,7 +18206,7 @@ function PD.RowsSettings(rows)
         { k = "recoveryEnabled", name = L["回血模式"],
           desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
           d1 = L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"],
-          d2 = L["关闭：只看采购支出，同时仍显示预计回血与净成本供参考。"] },
+          d2 = L["关闭：只看采购支出；剩余产物按卖店价折算，路线卡第三行显示净成本。"] },
         { k = "autoResidualMass", name = L["产物按大量上架折价"],
           desc = L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"],
           d1 = L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"],

@@ -357,7 +357,7 @@ local function SpecWeights(cls, specId, roleOverride)
             w.HIT_RATING = 0.79
             w.CRIT_RATING = 0.43
             w.HASTE_RATING = 0.2
-            w.MANA_REGENERATION = 1
+            w.MANA_REGENERATION = 0.05
             w.SPELL_POWER = 0.5
             w.SPELL_DAMAGE_DONE = 0.5
             w.HOLY_DAMAGE_DONE = 0.5
@@ -595,7 +595,19 @@ local function SpecWeights(cls, specId, roleOverride)
     if spw and spw.role == role then
         for k, v in pairs(spw) do if k ~= "role" then w[k] = v end end
     end
+    if role ~= "heal" then
+        if (w.MANA_REGENERATION or 0) > 0.05 then w.MANA_REGENERATION = 0.05 end
+        if (w.SPIRIT or 0) > 0.10 then w.SPIRIT = 0.10 end
+    end
     w.PHYSICAL_DAMAGE_DONE = (w.WEAPON_DPS or 0) * 0.385
+    return w
+end
+
+function BG.WeightsFor(cls, tspec)
+    local oc, ot, ow = BG.cls, BG.tspec, BG.wRole
+    BG.cls, BG.tspec, BG.wRole = cls, tspec, nil
+    local w = SpecWeights(cls, BG.spec, RoleOfKey(cls, tspec))
+    BG.cls, BG.tspec, BG.wRole = oc, ot, ow
     return w
 end
 
@@ -1612,6 +1624,22 @@ function BG.InstBuild()
         end
     end
     BG.__instDefs, BG.__instDef, BG.__instItem = defs, def, map
+    if def.unavail then
+        local n = 0
+        local gm = ns.GearModule
+        local srcOf = gm and gm.srcOf
+        local t = ns.GearEraLock
+        if type(t) == "table" then
+            for id, v in pairs(t) do
+                if v == "unavail" and not map[id] then
+                    local so = srcOf and srcOf[id]
+                    local iid = so and so.inst and so.inst.id
+                    if not (type(iid) == "string" and iid ~= "") then n = n + 1 end
+                end
+            end
+        end
+        def.unavail.n = n
+    end
     return defs, def
 end
 
@@ -1917,8 +1945,74 @@ local function GearSrcReady()
     end
 end
 
+function BG.IsT05(id)
+    local t = BG.__t05
+    if not t then
+        t = {}
+        local sets = ns.GearSetData and ns.GearSetData.sets
+        local cat = EnsureCatalog()
+        local nameOf, pref = {}, {}
+        if type(cat) == "table" then
+            for i = 1, #cat do
+                local r = cat[i]
+                local nm = r and r.name
+                if type(nm) == "string" and nm ~= "" then nameOf[r.id] = nm end
+            end
+        end
+        if type(sets) == "table" then
+            for _, sid in ipairs({ 511, 512, 513, 514, 515, 516, 517, 518, 519,
+                                   1778, 1673, 1669, 1676, 1675, 1679, 1671, 1681, 1667 }) do
+                local st = sets[sid]
+                if type(st) == "table" then
+                    local p
+                    for i = 1, #st do
+                        t[st[i]] = true
+                        local nm = nameOf[st[i]]
+                        if nm then
+                            if p == nil then
+                                p = nm
+                            else
+                                local k = 0
+                                local n = #p < #nm and #p or #nm
+                                while k < n and p:byte(k + 1) == nm:byte(k + 1) do k = k + 1 end
+                                p = p:sub(1, k)
+                            end
+                        end
+                    end
+                    if p and #p >= 2 then pref[#pref + 1] = p end
+                end
+            end
+        end
+        if type(cat) == "table" and #pref > 0 then
+            local src = ns.GearSrc
+            for i = 1, #cat do
+                local r = cat[i]
+                local nm = r and r.name
+                local rid = r and r.id
+                if rid and not t[rid] and type(nm) == "string" then
+                    local hit = false
+                    for j = 1, #pref do
+                        if nm:sub(1, #pref[j]) == pref[j] then hit = true break end
+                    end
+                    if hit then
+                        local kind = type(src) == "table" and src[rid] or nil
+                        kind = type(kind) == "string" and (kind:match("^(.-)|") or kind) or ""
+                        if (r.q or 0) >= 3 and (r.ilvl or 0) >= 58
+                            and (kind == "任务奖励" or kind == "任務獎勵" or kind == "Quest reward") then
+                            t[rid] = true
+                        end
+                    end
+                end
+            end
+        end
+        BG.__t05 = t
+    end
+    return t[id] == true
+end
+
 local function UsableAt(id, lv, catReq)
     GearSrcReady()
+    if type(lv) == "number" and lv < 60 and BG.IsT05(id) then return false end
     local _, _, _, _, req = DG.ItemInfo(id)
     if type(req) == "number" and req > 0 and req > lv then return false end
     if type(catReq) == "number" and catReq > lv then return false end
@@ -2619,7 +2713,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 30
+BG.AUTO_GEN_REV = 32
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -3839,6 +3933,7 @@ function FillBwRow(r)
     if not okn then
         BG.needNames = true
         DG.RequestItem(row.item)
+        if type(row.name) == "string" and row.name ~= "" then nm = row.name end
     end
     r.__nmMiss = (not okn) or nil
     r.name:SetText(nm)
@@ -3939,14 +4034,24 @@ local function PaintBrowser()
         BG.baseScore = baseId and ItemScore(baseId, w, nil, aref) or nil
         BG.baseId = baseId
         local pool = {}
+        local searching = BG.search ~= ""
         for _, r in ipairs(mainBoth and BG.CatRowsForMain() or CatRowsFor(rkey)) do
-            local kind = CatKind(r.id)
-            local pass = not (next(BG.srcSet) ~= nil and not BG.srcSet[kind])
-            if pass and (kind == "boss" or kind == "quest" or BG.EraLockOf(r.id)) and not BG.InstPass(r.id) then pass = false end
-            if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
-            if pass and BG.search ~= "" then
-                local nm = string.lower(DG.ItemName(r.id) or "")
-                if not string.find(nm, BG.search, 1, true) then pass = false end
+            local pass
+            if searching then
+                local s1 = string.lower(tostring(r.name or ""))
+                local s2 = string.lower(tostring(DG.ItemName(r.id) or ""))
+                pass = string.find(s1, BG.search, 1, true) ~= nil
+                    or string.find(s2, BG.search, 1, true) ~= nil
+            else
+                local eraKey = BG.EraLockOf(r.id)
+                if eraKey == "unavail" and BG.InstOf(r.id) == "unavail" then
+                    pass = (BG.instSet and BG.instSet.unavail == true) or false
+                else
+                    local kind = CatKind(r.id)
+                    pass = not (next(BG.srcSet) ~= nil and not BG.srcSet[kind])
+                    if pass and (kind == "boss" or kind == "quest" or eraKey) and not BG.InstPass(r.id) then pass = false end
+                    if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
+                end
             end
             if pass then pool[#pool + 1] = r end
         end
@@ -3976,7 +4081,7 @@ local function PaintBrowser()
             if i > cap then break end
             local r = pool[i]
             list[#list + 1] = { item = r.id, q = r.q, cat = true, isWep = isWep,
-                                score = sMap[r] }
+                                name = r.name, score = sMap[r] }
         end
         if not (BG.baseScore and BG.baseScore > 0) then
             local mx

@@ -154,7 +154,7 @@ function BC.NextItem()
 end
 
 function BC.AllItems()
-    return BC.Get(true).items or {}
+    return BC.Get().items or {}
 end
 
 function BC.WhiteList()
@@ -228,8 +228,7 @@ function BC.Card()
     return { card }
 end
 
-function BC.DestroyOne(bag, slot, wantId)
-    if type(InCombatLockdown) == "function" and InCombatLockdown() then return false end
+local function DeleteSlot(bag, slot, wantId)
     local getInfo = Con() and Con().GetContainerItemInfo
     if type(getInfo) ~= "function" then return false end
     local okI, info = pcall(getInfo, bag, slot)
@@ -241,45 +240,48 @@ function BC.DestroyOne(bag, slot, wantId)
     pcall(pick, bag, slot)
     if DeleteCursorItem then pcall(DeleteCursorItem) end
     if CursorHasItem and CursorHasItem() and ClearCursor then pcall(ClearCursor) end
-    BC.Get(true)
-    RefreshBag()
     return true
 end
 
+function BC.DestroyOne(bag, slot, wantId)
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then return false end
+    local ok = DeleteSlot(bag, slot, wantId)
+    BC.Get(true)
+    RefreshBag()
+    return ok
+end
+
 function BC.DestroyCheapest()
-    local d = BC.Get(true)
-    local it = d.items and d.items[1]
+    local it = BC.NextItem()
     if not it then return false end
     return BC.DestroyOne(it.bag, it.slot, it.id)
 end
 
 function BC.DestroyAll(done)
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+        if done then pcall(done) end
+        return
+    end
     local d = BC.Get(true)
     local list = {}
     for _, it in ipairs(d.items) do
         list[#list + 1] = { bag = it.bag, slot = it.slot, id = it.id }
     end
     local i = 0
+    local function finish()
+        BC.Get(true)
+        RefreshBag()
+        RefreshUI()
+        if done then pcall(done) end
+    end
     local function step()
         i = i + 1
         local e = list[i]
-        if not e then
-            BC.Get(true)
-            RefreshBag()
-            RefreshUI()
-            if done then pcall(done) end
-            return
-        end
-        if type(InCombatLockdown) == "function" and InCombatLockdown() then
-            BC.Get(true)
-            RefreshBag()
-            RefreshUI()
-            if done then pcall(done) end
-            return
-        end
-        BC.DestroyOne(e.bag, e.slot, e.id)
+        if not e then finish() return end
+        if type(InCombatLockdown) == "function" and InCombatLockdown() then finish() return end
+        DeleteSlot(e.bag, e.slot, e.id)
         if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-            C_Timer.After(0.1, step)
+            C_Timer.After(0.08, step)
         else
             step()
         end
@@ -348,9 +350,21 @@ function BC.ToggleOn()
     return BC.On()
 end
 
-local function OnBagChanged()
+local bagQueued = false
+local function DoBagScan()
     BC.Get(true)
     RefreshBag()
+    RefreshUI()
+end
+local function ScheduleBagScan()
+    if bagQueued then return end
+    bagQueued = true
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0.3, function() bagQueued = false; DoBagScan() end)
+    else
+        bagQueued = false
+        DoBagScan()
+    end
 end
 
 if not BC.__drv then
@@ -358,19 +372,6 @@ if not BC.__drv then
     drv:RegisterEvent("BAG_UPDATE_DELAYED")
     drv:RegisterEvent("PLAYER_ENTERING_WORLD")
     drv:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-    local pending = false
-    drv:SetScript("OnEvent", function(_, ev)
-        if ev == "GET_ITEM_INFO_RECEIVED" then
-            if pending then return end
-            pending = true
-            if C_Timer and C_Timer.After then
-                C_Timer.After(0.5, function() pending = false; OnBagChanged() end)
-            else
-                pending = false
-            end
-            return
-        end
-        OnBagChanged()
-    end)
+    drv:SetScript("OnEvent", function() ScheduleBagScan() end)
     BC.__drv = drv
 end
