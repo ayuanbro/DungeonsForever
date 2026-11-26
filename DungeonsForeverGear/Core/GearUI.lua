@@ -547,8 +547,6 @@ local function PassFilters(r)
     if not IlvlInRange(r) then return false end
     if not UsetypePass(r) then return false end
     if not SrcPass(r[1]) then return false end
-    if ns.BisModule and ns.BisModule.IsT05 and ns.BisModule.IsT05(r[1]) and (UnitLevel("player") or 60) < 60 then return false end
-    if ns.BisModule and ns.BisModule.VendorFacOK and not ns.BisModule.VendorFacOK(r[1]) then return false end
     if G.useType then
         local lv = UnitLevel("player")
         if type(lv) == "number" and lv > 0 then
