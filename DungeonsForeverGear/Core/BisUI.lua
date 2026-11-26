@@ -2177,7 +2177,7 @@ function BG.IsT05(id)
                     if hit then
                         local kind = type(src) == "table" and src[rid] or nil
                         kind = type(kind) == "string" and (kind:match("^(.-)|") or kind) or ""
-                        if (r.q or 0) >= 3 and (r.ilvl or 0) >= 58
+                        if (r.q or 0) >= 3 and (r.ilvl or 0) >= 55
                             and (kind == "任务奖励" or kind == "任務獎勵" or kind == "Quest reward") then
                             t[rid] = true
                         end
@@ -2192,6 +2192,7 @@ end
 
 local function UsableAt(id, lv, catReq)
     GearSrcReady()
+    if BG.IsT05(id) and (UnitLevel("player") or 60) < 60 then return false end
     if type(lv) == "number" and lv < 60 and BG.IsT05(id) then return false end
     local _, _, _, _, req = DG.ItemInfo(id)
     if type(req) == "number" and req > 0 and req > lv then return false end
@@ -2921,7 +2922,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 33
+BG.AUTO_GEN_REV = 35
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)

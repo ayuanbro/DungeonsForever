@@ -2271,6 +2271,41 @@ function DG.EnsureQuestLane()
     U.dungeonQDetName:SetWordWrap(false)
     U.dungeonQDetName:SetWidth(DG.Q_DET_W - 8)
     U.dungeonQDetSt = MakeFS(qdchild, 14, C_GREY, "LEFT")
+    do
+        local sb = NewButton(qdchild, L["跳转搜索"], 88, 24, 14)
+        local tw = sb:GetFontString() and sb:GetFontString():GetStringWidth() or 0
+        if type(tw) ~= "number" or tw <= 0 then tw = 56 end
+        sb:SetWidth(tw + 18)
+        sb:EnableMouseWheel(true)
+        sb:SetScript("OnMouseWheel", function(_, delta)
+            DG.WheelScroll(U.dungeonQDet, U.dungeonQDetChild, delta)
+        end)
+        sb:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(L["在搜索模块中查看这个任务"], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        sb:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        sb:SetScript("OnClick", function(self)
+            local qid = self.__qid
+            if not qid then return end
+            if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
+                if ns.NotifySearchDown then ns.NotifySearchDown() end
+                return
+            end
+            if ns.PlaySound then ns.PlaySound(1) end
+            ns.OpenPage("QuestSearch")
+            local QS = ns.QuestSearchModule
+            if QS and QS.OpenAt then
+                local qn = DG.QuestName and DG.QuestName(qid)
+                if type(qn) ~= "string" or qn == "" then qn = tostring(qid) end
+                QS.OpenAt(qid, "quest", qn)
+            end
+        end)
+        sb:Hide()
+        U.dungeonQDetSearch = sb
+    end
 
     local function questPlate()
         local p = CreateFrame("Frame", nil, detail, "BackdropTemplate")
@@ -9444,6 +9479,7 @@ function DG.HideDetailRows(pool)
     pool.nBadge = 0
     if U.dungeonQDetName then U.dungeonQDetName:Hide() end
     if U.dungeonQDetSt then U.dungeonQDetSt:Hide() end
+    if U.dungeonQDetSearch then U.dungeonQDetSearch:Hide() end
 end
 
 function DG.FlowTakeTxt(child, pool)
@@ -10346,10 +10382,12 @@ function U:RenderQuestDetail()
         U.dungeonQDetGains = nil
         name:ClearAllPoints()
         name:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -DG.Q_PAD)
+        name:SetWidth(DG.Q_DET_W - 8)
         name:SetText(L["点左侧任务查看详情"])
         name:SetTextColor(Unpack(C_GREY))
         name:Show()
         stf:Hide()
+        if U.dungeonQDetSearch then U.dungeonQDetSearch:Hide() end
         child:SetHeight(DG.Q_PAD + 24 + DG.Q_PAD)
         return
     end
@@ -10366,6 +10404,14 @@ function U:RenderQuestDetail()
     name:ClearAllPoints()
     name:SetPoint("TOPLEFT", child, "TOPLEFT", 0, -DG.Q_PAD)
     name:Show()
+    local qsBtn = U.dungeonQDetSearch
+    if qsBtn then
+        qsBtn.__qid = q[1]
+        qsBtn:ClearAllPoints()
+        qsBtn:SetPoint("TOPRIGHT", child, "TOPRIGHT", 0, -DG.Q_PAD)
+        qsBtn:Show()
+        name:SetWidth(detW - 8 - qsBtn:GetWidth() - 8)
+    end
     y = -(DG.Q_PAD + 26)
     stf:SetText(hasName and (L["状态："] .. (DG.Q_STATUS_TAG[st] or "")) or L["暂时没有客户端数据"])
     stf:SetTextColor(Unpack(hasName and col or C_DARKGREY))

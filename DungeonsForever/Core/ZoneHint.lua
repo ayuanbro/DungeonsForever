@@ -1834,18 +1834,18 @@ local function RestedRow(c)
     local sub = L["缺少精神饱满"]
     if buffed then
         if rem == nil or rem >= RESTED_WARN then return nil end
-        if not SleepBagCdReady() then
-            local left = SleepBagCdLeft()
-            restedGen = restedGen + 1
-            if left < rem and type(C_Timer) == "table" and C_Timer.After then
-                local my = restedGen
-                C_Timer.After(left + 1, function()
-                    if my == restedGen then Z.ScheduleSoft(0.1, true) end
-                end)
-            end
-            return nil
-        end
         sub = L["精神饱满即将到期"]
+    end
+    if not SleepBagCdReady() then
+        local left = SleepBagCdLeft()
+        restedGen = restedGen + 1
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            local my = restedGen
+            C_Timer.After(left + 1, function()
+                if my == restedGen then Z.ScheduleSoft(0.1, true) end
+            end)
+        end
+        return nil
     end
     return {
         id = SLEEP_BAG_ITEM, base = SLEEP_BAG_ITEM,
