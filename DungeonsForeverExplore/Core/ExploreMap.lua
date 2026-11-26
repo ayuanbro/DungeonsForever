@@ -165,23 +165,38 @@ end
 
 local function project(uiMap, x, y, disp, pad)
     if not uiMap or not disp then return nil end
-    if uiMap == disp then return x, y end
     local e = pad or 0.005
     local api = _G.OpenMapAPI
-    if type(api) == "table" and type(api.WorldFromMap) == "function"
-        and type(api.MapFromWorld) == "function" and artTopLevel() > 0 then
-        local oku, u, v = pcall(api.WorldFromMap, uiMap, x, y)
-        if oku and u and v then
-            local okm, cx, cy = pcall(api.MapFromWorld, disp, u, v)
-            if okm and type(cx) == "number" and type(cy) == "number" then
+    local stitched = false
+    if type(api) == "table" and type(api.IsStitched) == "function" then
+        local okst, st = pcall(api.IsStitched)
+        stitched = okst and st and true or false
+    end
+    if stitched then
+        local cont, wx, wy = worldPos(uiMap, x, y)
+        if cont and type(wx) == "number" and type(wy) == "number"
+            and type(api.CanvasFromWorldPos) == "function" then
+            local okc, cx, cy = pcall(api.CanvasFromWorldPos, cont, wx, wy)
+            if okc and type(cx) == "number" and type(cy) == "number" then
                 if inMap(cx, cy, math.max(e, 0.05)) then return cx, cy end
                 return nil
             end
         end
+        if type(api.WorldFromMap) == "function" and type(api.MapFromWorld) == "function" then
+            local oku, u, v = pcall(api.WorldFromMap, uiMap, x, y)
+            if oku and u and v then
+                local okm, cx, cy = pcall(api.MapFromWorld, disp, u, v)
+                if okm and type(cx) == "number" and type(cy) == "number" then
+                    if inMap(cx, cy, math.max(e, 0.05)) then return cx, cy end
+                    return nil
+                end
+            end
+        end
     end
-    local cont, wp = worldVec(uiMap, x, y)
-    if cont and wp and C_Map and C_Map.GetMapPosFromWorldPos then
-        local ok, _, p = pcall(C_Map.GetMapPosFromWorldPos, cont, wp, disp)
+    if uiMap == disp then return x, y end
+    local vcont, wp = worldVec(uiMap, x, y)
+    if vcont and wp and C_Map and C_Map.GetMapPosFromWorldPos then
+        local ok, _, p = pcall(C_Map.GetMapPosFromWorldPos, vcont, wp, disp)
         if ok and p and inMap(p.x, p.y, e) then return p.x, p.y end
     end
     if topParent(uiMap) ~= topParent(disp) then return nil end
@@ -1018,6 +1033,7 @@ function ns.ExploreMapRefresh()
     local size = (c.pinSize or 20) / scale
 
     local pinLevel = math.max((canvas:GetFrameLevel() or 0) + 7000, artTopLevel() + 1)
+    if ns.MapPinLevel then pinLevel = ns.MapPinLevel(pinLevel) end
     local subMap = isSubMap(disp)
     local showHere = c.showPins == true
         and (c.showZonePins ~= false or not subMap)
@@ -1127,7 +1143,9 @@ function ns.ExploreMapRefresh()
                 p.dotEdge:ClearAllPoints()
                 p.dotEdge:SetPoint("CENTER", p, "TOPRIGHT", -di, -di)
                 p:SetPoint("CENTER", canvas, "TOPLEFT", flat[i] / 100 * w, -flat[i + 1] / 100 * h)
-                p:SetFrameLevel(canvas:GetFrameLevel() + 7005)
+                local glvl = canvas:GetFrameLevel() + 7005
+                if ns.MapPinLevel then glvl = ns.MapPinLevel(glvl) end
+                p:SetFrameLevel(glvl)
                 p:Show()
                 graves[#graves + 1] = p
             end

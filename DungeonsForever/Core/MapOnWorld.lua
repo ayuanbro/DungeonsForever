@@ -1564,16 +1564,23 @@ local function ensurePinLogo()
     bt.ring:SetSize(54, 54)
     bt.ring:SetPoint("TOPLEFT")
     bt:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
+    bt:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     bt:SetScript("OnEnter", function(self)
         GameTooltip:ClearLines()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine("|T" .. PINLOGO_TEX .. ":18|t " .. L["无限副本手册"], 1, 0.82, 0, true)
         GameTooltip:AddLine(L[pinLogoOn() and "左键：隐藏地图图例" or "左键：显示地图图例"], 0.75, 0.75, 0.75, true)
+        local lay = (ns.MapModule and ns.MapModule.PinsLayer and ns.MapModule.PinsLayer()) or "above"
+        GameTooltip:AddLine(L["右键：切换图例层级（当前：%s）"]:format(L[lay == "above" and "Questie 之上" or "Questie 之下"]), 0.75, 0.75, 0.75, true)
         GameTooltip:Show()
     end)
     bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
     bt:SetScript("OnClick", function(_, button)
-        if button ~= "LeftButton" then return end
+        if button == "RightButton" then
+            if ns.MapModule and ns.MapModule.TogglePinsLayer then pcall(ns.MapModule.TogglePinsLayer) end
+            syncPinLogo()
+            return
+        end
         pinLogoSet(not pinLogoOn())
     end)
     W.pinLogo = bt
@@ -2943,6 +2950,7 @@ function Provider:RefreshAllData()
         if ok2 and type(lv) == "number" then level = lv end
     end
     level = math.max(level, ArtTopLevel())
+    if ns.MapPinLevel then level = ns.MapPinLevel(level) end
     local n = math.min(#groups, PIN_ENTRY_MAX)
     for i = 1, n do
         local g = groups[i]
@@ -3009,6 +3017,7 @@ local function driveEntryPins()
     local sig = table.concat({
         tostring(mapID), tostring(cs), tostring(cw), tostring(ch),
         W.Active() and "1" or "0", tostring(ArtTopLevel()),
+        tostring(ns.MapModule and ns.MapModule.PinsLayer and ns.MapModule.PinsLayer() or "above"),
     }, "|")
     if sig == epSig then return end
     epSig = sig

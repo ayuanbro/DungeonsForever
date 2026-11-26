@@ -1925,6 +1925,7 @@ ns.DungeonLoot = {
             { 287023, nil, true },
             { 287024, nil, true },
             { 287025, nil, true },
+            { 287026, nil, true },
         } },
     },
     ["sunken_temple"] = {
@@ -2085,6 +2086,7 @@ ns.DungeonLoot = {
             { 252869, nil, true },
             { 251405, nil, true },
             { 273119, nil, true },
+            { 252871, nil, true },
         } },
     },
     ["blackrock_depths"] = {
@@ -2498,6 +2500,7 @@ ns.DungeonLoot = {
         } },
         { "Sabella No-Eyes", "Sabella No-Eyes", "Rare", "269151", {
             { 280084, nil, true },
+            { 280083, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 287032, nil, true },
@@ -3274,7 +3277,10 @@ ns.DungeonLoot = {
             { 280028, nil, true },
             { 280029, nil, true },
         } },
-        { "King Op", "King Op", "Rare", "261993", {} },
+        { "King Op", "King Op", "Rare", "261993", {
+            { 280026, nil, true },
+            { 280027, nil, true },
+        } },
         { "Snowtalon", "Snowtalon", "", "262297", {
             { 280027, nil, true },
             { 280026, nil, true },

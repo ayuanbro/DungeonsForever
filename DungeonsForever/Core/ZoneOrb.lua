@@ -16,6 +16,7 @@ local GAP = 8
 local SLIDE = 26
 local CLOSE_S = 36
 local SIDE_S = 29
+local STATUS_CARD_H = 84
 
 local FOOD_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_food.ogg"
 local RESTED_CUE = "Interface\\AddOns\\DungeonsForever\\Media\\Voice\\todo_rested.ogg"
@@ -45,15 +46,110 @@ local closePending = false
 local lastN = -1
 local pulseFrame, pulseT = nil, 0
 local orbSizeDirty = false
+O.rareList = {}
+local function StatusCardH()
+    return STATUS_CARD_H
+end
 
 local function Cfg()
     return ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+end
+
+local function StatusName()
+    local db = ns.DB and ns.DB()
+    if db and db.ui and db.ui.statusCard and type(db.ui.statusCard.targetName) == "string" then
+        return db.ui.statusCard.targetName
+    end
+    return ""
+end
+
+local function PingMacroFor(name)
+    return "/cleartarget\n/target " .. name .. "\n/stopmacro [noexists][dead]\n/ping [@target] Attack"
+end
+
+function O.SyncPing()
+    if not orb then return end
+    local name = StatusName()
+    orb.pingTarget = name
+    orb.pingMacro = (name ~= "" and PingMacroFor(name)) or nil
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+        orb.pingDirty = true
+        return
+    end
+    orb.pingDirty = nil
+    if orb.SetAttribute then orb:SetAttribute("macrotext", orb.pingMacro) end
+end
+
+function O.CurDungeonId()
+    if type(GetInstanceInfo) ~= "function" then return nil end
+    local ok, nm, itype, _, _, _, _, _, iid = pcall(GetInstanceInfo)
+    if not ok then return nil end
+    local inside = (type(itype) == "string" and itype ~= "none") or (type(iid) == "number" and iid > 0)
+    if not inside and type(IsInInstance) == "function" then
+        local ok2, v = pcall(IsInInstance)
+        if ok2 and v then inside = true end
+    end
+    if not inside then return nil end
+    if type(nm) ~= "string" or nm == "" then return nil end
+    local dd = ns.DungeonData and ns.DungeonData.dungeons
+    if type(dd) ~= "table" then return nil end
+    local same = (ns.ZoneHint and ns.ZoneHint.SameName) or function(a, b) return a == b end
+    local pref
+    for i = 1, #dd do
+        local d = dd[i]
+        if type(d) == "table" and d.id then
+            if same(nm, d.name) or same(nm, d.nameEn) then return d.id end
+            if not pref and type(d.name) == "string" and #nm >= 2 and string.find(d.name, nm, 1, true) == 1 then pref = d.id end
+        end
+    end
+    return pref
+end
+
+function O.RareNamesFor(id)
+    local out = {}
+    if not id or not (ns.MapUI and ns.MapUI.BossesFor) then return out end
+    local bs = ns.MapUI.BossesFor(id)
+    if type(bs) ~= "table" then return out end
+    for i = 1, #bs do
+        local b = bs[i]
+        if b and b.rare and type(b.zh) == "string" and b.zh ~= "" then out[#out + 1] = b.zh end
+    end
+    return out
+end
+
+function O.RotateRare()
+    if #O.rareList == 0 then return end
+    local db = ns.DB and ns.DB()
+    if not db then return end
+    db.ui = db.ui or {}
+    db.ui.statusCard = db.ui.statusCard or {}
+    local sc = db.ui.statusCard
+    local cur = sc.targetName or ""
+    local idx
+    for i = 1, #O.rareList do
+        if O.rareList[i] == cur then idx = i break end
+    end
+    if not (cur == "" or idx) then return end
+    local ni = (idx or 0) % #O.rareList + 1
+    sc.targetName = O.rareList[ni]
+    sc.rareIdx = ni
+    if O.SyncPing then O.SyncPing() end
+    if O.Refresh then O.Refresh() end
 end
 
 local function InCombat()
     return type(InCombatLockdown) == "function" and InCombatLockdown()
 end
 O.InCombat = InCombat
+
+local function IsEditingText()
+    if type(cards) ~= "table" then return false end
+    for i = 1, #cards do
+        local c = cards[i]
+        if c and c.edit and c.edit.HasFocus and c.edit:HasFocus() then return true end
+    end
+    return false
+end
 
 local VOICE_SEC = {
     ["todo_food.ogg"] = 1.45,
@@ -243,6 +339,7 @@ local function CombatHide()
 end
 
 local function Close()
+    if IsEditingText() then return end
     if not panel or not panel:IsShown() then
         closePending = false
         return
@@ -299,6 +396,7 @@ local function StartHideTimer(keep)
         if my ~= hideToken then return end
         if foodMenu and foodMenu:IsShown() then return end
         if opts and opts:IsShown() then return end
+        if IsEditingText() then return end
         if panel and panel:IsShown() and not hovered and not PanelHover() then Close() end
     end)
 end
@@ -444,8 +542,114 @@ local function MakeCard(i)
     card.stat:SetWidth(150)
     card.stat:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
     card.stat:Hide()
+    card.status = card:CreateFontString(nil, "OVERLAY")
+    card.status:SetFont(ns.FONT, 14, "")
+    card.status:SetPoint("LEFT", card.title, "RIGHT", 8, 0)
+    card.status:SetJustifyH("LEFT")
+    card.status:SetWordWrap(false)
+    card.status:SetWidth(150)
+    card.status:SetTextColor(DIM[1], DIM[2], DIM[3])
+    card.status:Hide()
+    card.edit = CreateFrame("EditBox", nil, card, "BackdropTemplate")
+    card.edit:SetHeight(22)
+    card.edit:SetAutoFocus(false)
+    card.edit:SetFont(ns.FONT, 12, "")
+    card.edit:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    card.edit:SetTextInsets(6, 6, 0, 0)
+    card.edit:SetPoint("TOPLEFT", card, "TOPLEFT", 50, -30)
+    card.edit:SetPoint("TOPRIGHT", card, "TOPRIGHT", -10, -30)
+    if ns.hui and ns.hui.SkinPopup and ns.hui.layer then
+        ns.hui.SkinPopup(card.edit, 6, "both", ns.hui.layer.L1)
+    end
+    card.edit.ph = card.edit:CreateFontString(nil, "OVERLAY")
+    card.edit.ph:SetFont(ns.FONT, 12, "")
+    card.edit.ph:SetPoint("LEFT", card.edit, "LEFT", 7, 0)
+    card.edit.ph:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
+    card.edit.ph:SetText(L["输入目标名字"])
+    card.edit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    card.edit:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    card.edit:SetScript("OnTextChanged", function(self)
+        if self.__dfSet then return end
+        local name = (self:GetText() or ""):match("^%s*(.-)%s*$") or ""
+        if name == "" then self.ph:Show() else self.ph:Hide() end
+        if card.__dfStatusShown and card.status then
+            card.status:SetText((name ~= "" and name) or L["未设置"])
+        end
+        local db = ns.DB and ns.DB()
+        if db then
+            db.ui = db.ui or {}
+            db.ui.statusCard = db.ui.statusCard or {}
+            db.ui.statusCard.targetName = name
+        end
+        if O.SyncPing then O.SyncPing() end
+    end)
+    card.edit:Hide()
+    card.guide = card:CreateFontString(nil, "OVERLAY")
+    card.guide:SetFont(ns.FONT, 12, "")
+    card.guide:SetPoint("TOPLEFT", card, "TOPLEFT", 50, -56)
+    card.guide:SetJustifyH("LEFT")
+    card.guide:SetWordWrap(false)
+    card.guide:SetWidth(PANEL_W - PAD * 2 - 60)
+    card.guide:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
+    card.guide:Hide()
     cards[i] = card
     return card
+end
+
+local function PaintStatusCard(card, it)
+    local eb = card.edit
+    if eb and eb.HasFocus and eb:HasFocus() then
+        eb:Show()
+        return StatusCardH()
+    end
+    card.title:SetText(it.title or L["状态卡"])
+    card.text:SetText("")
+    card.text:Hide()
+    card.name:SetText("")
+    card.name:Hide()
+    if card.chip then card.chip:Hide() end
+    card.act:Hide()
+    card.act2:Hide()
+    card.act3:Hide()
+    card.stat:Hide()
+    card.onAct, card.onAct2, card.onAct3 = nil, nil, nil
+    card.hint, card.hint2, card.hint3 = nil, nil, nil
+    card.cardHint = nil
+    card.__dfStatusShown = true
+    card:EnableMouse(false)
+    card:SetScript("OnEnter", nil)
+    card:SetScript("OnLeave", nil)
+    if it.icon then
+        card.icon:SetTexture(it.icon)
+        card.icon:ClearAllPoints()
+        card.icon:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -10)
+        card.icon:Show()
+    else
+        card.icon:Hide()
+    end
+    local name = StatusName()
+    local tw = card.title:GetStringWidth() or 40
+    card.title:SetWidth(tw + 4)
+    card.status:ClearAllPoints()
+    card.status:SetPoint("LEFT", card.title, "RIGHT", 8, 0)
+    local avail = (PANEL_W - PAD * 2) - (50 + tw + 4 + 8) - 10
+    if avail < 40 then avail = 40 end
+    card.status:SetWidth(avail)
+    card.status:SetText((name ~= "" and name) or L["未设置"])
+    card.status:Show()
+    if card.guide then
+        card.guide:SetText(L["填好名字后，右键待办圆球"])
+        card.guide:Show()
+    end
+    eb.__dfSet = true
+    eb:SetText(name)
+    eb.__dfSet = false
+    if name == "" then eb.ph:Show() else eb.ph:Hide() end
+    eb:ClearAllPoints()
+    eb:SetPoint("TOPLEFT", card, "TOPLEFT", 50, -30)
+    eb:SetPoint("TOPRIGHT", card, "TOPRIGHT", -10, -30)
+    eb:Show()
+    return StatusCardH()
 end
 
 local function MakeHead(i)
@@ -488,7 +692,13 @@ Tip = function(owner, title, desc, foot)
     GameTooltip:ClearLines()
     GameTooltip:AddLine(title or "", 1, 1, 1, true)
     AddGray(desc)
-    AddAccent(foot)
+    if type(foot) == "table" then
+        for i = 1, #foot do
+            GameTooltip:AddLine(foot[i], 0.82, 0.86, 0.90, true)
+        end
+    else
+        AddAccent(foot)
+    end
     GameTooltip:Show()
 end
 
@@ -1062,7 +1272,8 @@ local function Layout(res)
                 if c > shown then h = h + 18 end
             else
                 local cardH = CARD_H
-                if list[i] and list[i].btn then cardH = CARD_H + 26 end
+                if list[i] and list[i].statuscard then cardH = StatusCardH()
+                elseif list[i] and list[i].btn then cardH = CARD_H + 26 end
                 h = h + cardH + GAP
             end
         end
@@ -1254,6 +1465,12 @@ local function Layout(res)
         else
             ci = ci + 1
             local card = MakeCard(ci)
+            card.__dfStatusShown = nil
+            if card.edit and not (it and it.statuscard) then card.edit:Hide() end
+            if card.status and not (it and it.statuscard) then card.status:Hide() end
+            if card.guide and not (it and it.statuscard) then card.guide:Hide() end
+            if card.title and not (it and it.statuscard) then card.title:SetWidth(PANEL_W - PAD * 2 - 60) end
+            if card.text and not (it and it.statuscard) then card.text:Show() end
             card.title:SetText(it.title or "")
             card.text:SetText(it.text or "")
             local textH = 14
@@ -1401,6 +1618,9 @@ local function Layout(res)
                 card.act2:Hide()
                 card.act3:Hide()
                 card.stat:Hide()
+            end
+            if it.statuscard then
+                ch = PaintStatusCard(card, it)
             end
             local cardAct = it.onCard or it.useMacro or it.useItem
             card:SetScript("OnMouseUp", nil)
@@ -1576,6 +1796,7 @@ function O.Update(res)
                 if it and it.kind == "bagcleanup" then table.remove(res.items, i) end
             end
             local cards = (BCM and BCM.Card) and BCM.Card() or nil
+            if cards and ns.BagCleanup and ns.BagCleanup.DB and ns.BagCleanup.DB().hideEmpty == true then local b = cards[1]; if b and b.bagcleanup and not b.icon then cards = nil end end
             if cards then
                 for i = #cards, 1, -1 do table.insert(res.items, 1, cards[i]) end
                 res.__bagActive = true
@@ -1584,7 +1805,57 @@ function O.Update(res)
             end
         end
     end
+    do
+        if res and type(res.items) == "table" then
+            local _sc = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+            local _show = (_sc.statusCard ~= false)
+            res.__statusActive = _show
+            O.rareList = {}
+            if _show then
+                local _cid = O.CurDungeonId()
+                if _cid and (_sc.rareTarget ~= false) then O.rareList = O.RareNamesFor(_cid) else O.rareList = {} end
+                local db = ns.DB and ns.DB()
+                if db then
+                    db.ui = db.ui or {}
+                    db.ui.statusCard = db.ui.statusCard or {}
+                    local sc = db.ui.statusCard
+                    if #O.rareList > 0 then
+                        local cur = sc.targetName or ""
+                        local idx
+                        for i = 1, #O.rareList do
+                            if O.rareList[i] == cur then idx = i break end
+                        end
+                        if cur == "" then
+                            sc.targetName = O.rareList[1]
+                            sc.rareIdx = 1
+                        elseif idx then
+                            sc.rareIdx = idx
+                        end
+                    else
+                        sc.rareIdx = 0
+                    end
+                end
+            else
+                local db = ns.DB and ns.DB()
+                if db and db.ui and db.ui.statusCard then db.ui.statusCard.rareIdx = 0 end
+            end
+            for i = #res.items, 1, -1 do
+                local it = res.items[i]
+                if it and it.kind == "statuscard" then table.remove(res.items, i) end
+            end
+            if _show then
+                table.insert(res.items, 1, {
+                    kind = "statuscard",
+                    statuscard = true,
+                    title = L["状态卡"],
+                    icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+                    noChip = true,
+                })
+            end
+        end
+    end
     current = res
+    if O.SyncPing then O.SyncPing() end
     if not badge then return end
     local onc = Cfg()
     local n = (res and res.total) or 0
@@ -1653,7 +1924,13 @@ end
 
 function O.Hide()
     Close()
-    if orb then orb:Hide() end
+    if orb then
+        if type(InCombatLockdown) == "function" and InCombatLockdown() then
+            orb.hidePending = true
+        else
+            orb:Hide()
+        end
+    end
 end
 
 local function InitVoiceBtn()
@@ -1692,7 +1969,7 @@ function O.Init()
         return
     end
 
-    orb = CreateFrame("Button", "DFZoneOrb", UIParent)
+    orb = CreateFrame("Button", "DFZoneOrb", UIParent, "SecureActionButtonTemplate")
     orb:SetSize(ORB_SIZE, ORB_SIZE)
     orb:SetFrameStrata("MEDIUM")
     orb:SetFrameLevel(300)
@@ -1926,7 +2203,7 @@ function O.Init()
 
     InitVoiceBtn()
     opts = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    opts:SetSize(620, 330)
+    opts:SetSize(750, 330)
     opts:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -40)
     opts:SetFrameStrata("DIALOG")
     opts:SetFrameLevel(panel:GetFrameLevel() + 8)
@@ -1978,7 +2255,17 @@ function O.Init()
 
     local COL_STEP = 152
     local colRow = { 0, 0, 0, 0 }
-    local function ColX(col) return 10 + (col - 1) * COL_STEP end
+    local function ColX(col)
+        local x = 10
+        for c = 1, col - 1 do
+            x = x + COL_STEP + ((c == 2 or c == 3) and 33 or 0)
+        end
+        return x
+    end
+    local function CtrlOff(col)
+        if col == 2 or col == 3 then return 168 end
+        return 132
+    end
     local function ColNext(col)
         local y = -34 - colRow[col] * 22
         colRow[col] = colRow[col] + 1
@@ -1993,7 +2280,7 @@ function O.Init()
         h:SetTextColor(FAINT[1], FAINT[2], FAINT[3])
     end
 
-    local function OptRow(col, label, key, tip, vkey)
+    local function OptRow(col, label, key, tip, vkey, rightAlign)
         local y = ColNext(col)
         local bx = ColX(col)
         local t = opts:CreateFontString(nil, "OVERLAY")
@@ -2043,7 +2330,11 @@ function O.Init()
         end
         local cb = CreateFrame("CheckButton", nil, opts)
         cb:SetSize(36, 20)
-        cb:SetPoint("TOPRIGHT", opts, "TOPLEFT", bx + 132, y + 1)
+        if rightAlign then
+            cb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -12, y + 1)
+        else
+            cb:SetPoint("TOPRIGHT", opts, "TOPLEFT", bx + CtrlOff(col), y + 1)
+        end
         if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(cb) end
         cb:SetScript("OnClick", function(self)
             ns.PlaySound(1)
@@ -2088,6 +2379,55 @@ function O.Init()
     OptRow(2, L["已接任务提醒"], "questTaken", L["在副本里列出已接任务，并显示每条任务的完成进度"])
     OptRow(2, L["任务难度灰色不显示"], "questGrey", L["任务难度对当前等级呈灰色时，不列入地图待办"])
 
+    ColHead(2, L["状态卡"])
+    local scy = ColNext(2)
+    local scLabel = opts:CreateFontString(nil, "OVERLAY")
+    scLabel:SetFont(ns.FONT, 14, "")
+    scLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", ColX(2), scy - 4)
+    scLabel:SetText(L["显示标记目标卡"])
+    scLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local scCb = CreateFrame("CheckButton", nil, opts)
+    scCb:SetSize(36, 20)
+    scCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", ColX(2) + 168, scy + 1)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(scCb) end
+    scCb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        if c then
+            c.statusCard = not (c.statusCard ~= false)
+            if self.SetChecked then self:SetChecked(c.statusCard ~= false) end
+        end
+        O.Refresh()
+    end)
+    scCb:SetScript("OnEnter", function()
+        Tip(scCb, L["显示标记目标卡"], L["在地图待办里显示标记目标卡片，填目标名后右键待办圆球即可选中并 ping"])
+    end)
+    scCb:SetScript("OnLeave", HideTip)
+
+    local rty = ColNext(2)
+    local rtLabel = opts:CreateFontString(nil, "OVERLAY")
+    rtLabel:SetFont(ns.FONT, 14, "")
+    rtLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", ColX(2), rty - 4)
+    rtLabel:SetText(L["副本稀有目标"])
+    rtLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local rareCb = CreateFrame("CheckButton", nil, opts)
+    rareCb:SetSize(36, 20)
+    rareCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", ColX(2) + 168, rty + 1)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(rareCb) end
+    rareCb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+        if c then
+            c.rareTarget = not (c.rareTarget ~= false)
+            if self.SetChecked then self:SetChecked(c.rareTarget ~= false) end
+        end
+        O.Refresh()
+    end)
+    rareCb:SetScript("OnEnter", function()
+        Tip(rareCb, L["副本稀有目标"], L["开启后进入副本时自动把目标填成本副本稀有怪名字，右键待办圆球可切换下一个稀有"])
+    end)
+    rareCb:SetScript("OnLeave", HideTip)
+
     ColHead(3, L["增益"])
     OptRow(3, L["食物提醒"], "food", L["没吃食物、缺少经验加成时提示"], "foodVoice")
     OptRow(3, L["睡袋提醒"], "rested", L["背包有睡袋且未休息或 buff 快到期时提示"], "restedVoice")
@@ -2106,7 +2446,7 @@ function O.Init()
 
     local ttBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     ttBtn:SetSize(56, 20)
-    ttBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", ttBX + 132, ttY + 1)
+    ttBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", ttBX + 168, ttY + 1)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(ttBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -2178,7 +2518,7 @@ function O.Init()
     mtLbl:Hide()
     local mtCb = CreateFrame("CheckButton", nil, opts)
     mtCb:SetSize(36, 20)
-    mtCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", mtHeadX + 132, mtRowY + 1)
+    mtCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", mtHeadX + 168, mtRowY + 1)
     if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(mtCb) end
     mtCb:SetScript("OnClick", function(self)
         ns.PlaySound(1)
@@ -2210,8 +2550,8 @@ function O.Init()
     end
 
     ColHead(4, L["窗口"])
-    OptRow(4, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"])
-    OptRow(4, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"])
+    OptRow(4, L["仅有待办时显示"], "onlyTodo", L["没有待办时隐藏圆形按钮"], nil, true)
+    OptRow(4, L["进新场景不弹窗"], "noZonePopup", L["进入新的场景时不再自动弹出待办窗口，可点击圆球查看"], nil, true)
 
     local SIZES = { 24, 28, 32, 36, 40 }
 
@@ -2225,7 +2565,7 @@ function O.Init()
 
     local szBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     szBtn:SetSize(36, 20)
-    szBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", szBX + 132, szY + 1)
+    szBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -12, szY + 1)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(szBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -2270,7 +2610,7 @@ function O.Init()
     bcLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
     local bcCb = CreateFrame("CheckButton", nil, opts)
     bcCb:SetSize(36, 20)
-    bcCb:SetPoint("TOPRIGHT", opts, "TOPLEFT", ColX(4) + 132, bcy + 1)
+    bcCb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -12, bcy + 1)
     if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(bcCb) end
     bcCb:SetScript("OnClick", function(self)
         ns.PlaySound(1)
@@ -2284,6 +2624,30 @@ function O.Init()
     bcCb:SetScript("OnLeave", HideTip)
     optCbs.bagCleanup = bcCb
 
+    local hey = ColNext(4)
+    local heLabel = opts:CreateFontString(nil, "OVERLAY")
+    heLabel:SetFont(ns.FONT, 14, "")
+    heLabel:SetPoint("TOPLEFT", opts, "TOPLEFT", ColX(4), hey - 4)
+    heLabel:SetText(L["没有可摧毁的物品时隐藏"])
+    heLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
+    local heCb = CreateFrame("CheckButton", nil, opts)
+    heCb:SetSize(36, 20)
+    heCb:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -12, hey + 1)
+    if ns.hui and ns.hui.ReskinToggle then ns.hui.ReskinToggle(heCb) end
+    heCb:SetScript("OnClick", function(self)
+        ns.PlaySound(1)
+        local b = ns.BagCleanup and ns.BagCleanup.DB and ns.BagCleanup.DB()
+        if b then
+            b.hideEmpty = not b.hideEmpty
+            if heCb.SetChecked then heCb:SetChecked(b.hideEmpty == true) end
+        end
+        O.Refresh()
+    end)
+    heCb:SetScript("OnEnter", function()
+        Tip(heCb, L["没有可摧毁的物品时隐藏"], L["没有可摧毁的灰色物品时，不显示背包清理卡"])
+    end)
+    heCb:SetScript("OnLeave", HideTip)
+
     local thy = ColNext(4)
     local thLabel = opts:CreateFontString(nil, "OVERLAY")
     thLabel:SetFont(ns.FONT, 14, "")
@@ -2292,7 +2656,7 @@ function O.Init()
     thLabel:SetTextColor(TEXT[1], TEXT[2], TEXT[3])
     local thBtn = CreateFrame("Button", nil, opts, "BackdropTemplate")
     thBtn:SetSize(36, 20)
-    thBtn:SetPoint("TOPRIGHT", opts, "TOPLEFT", ColX(4) + 132, thy + 1)
+    thBtn:SetPoint("TOPRIGHT", opts, "TOPRIGHT", -12, thy + 1)
     if ns.hui and ns.hui.BuildRoundedBG and ns.hui.layer then
         ns.hui.BuildRoundedBG(thBtn, 6, ns.hui.layer.L2, "both", true, 1)
     end
@@ -2363,8 +2727,14 @@ function O.Init()
             end
             if ns.BagCleanup then
                 if bcCb and bcCb.SetChecked then bcCb:SetChecked(ns.BagCleanup.On()) end
+                if heCb and heCb.SetChecked then heCb:SetChecked(ns.BagCleanup.DB and ns.BagCleanup.DB().hideEmpty == true) end
                 SyncTh()
             end
+            if scCb and scCb.SetChecked then
+                local sc = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}
+                scCb:SetChecked(sc.statusCard ~= false)
+            end
+            if rareCb and rareCb.SetChecked then rareCb:SetChecked((ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG() or {}).rareTarget ~= false) end
             SyncSize()
             SyncTentText()
             SyncMountOpts()
@@ -2413,18 +2783,65 @@ function O.Init()
 
     ApplyOrbSize()
     orb:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    orb:SetScript("OnClick", function(_, btn)
+    orb:SetAttribute("useOnKeyDown", false)
+    orb:SetScript("PreClick", function(self, mouse)
+        if mouse == "RightButton" then
+            if type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+                self:SetAttribute("type", nil)
+                return
+            end
+            local name = self.pingTarget or ""
+            if name == "" then
+                self:SetAttribute("type", nil)
+                return
+            end
+            self:SetAttribute("macrotext", self.pingMacro or PingMacroFor(name))
+            self:SetAttribute("type", "macro")
+        elseif self:GetAttribute("type") then
+            self:SetAttribute("type", nil)
+        end
+    end)
+    orb:HookScript("OnClick", function(self, btn, down)
+        if down then return end
         ns.PlaySound(1)
-        if btn == "RightButton" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
-            local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
-            if c then c.on = false end
-            Close()
-            if orb then orb:Hide() end
-            if ns.MainFrame and ns.MainFrame.SyncZoneHintCard then ns.MainFrame.SyncZoneHintCard() end
+        if btn == "RightButton" then
+            if type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+                local c = ns.ZoneHint and ns.ZoneHint.CFG and ns.ZoneHint.CFG()
+                if c then c.on = false end
+                Close()
+                if orb then
+                    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+                        orb.hidePending = true
+                    else
+                        orb:Hide()
+                    end
+                end
+                if ns.MainFrame and ns.MainFrame.SyncZoneHintCard then ns.MainFrame.SyncZoneHintCard() end
+                return
+            end
+            local name = (orb and orb.pingTarget) or ""
+            if name == "" then
+                print("|cff46bf72[无限副本手册]|r " .. L["请先在状态卡填写目标名"])
+            elseif #O.rareList > 0 then
+                O.RotateRare()
+            end
             return
         end
         Toggle()
     end)
+    if not orb.dfRegen then
+        local regen = CreateFrame("Frame")
+        regen:RegisterEvent("PLAYER_REGEN_ENABLED")
+        regen:SetScript("OnEvent", function()
+            if orb and orb.pingDirty then O.SyncPing() end
+            if orb and orb.hidePending then
+                orb.hidePending = nil
+                orb:Hide()
+            end
+        end)
+        orb.dfRegen = regen
+    end
+    O.SyncPing()
 
     orb:SetScript("OnEnter", function()
         hovered = true
@@ -2443,7 +2860,7 @@ function O.Init()
         else
             desc = L["本图暂无待办"]
         end
-        Tip(orb, zone ~= "" and zone or L["当前地图"], desc, L["左键/右键展开 · Shift+右键永久关闭 · 拖拽移动"])
+        Tip(orb, zone ~= "" and zone or L["当前地图"], desc, { L["左键展开　　拖拽移动"], L["右键标记目标并Ping"], L["Shift+右键永久关闭"] })
     end)
 
     orb:SetScript("OnLeave", function()
@@ -2490,6 +2907,13 @@ function O.Init()
         if now - openedAt < 0.2 then return end
         if _G.DFFoodMenuUp then return end
         if panel:IsMouseOver() then return end
+        if IsEditingText() then return end
+        if type(cards) == "table" then
+            for i = 1, #cards do
+                local c = cards[i]
+                if c and c.edit and c.edit.IsMouseOver and c.edit:IsMouseOver() then return end
+            end
+        end
         if opts and opts:IsShown() and opts:IsMouseOver() then return end
         if orb:IsMouseOver() then return end
         Close()
@@ -2553,7 +2977,7 @@ function O.Refresh()
     local res = ns.ZoneHint.Collect(ctx)
     res.key = ns.ZoneHint.Key(ctx)
     O.Update(res)
-    if (res.total or 0) == 0 and not res.__bagActive then
+    if (res.total or 0) == 0 and not res.__bagActive and not res.__statusActive then
         lastN = 0
         if badge then badge:Hide() end
         if not (opts and opts:IsShown()) then Close() end

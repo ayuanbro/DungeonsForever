@@ -1366,7 +1366,7 @@ function CB.JumpSearch(target)
     if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
         if UIErrorsFrame and UIErrorsFrame.AddMessage then
             pcall(UIErrorsFrame.AddMessage, UIErrorsFrame,
-                  T("搜索模块未启用，暂时无法跳转", "搜索模块未启用，暂时无法跳转"), 1, 0.82, 0.35)
+                  ns.NotifySearchDown(), 1, 0.82, 0.35)
         end
         return
     end

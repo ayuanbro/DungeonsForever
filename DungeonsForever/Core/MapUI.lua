@@ -5255,6 +5255,33 @@ local function wpCfg()
     return c
 end
 
+function M.PinsLayer()
+    return wpCfg().layer
+end
+
+function M.SetPinsLayer(v)
+    local c = wpCfg()
+    c.layer = (v == "below") and "below" or "above"
+    c.layerVer = 2
+    if M.SyncWorldQuestPins then pcall(M.SyncWorldQuestPins) end
+    if ns.MapWorldModule and ns.MapWorldModule.RefreshPins then pcall(ns.MapWorldModule.RefreshPins) end
+    if ns.ExploreMapRefresh then pcall(ns.ExploreMapRefresh) end
+    if ns.SyncQuestPinIcon then pcall(ns.SyncQuestPinIcon) end
+    return c.layer
+end
+
+function M.TogglePinsLayer()
+    return M.SetPinsLayer(M.PinsLayer() == "above" and "below" or "above")
+end
+
+function ns.MapPinLevel(natural)
+    if type(natural) ~= "number" then return natural end
+    if M.PinsLayer() ~= "above" and natural > WP_LAYER_BELOW then
+        return WP_LAYER_BELOW
+    end
+    return natural
+end
+
 local wpDlvCache
 local function wpDlv()
     if wpDlvCache then return wpDlvCache end
@@ -5321,6 +5348,7 @@ function M.SyncWorldQuestPins()
     local data = wpStatic()
     local cfg = wpCfg()
     local sc2 = cfg.scope
+    local takeOnly = sc2.take ~= false
     local lv = (UnitLevel and UnitLevel("player")) or 0
     local side = DG.PlayerSide and DG.PlayerSide() or nil
     local nOn = (sc2.lv and 1 or 0) + (sc2.reco and 1 or 0) + (sc2.enter and 1 or 0)
@@ -5375,6 +5403,7 @@ function M.SyncWorldQuestPins()
     end
     local function qHit(q)
         if DG.QuestRepeat and DG.QuestRepeat(q[1]) then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not wpClassOK(q[15]) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
@@ -5407,6 +5436,7 @@ function M.SyncWorldQuestPins()
     end
     local function segOk(seg)
         if (DG.QuestState and DG.QuestState(seg)) ~= "todo" then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(seg) then return false end
         local sq = DG.QuestRowByID and DG.QuestRowByID(seg)
         local qlv
         if sq then
@@ -5788,7 +5818,7 @@ local function wpCreatePanel()
             { "below", L["Questie 之下"] },
         },
             function() return wpCfg().layer end,
-            function(v) wpCfg().layer = v end)
+            function(v) M.SetPinsLayer(v) end)
         syncers[#syncers + 1] = function() row:sync() end
     end
     f.syncAll = function()

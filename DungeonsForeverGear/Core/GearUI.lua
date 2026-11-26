@@ -613,9 +613,11 @@ local function PassFilters(r)
                 local dm = im and im[tostring(inst.id)]
                 if type(dm) == "number" and dm > lv then return false end
             end
+            if lv < 60 and ns.BisModule and ns.BisModule.IsT05 and ns.BisModule.IsT05(r[1]) then return false end
         end
         local fac = QuestFac(r[1])
         if fac and fac ~= PlayerFac() then return false end
+        if ns.BisModule and ns.BisModule.VendorFacOK and not ns.BisModule.VendorFacOK(r[1]) then return false end
     end
     if not HasStat(r) then return false end
     return NamePass(r)
@@ -2719,7 +2721,7 @@ local function BuildRow(parent)
         if ns.ModuleOn and not ns.ModuleOn("QuestSearch") then
             local cf = DEFAULT_CHAT_FRAME
             if cf and cf.AddMessage then
-                pcall(cf.AddMessage, cf, "|cffff7a66" .. L["搜索模块未启用，暂时无法跳转"] .. "|r")
+                pcall(cf.AddMessage, cf, "|cffff7a66" .. ns.NotifySearchDown() .. "|r")
             end
             return
         end

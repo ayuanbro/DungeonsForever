@@ -1987,6 +1987,8 @@ function CT.DoEquip()
     if not FindInBags(CARROT_ID) then return false end
     local slot = (InvID(13) == nil and 13) or (InvID(14) == nil and 14) or 14
     CT.slot, CT.orig, CT.id = slot, InvID(slot), CARROT_ID
+    CT.wait, CT.nextTry = nil, nil
+    CT.armedAt = (GetTime and GetTime()) or 0
     SaveSwap()
     EquipTo(TrinketName(CARROT_ID, L["棍子上的胡萝卜"]), slot)
     SwapSay()
@@ -1998,20 +2000,31 @@ function CT.DoRestore()
     local slot, orig, id = CT.slot, CT.orig, CT.id
     if not slot then return false end
     if TrinketBusy() then CT.wait = true; return false end
-    CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
-    SaveSwap()
-    if InvID(slot) ~= id then return false end
+    if InvID(slot) ~= id then
+        local alt = (slot == 13) and 14 or 13
+        if InvID(alt) == id then
+            slot = alt
+            CT.slot = alt
+            SaveSwap()
+        else
+            CT.wait = true
+            return false
+        end
+    end
     if orig then
-        if not FindInBags(orig) then return false end
+        if not FindInBags(orig) then CT.wait = true; return false end
         EquipTo(TrinketName(orig, L["原饰品"]), slot)
     else
         local bag, s = FreeBagSlot()
         local pick = BagFn("PickupContainerItem")
-        if not (bag and pick and PickupInventoryItem) then return false end
+        if not (bag and pick and PickupInventoryItem) then CT.wait = true; return false end
         PickupInventoryItem(slot)
         pcall(pick, bag, s)
         if ClearCursor then pcall(ClearCursor) end
     end
+    CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
+    CT.nextTry, CT.armedAt = nil, nil
+    SaveSwap()
     SwapSay()
     Z.ScheduleSoft(0.3, true)
     return true
@@ -2020,17 +2033,29 @@ end
 function CT.Sync(force)
     local m = (IsMounted and IsMounted()) and true or false
     if not force and m == CT.was and not CT.wait then return end
-    CT.was = m
     if TrinketBusy() then CT.wait = true; return end
-    CT.wait = nil
-    if CT.slot and InvID(CT.slot) ~= CT.id then
-        CT.slot, CT.orig, CT.id = nil, nil, nil
-        SaveSwap()
+    local now = (GetTime and GetTime()) or 0
+    CT.was, CT.wait = m, nil
+    if CT.slot then
+        local cur = InvID(CT.slot)
+        if cur ~= CT.id then
+            local alt = (CT.slot == 13) and 14 or 13
+            if InvID(alt) == CT.id then
+                CT.slot = alt
+                SaveSwap()
+            elseif cur ~= nil and not CarrotOn() and FindInBags(CT.id) and (now - (CT.armedAt or -1e9)) > 1.5 then
+                CT.slot, CT.orig, CT.id = nil, nil, nil
+                SaveSwap()
+            else
+                CT.wait = true
+            end
+        end
     end
     if m then
         if not InInst() and CFG().carrot ~= false and CFG().carrotAuto ~= false and not CT.slot and not CarrotOn() then CT.DoEquip() end
-    else
-        if CT.slot then CT.DoRestore() end
+    elseif CT.slot then
+        if CT.nextTry and now < CT.nextTry then CT.wait = true; return end
+        if not CT.DoRestore() then CT.nextTry = now + 1.5 end
     end
 end
 
@@ -2641,6 +2666,12 @@ ns.Init(function()
         end
     end)
     if ns.ZoneOrb and ns.ZoneOrb.Init then ns.ZoneOrb.Init() end
+    if worldAt == nil then
+        worldAt = (GetTime and GetTime()) or 0
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            C_Timer.After(6.5, function() Z.ScheduleSoft(0.1, true) end)
+        end
+    end
     Z.LoginCheck(0)
 end)
 

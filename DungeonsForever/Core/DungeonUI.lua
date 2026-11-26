@@ -7314,7 +7314,10 @@ function DG.QuestObjectiveList(id)
     local out = {}
     for _, o in ipairs(list) do
         if type(o) == "table" and type(o.text) == "string" and o.text ~= "" then
-            out[#out + 1] = { o.text, tonumber(o.numFilled) or 0, tonumber(o.numRequired) or 0 }
+            local need = tonumber(o.numRequired) or 0
+            local done = tonumber(o.numFulfilled)
+            if done == nil then done = (o.finished and need) or 0 end
+            out[#out + 1] = { o.text, done, need }
         end
     end
     if #out == 0 then return nil end
@@ -7642,7 +7645,12 @@ function DG.ShowQuestTip(owner, q)
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and (" #" .. en[1]) or ""
+            GameTooltip:AddLine(L["结束："] .. label .. " " .. nm .. idp, 0.75, 0.75, 0.75, true)
+        elseif en then
             local txt = (en[2] and en[2] ~= "" and en[2]) or ""
             if en[1] then txt = (txt ~= "" and (txt .. " #" .. en[1]) or ("#" .. en[1])) end
             if (not en[1]) and DG.Q_END_OBJ[q[1]] == true and txt ~= "" then
@@ -7709,6 +7717,7 @@ DG.Q_BADGE_MID_BG = { 0.42, 0.26, 0.60, 1 }
 DG.Q_BADGE_PROF_BG = { 0.62, 0.36, 0.18, 1 }
 DG.Q_BADGE_ELITE_BG = { 0.85, 0.45, 0.10, 1 }
 DG.Q_BADGE_T05_BG = { 0.36, 0.24, 0.55, 1 }
+DG.Q_BADGE_NOREC_BG = { 0.55, 0.07, 0.07, 1 }
 DG.Q_RACE_TAG = { [1049] = { ok = { 2, 6, 8 }, label = "非亡灵" } }
 DG.Q_RACE_TAG_L = { ["非亡灵"] = L["非亡灵"] }
 function DG.QuestRaceOK(qid)
@@ -8095,6 +8104,11 @@ end
 function DG.IsT05Quest(id)
     local ex = ns.EnsureDungeonQuestExtInfo()[id]
     return (ex and ex.t05 == true) or false
+end
+
+function DG.IsNoRecQuest(id)
+    local ex = ns.EnsureDungeonQuestExtInfo()[id]
+    return (ex and ex.norec == true) or false
 end
 
 function DG.QuestList(d)
@@ -8695,7 +8709,7 @@ function U:RenderDungeonQuests()
         local q = list[i]
         if q[2] == side or not q[2] then
             local qn = q[5] or ""
-            local isItem = qn:find("^由物品", 1, true) ~= nil
+            local isItem = qn:find("^由物品", 1, true) ~= nil or qn:find("^Started by item", 1, true) ~= nil
                 or (qn == "" and q[8] and true or false)
             local gate = (ns.DungeonQuestGateDone and ns.DungeonQuestGateDone[q[1]]) and true or false
             local key = DG.IsOptQuest(q[1]) and 4 or (gate and 5 or (isItem and 3 or (q[8] and 2 or 1)))
@@ -8793,6 +8807,7 @@ function U:RenderDungeonQuests()
             r.raceB = DG.MakeBadge(r, DG.Q_BADGE_RACE_BG)
             r.profB = DG.MakeBadge(r, DG.Q_BADGE_PROF_BG)
             r.t05B = DG.MakeBadge(r, DG.Q_BADGE_T05_BG)
+            r.norecB = DG.MakeBadge(r, DG.Q_BADGE_NOREC_BG)
             r.meta = MakeFS(r, DG.Q_FS_META, C_GREY, "RIGHT")
             r.meta:SetPoint("TOPRIGHT", r, "TOPRIGHT", -6, -(DG.Q_ROW_H - DG.Q_FS_META) / 2 - 1)
             r:SetScript("OnEnter", function(self)
@@ -8873,6 +8888,11 @@ function U:RenderDungeonQuests()
                 local bmax = DG.Q_X_LOC - 4
                 local bx = DG.Q_X_NAME + FSW(r.name) + DG.Q_BADGE_GAP
                 local ci = 0
+                if hasName and DG.IsNoRecQuest(q[1]) then
+                    bx = DG.PlaceBadge(r.norecB, bx, L["不推荐"], bmax)
+                else
+                    r.norecB:Hide()
+                end
                 if hasName and DG.IsT05Quest(q[1]) then
                     bx = DG.PlaceBadge(r.t05B, bx, L["T0.5"], bmax)
                 else
@@ -9090,9 +9110,14 @@ DG.Q_END_OBJ = {
     [7761] = true,
 }
 
+DG.Q_END_INSTANCE = {
+    [5463] = true,
+    [8945] = true,
+}
+
 function DG.TriggerItemName(s)
     if type(s) ~= "string" or s == "" then return nil end
-    local inner = s:match("由物品%[(.-)%]")
+    local inner = s:match("由物品%[(.-)%]") or s:match("^Started by item %[(.-)%]")
     if inner and inner ~= "" then return inner end
     if s == "物品触发" or s == "未收录" then return nil end
     if DG.ITEM_TAG_SKIP[s] then return nil end
@@ -10550,7 +10575,14 @@ function U:RenderQuestDetail()
     end
     do
         local en = DG.QuestEndNpc(q[1])
-        if en then
+        if DG.Q_END_INSTANCE[q[1]] and en then
+            local label = (en[6] and en[6] ~= "") and en[6] or L["副本内"]
+            local nm = (en[2] and en[2] ~= "") and en[2] or ""
+            local idp = en[1] and format(" #%d", en[1]) or ""
+            local f = takeKv()
+            f:SetText(DG.Hex(C_GREY) .. L["结束："] .. "|r" .. label .. " " .. nm .. idp)
+            put(f, 24)
+        elseif en then
             local enid, ename, emap, ex, ey, ezone = en[1], en[2], en[3], en[4], en[5], en[6]
             local endObj = (not enid) and DG.Q_END_OBJ[q[1]] == true
             local txt

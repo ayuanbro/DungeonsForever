@@ -7951,7 +7951,7 @@ function PD.PaintLvTiles()
         costLines[#costLines + 1] = { PD.ScanSnapshotText(true)
             or L["请打开拍卖行完成一次完整扫描，再重新计算路线。"], 0.95, 0.75, 0.4 }
     end
-    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
+    if type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 and PD.RecoveryDisplayOn(s) then
         local net = s.netTotal or ((s.total or 0) - s.recoveryTotal)
         local netTxt = format(L["预计回血 %s · 净成本 %s"],
             PD.RecoveryMoney(s.recoveryTotal), PD.RecoveryMoney(net))
@@ -7966,6 +7966,12 @@ function PD.PaintLvTiles()
             costLines[#costLines + 1] = { format(L["其中 %d 种产物尚未计入回血；请打开拍卖行完成一次完整扫描后重新计算。"], s.recoveryMissing),
                                           0.95, 0.75, 0.4 }
         end
+    elseif type(s.total) == "number" and not s.referenceOnly and not PD.RecoveryDisplayOn(s)
+        and (s.planVersion == 2 or s.auto == false) then
+        local vendorRec = PD.VendorRecoveryOf(s)
+        local vendorNet = (s.purchaseTotal or s.total or 0) - vendorRec
+        costLines[#costLines + 1] = { format(L["按卖店价估算：回收 %s · 净成本 %s"],
+            PD.RecoveryMoney(vendorRec), PD.RecoveryMoney(vendorNet)), 0.55, 0.85, 0.6 }
     end
     if s.auctionDepthComplete==false then
         costLines[#costLines+1]={L["单价按方案估算，未用逐档行情"],0.7,0.7,0.7}
@@ -8065,13 +8071,13 @@ function PD.PaintLvTiles()
         end
         PD.SetBadge(L["按快照售价估算"], 0.7, 0.7, 0.7)
     end
-    if PD.autoPage ~= "log" and s.residualMass then
+    if PD.autoPage ~= "log" and s.residualMass and PD.RecoveryDisplayOn(s) then
         costLines[#costLines + 1] = { L["拍卖产物按七折估值，NPC卖价不打折。"], 0.7, 0.7, 0.7 }
     end
     if PD.autoPage ~= "log" and s.recoveryOptimized and s.profitPriorityLimit then
         costLines[#costLines + 1] = { L["盈利优先每配方最多20次；多余产物仍计入预计回血。"], 0.7, 0.7, 0.7 }
     end
-    if PD.autoPage ~= "log" and s.recoveryEstimated then
+    if PD.autoPage ~= "log" and s.recoveryEstimated and PD.RecoveryDisplayOn(s) then
         costLines[#costLines + 1] = { L["回血暂按历史数据估算；重新计算可更新。"], 0.95, 0.75, 0.4 }
     end
     if ns.IsForever and PD.ScanModeAdvice() then
@@ -8088,18 +8094,30 @@ function PD.PaintLvTiles()
         if tiles[k].__use then n = n + 1 end
     end
     PD.PlaceCards(n > 0 and n or 1)
-    if PD.autoPage ~= "log" and type(s.recoveryTotal) == "number" and s.recoveryTotal > 0 then
-        local recNet = s.netTotal or ((s.total or 0) - s.recoveryTotal)
-        local netTxt
-        if recNet < 0 then
-            netTxt = format(L["净赚 %s"], PD.MoneyBrief(-recNet))
-        else
-            netTxt = format(L["净成本 %s"], PD.MoneyBrief(recNet))
-        end
+    if PD.autoPage ~= "log" and type(s.total) == "number" and not s.referenceOnly then
+        local recTotal = tonumber(s.recoveryTotal) or 0
         if PD.autoPage == "recovery" then
+            local recNet = s.netTotal or ((s.total or 0) - recTotal)
+            local netTxt = recNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+                or format(L["净成本 %s"], PD.MoneyBrief(recNet))
             PD.SetSub(format(L["成本 %s · %s"], PD.MoneyBrief(s.total or 0), netTxt))
+        elseif PD.RecoveryDisplayOn(s) then
+            if recTotal > 0 then
+                local recNet = s.netTotal or ((s.total or 0) - recTotal)
+                local netTxt = recNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-recNet))
+                    or format(L["净成本 %s"], PD.MoneyBrief(recNet))
+                PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(recTotal), netTxt))
+            else
+                PD.SetSub(nil)
+            end
+        elseif s.planVersion == 2 or s.auto == false then
+            local vendorRec = PD.VendorRecoveryOf(s)
+            local vendorNet = (s.purchaseTotal or s.total or 0) - vendorRec
+            local netTxt = vendorNet < 0 and format(L["净赚 %s"], PD.MoneyBrief(-vendorNet))
+                or format(L["净成本 %s"], PD.MoneyBrief(vendorNet))
+            PD.SetSub(format(L["卖店 %s · %s"], PD.MoneyBrief(vendorRec), netTxt))
         else
-            PD.SetSub(format(L["回血 %s · %s"], PD.MoneyBrief(s.recoveryTotal), netTxt))
+            PD.SetSub(nil)
         end
     else
         PD.SetSub(nil)
@@ -12879,38 +12897,100 @@ PD.__curCntMemo = {}
 
 function PD.CurCounts(d)
     local m = PD.__curCntMemo
-    local c = m[d]
+    local rev = 0
+    local E = ns.ProfEconomy
+    if E and E.ClientStore then
+        local okS, store = pcall(E.ClientStore)
+        if okS and type(store) == "table" then rev = tonumber(store.clientInputRevision) or 0 end
+    end
+    local sig = tostring(PD.qualityKey) .. "|" .. tostring(PD.lvLo) .. "|" .. tostring(PD.lvHi) .. "|" .. tostring(rev)
+    local pool = m[d]
+    if not pool then pool = {} m[d] = pool end
+    local c = pool[sig]
     if c then return c end
     c = {}
+    local nipSet = ns.ProfRecipeNIP
+    local function baseVis(spell)
+        local ok, v = pcall(PD.RecipeVisible, spell)
+        if ok then return v end
+        return true
+    end
     for _, r in ipairs(d.rows or {}) do
-        local ks = PD.CurKeysOfFid(r[13] and r[13][1])
-        if ks then
-            for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+        if PD.QualityHit(r[2]) and PD.LvRowHit(r) then
+            local isNip = nipSet and nipSet[r[1]]
+            local base
+            if not isNip then base = baseVis(r[1]) end
+            local sk = PD.SrcBucketOf(r)
+            if sk and ((sk == PD.SRC_NIP_KEY) or (not r.nip)) then
+                local okb
+                if isNip then okb = (sk == PD.SRC_NIP_KEY) else okb = base end
+                if okb then c[sk] = (c[sk] or 0) + 1 end
+            end
+            if not r.nip then
+                local ks = PD.CurKeysOfFid(r[13] and r[13][1])
+                if ks then
+                    for k in pairs(ks) do
+                        local okb
+                        if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                        if okb then c[k] = (c[k] or 0) + 1 end
+                    end
+                end
+            end
         end
-        local sk = PD.SrcBucketOf(r)
-        if sk then c[sk] = (c[sk] or 0) + 1 end
     end
     if not (d.rows and #d.rows > 0) then
         for _, e in ipairs(d.enchants or {}) do
-            local ek = PD.EnchBucketOf(e)
-            if ek then c[ek] = (c[ek] or 0) + 1 end
-            local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
-            if ks then
-                for k in pairs(ks) do c[k] = (c[k] or 0) + 1 end
+            if PD.LvStartHit(e[5]) then
+                local isNip = nipSet and nipSet[e[14]]
+                local base
+                if not isNip then base = baseVis(e[14]) end
+                local ek = PD.EnchBucketOf(e)
+                if ek then
+                    local okb
+                    if isNip then okb = (ek == PD.SRC_NIP_KEY) else okb = base end
+                    if okb then c[ek] = (c[ek] or 0) + 1 end
+                end
+                local ks = PD.CurKeysOfFid(type(e[16]) == "number" and e[16] or nil)
+                if ks then
+                    for k in pairs(ks) do
+                        local okb
+                        if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                        if okb then c[k] = (c[k] or 0) + 1 end
+                    end
+                end
             end
         end
     end
     for _, row in ipairs(d.crafted or {}) do
         local fid = tonumber(row[9])
-        local ks = PD.CurKeysOfFid(fid)
-        for key in pairs(ks or {}) do c[key] = (c[key] or 0) + 1 end
-        local bucket = PD.SrcBucketOf({nip=row.nip,[13]=fid and {fid}})
-        if bucket then c[bucket] = (c[bucket] or 0) + 1 end
+        if PD.QualityHit(row[2]) and PD.LvStartHit(row[4]) then
+            local isNip = nipSet and nipSet[row[1]]
+            local base
+            if not isNip then base = baseVis(row[1]) end
+            local ks = PD.CurKeysOfFid(fid)
+            if ks then
+                for k in pairs(ks) do
+                    local okb
+                    if isNip then okb = (k == PD.SRC_NIP_KEY) else okb = base end
+                    if okb then c[k] = (c[k] or 0) + 1 end
+                end
+            end
+            local bucket = PD.SrcBucketOf({nip=row.nip,[13]=fid and {fid}})
+            if bucket then
+                local okb
+                if isNip then okb = (bucket == PD.SRC_NIP_KEY) else okb = base end
+                if okb then c[bucket] = (c[bucket] or 0) + 1 end
+            end
+        end
     end
     if d.favor and #d.favor > 0 then
-        c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + #d.favor
+        local fn = 0
+        for _, f in ipairs(d.favor) do
+            if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) then fn = fn + 1 end
+        end
+        if fn > 0 then c[PD.FAVOR_CURID] = (c[PD.FAVOR_CURID] or 0) + fn end
     end
-    m[d] = c
+    pool[sig] = c
     return c
 end
 
@@ -12936,8 +13016,28 @@ function PD.CurName(id)
     return fb, ic
 end
 
-local function RecipeCounts(list, spellIndex, groupIndex)
+local function RecipeCounts(list, spellIndex, groupIndex, kind)
     local n, groups = 0, {}
+    if kind == "enchant" then
+        local nip = ns.ProfRecipeNIP
+        for _, e in ipairs(list or {}) do
+            local spell = e[spellIndex]
+            local vis
+            if nip and nip[spell] then
+                vis = false
+            else
+                local ok, v = pcall(PD.RecipeVisible, spell)
+                vis = ok and v or true
+            end
+            if vis and PD.LvStartHit(e[5]) then
+                n = n + 1
+                local key = tostring(e[groupIndex] or "")
+                if key == "" then key = L["其他"] end
+                groups[key] = (groups[key] or 0) + 1
+            end
+        end
+        return n, groups
+    end
     for _, r in ipairs(list or {}) do
         if (not r.nip) and not (ns.ProfRecipeNIP and ns.ProfRecipeNIP[r[spellIndex]]) then
             n = n + 1
@@ -12975,7 +13075,7 @@ function PD.RecipeTypeItems(d)
     local items = {}
     if not d then return items end
     local rowsN, rowGroups = RecipeCounts(d.rows, 1, 4)
-    local enchN, enchantGroups = RecipeCounts(d.enchants, 14, 3)
+    local enchN, enchantGroups = RecipeCounts(d.enchants, 14, 3, "enchant")
     if rowsN > 0 then
         items[#items + 1] = { v = "all", text = format(L["全部 %d"], rowsN) }
         for _, g in ipairs(d.groups or {}) do
@@ -13151,7 +13251,7 @@ function PD.RecipeTool(d)
     if d.rows and #d.rows > 0 then
         total = RecipeCounts(d.rows, 1, 4)
     else
-        total = RecipeCounts(d.enchants, 14, 3)
+        total = RecipeCounts(d.enchants, 14, 3, "enchant")
     end
     local tool = {}
     local allOn = (PD.moneyKey == nil and PD.toolKey == "all" and PD.qualityKey == nil) or false
@@ -13417,6 +13517,53 @@ function PD.ScanRecipe()
     return n, maxW
 end
 
+function PD.RecipeFullCount(d)
+    if not d then return 0 end
+    local key = PD.toolKey
+    local n = 0
+    if PD.moneyKey ~= nil then
+        for _, e in ipairs(d.enchants or {}) do
+            if PD.EnchCurHit(e, PD.moneyKey) and PD.RecipeVisible(e[14]) and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        for _, c in ipairs(d.crafted or {}) do
+            local fid = tonumber(c[9])
+            if PD.RowCurHit({nip=c.nip,[13]=fid and {fid}}) and PD.QualityHit(c[2])
+               and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then n = n + 1 end
+        end
+        if PD.moneyKey == PD.FAVOR_CURID then
+            for _, f in ipairs(d.favor or {}) do
+                if PD.QualityHit(f[1]) and PD.LvStartHit(f[2]) then n = n + 1 end
+            end
+        end
+        return n
+    end
+    if key == "__enchant" then
+        for _, e in ipairs(d.enchants or {}) do
+            if PD.EnchCurHit(e, nil) and PD.RecipeVisible(e[14]) and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        return n
+    end
+    if d.enchants and #d.enchants > 0 and not (d.rows and #d.rows > 0)
+       and key ~= "__crafted" and key ~= "__rest" then
+        local want
+        if key ~= "all" then want = tostring(key) end
+        for _, e in ipairs(d.enchants or {}) do
+            local g = tostring(e[3] or "")
+            if g == "" then g = L["其他"] end
+            if ((not want) or g == want) and PD.EnchCurHit(e, nil) and PD.RecipeVisible(e[14])
+               and PD.LvStartHit(e[5]) then n = n + 1 end
+        end
+        return n
+    end
+    if key == "__crafted" then
+        for _, c in ipairs(d.crafted or {}) do
+            if PD.QualityHit(c[2]) and PD.RecipeVisible(c[1]) and PD.LvStartHit(c[4]) then n = n + 1 end
+        end
+        return n
+    end
+    return n
+end
+
 function PD.RowsRecipe(rows)
     local d = RGet(PD.cur)
     if not d and PD.cur=="first-aid" then
@@ -13444,7 +13591,11 @@ function PD.RowsRecipe(rows)
         PD.RenderProgressStart(nil)
     end
     local realN, maxW = PD.ScanRecipe()
-    PD.__recipeTotal = realN
+    local fullN
+    if not realN and not (d.rows and #d.rows > 0) and not (PD.searchQ and PD.searchQ ~= "") then
+        fullN = PD.RecipeFullCount(d)
+    end
+    PD.__recipeTotal = fullN or realN
     local list
     if realN then
         if PD.__renderProg then PD.__renderProg.total = #(d.rows or {}) end
@@ -14376,6 +14527,21 @@ function PD.CopyRecoverySummary(src)
     s.recoveryFeePercent = src.recoverySnapshot and src.recoverySnapshot.feePercent or nil
     s.saleOutputs = src.saleOutputs
     s.purchaseTotal = src.purchaseTotal or src.total
+    s.recoveryEnabled = src.recoveryEnabled
+end
+
+function PD.RecoveryDisplayOn(s)
+    return PD.Setting("recoveryEnabled", s and s.slug or nil) and true or false
+end
+
+function PD.VendorRecoveryOf(s)
+    local total = 0
+    for _, e in ipairs(s and s.saleOutputs or {}) do
+        local n = tonumber(e.count) or 0
+        local npc = tonumber(e.npcUnit)
+        if n > 0 and npc and npc > 0 then total = total + n * npc end
+    end
+    return total
 end
 
 function PD.RecoverySummaryText(src)
@@ -18200,7 +18366,7 @@ function PD.RowsSettings(rows)
         { k = "recoveryEnabled", name = L["回血模式"],
           desc = L["把「搓完卖掉能收回多少」计入路线决策，比较采购支出减去剩余产物预计收入。"],
           d1 = L["开启：「最省钱」计入预计回血，盈利优先每配方最多20次；其他方案保留原目标。"],
-          d2 = L["关闭：只看采购支出，同时仍显示预计回血与净成本供参考。"] },
+          d2 = L["关闭：只看采购支出；剩余产物按卖店价折算，路线卡第三行显示净成本。"] },
         { k = "autoResidualMass", name = L["产物按大量上架折价"],
           desc = L["路线比较时配方产物折算的收益：按拍卖行全价（默认）或七折模拟大量上架。"],
           d1 = L["七折仅影响拍卖产物估值；手续费照常计算，NPC卖价不打折。"],
