@@ -547,6 +547,8 @@ local function PassFilters(r)
     if not IlvlInRange(r) then return false end
     if not UsetypePass(r) then return false end
     if not SrcPass(r[1]) then return false end
+    if ns.BisModule and ns.BisModule.IsT05 and ns.BisModule.IsT05(r[1]) and (UnitLevel("player") or 60) < 60 then return false end
+    if ns.BisModule and ns.BisModule.VendorFacOK and not ns.BisModule.VendorFacOK(r[1]) then return false end
     if G.useType then
         local lv = UnitLevel("player")
         if type(lv) == "number" and lv > 0 then
@@ -559,11 +561,9 @@ local function PassFilters(r)
                 local dm = im and im[tostring(inst.id)]
                 if type(dm) == "number" and dm > lv then return false end
             end
-            if lv < 60 and ns.BisModule and ns.BisModule.IsT05 and ns.BisModule.IsT05(r[1]) then return false end
         end
         local fac = QuestFac(r[1])
         if fac and fac ~= PlayerFac() then return false end
-        if ns.BisModule and ns.BisModule.VendorFacOK and not ns.BisModule.VendorFacOK(r[1]) then return false end
     end
     if not HasStat(r) then return false end
     return NamePass(r)
