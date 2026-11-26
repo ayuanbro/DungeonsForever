@@ -313,16 +313,80 @@ local function SideAllowed(x, pside, c)
     return c.enemy and true or false
 end
 
+local FACTION_ALIAS = {
+    [890] = { "战歌峡谷", "银翼哨兵" },
+    [889] = { "战歌峡谷" },
+    [730] = { "奥特兰克", "奥特兰克山谷" },
+    [729] = { "奥特兰克", "奥特兰克山谷" },
+}
+
 local function SearchHit(x, needle)
     if needle == "" then return true end
+    local nd = needle:lower()
     local nm = FacName(x):lower()
-    if nm:find(needle, 1, true) then return true end
+    if nm:find(nd, 1, true) then return true end
     local fb = (x.name or ""):lower()
-    return fb:find(needle, 1, true) ~= nil
+    if fb:find(nd, 1, true) then return true end
+    local al = FACTION_ALIAS[x.id]
+    if al then
+        for _, k in ipairs(al) do
+            if k:lower():find(nd, 1, true) then return true end
+        end
+    end
+    return false
+end
+
+local BATTLE_FACTION = {
+    [509] = { src = "battle", bg = "ab", side = "A" },
+    [510] = { src = "battle", bg = "ab", side = "H" },
+    [890] = { src = "battle", bg = "wsg", side = "A" },
+    [889] = { src = "battle", bg = "wsg", side = "H" },
+    [730] = { src = "battle", bg = "av", side = "A" },
+    [729] = { src = "battle", bg = "av", side = "H" },
+    [2799] = { src = "spear", side = "A" },
+    [2798] = { src = "spear", side = "H" },
+}
+
+local function EnsurePvPData()
+    if type(ns.PvPSetData) == "table" then return ns.PvPSetData end
+    local loader
+    if type(C_AddOns) == "table" and type(C_AddOns.LoadAddOn) == "function" then
+        loader = function() C_AddOns.LoadAddOn("DungeonsForeverPvP") end
+    else
+        local legacy = rawget(_G, "LoadAddOn")
+        if type(legacy) == "function" then loader = function() legacy("DungeonsForeverPvP") end end
+    end
+    if loader then pcall(loader) end
+    return type(ns.PvPSetData) == "table" and ns.PvPSetData or nil
+end
+
+local function BattleRewards(x)
+    local m = type(x) == "table" and BATTLE_FACTION[x.id]
+    if not m then return nil end
+    local pv = EnsurePvPData()
+    if not pv then return nil end
+    local src = (m.src == "spear") and pv.spear or (type(pv.battle) == "table" and pv.battle[m.bg])
+    if type(src) ~= "table" then return nil end
+    local out = {}
+    local any = false
+    for _, key in ipairs(REWARD_TIERS) do
+        local tier = src[key]
+        local ids = type(tier) == "table" and (tier[m.side] or tier.A)
+        if type(ids) == "table" and #ids > 0 then out[key] = ids; any = true end
+    end
+    if not any then return nil end
+    return out
+end
+
+local function RewardsOf(x)
+    if type(x) ~= "table" then return nil end
+    local r = BattleRewards(x)
+    if r then return r end
+    return x.rewards
 end
 
 local function HasRewards(x)
-    local r = x.rewards
+    local r = RewardsOf(x)
     if type(r) ~= "table" then return false end
     for _, key in ipairs(REWARD_TIERS) do
         local ids = r[key]
@@ -1827,6 +1891,7 @@ function FV:PaintDetail()
     if not FV.segs then return end
     local c = Cfg()
     local x = FacBySel(c.sel)
+    local rw = x and RewardsOf(x) or nil
     FV.dCull = {}
     for _, seg in ipairs(FV.segs) do seg:Hide() end
     for _, tk in ipairs(FV.ticks) do tk:Hide() end
@@ -1947,7 +2012,7 @@ function FV:PaintDetail()
 
     local nSep = 0
     for _, key in ipairs(REWARD_TIERS) do
-        local ids = x.rewards and x.rewards[key]
+        local ids = rw and rw[key]
         if type(ids) == "table" and #ids > 0 then
             nSep = nSep + 1
             local s = FV.rSeps[nSep]
