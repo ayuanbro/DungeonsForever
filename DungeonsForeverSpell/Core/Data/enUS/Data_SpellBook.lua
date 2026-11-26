@@ -9,7 +9,7 @@ ns.SpellBookData = {
     version = "2026-11-13",
     classes = {
     DRUID = {
-        total = 59,
+        total = 53,
         tabs = {
         {
             name = "Balance",
@@ -120,7 +120,6 @@ ns.SpellBookData = {
                 { rank = 4, learn = 42, id = 9747 },
                 { rank = 5, learn = 52, id = 9898 },
                 } },
-                { name = "Growl", icon = "Interface\\Icons\\Ability_Physical_Taunt", id = 6795, learnLv = 10 },
                 { name = "Maul", icon = "Interface\\Icons\\Ability_Druid_Maul", id = 9881, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 6807 },
                 { rank = 2, learn = 18, id = 6808 },
@@ -305,10 +304,6 @@ ns.SpellBookData = {
                 { rank = 2, learn = 50, id = 1238214 },
                 { rank = 3, learn = 60, id = 1238215 },
                 } },
-                { name = "Gift of the Wild", icon = "Interface\\Icons\\Spell_Nature_Regeneration", id = 21850, learnLv = 50, ranks = {
-                { rank = 1, learn = 50, id = 21849 },
-                { rank = 2, learn = 60, id = 21850 },
-                } },
                 { name = "Swiftmend", icon = "Interface\\Icons\\Inv_Relics_Idolofrejuvenation", id = 18562, isTalent = true },
                 { name = "Nature's Swiftness", icon = "Interface\\Icons\\Spell_Nature_Ravenform", id = 17116, isTalent = true },
             },
@@ -316,17 +311,12 @@ ns.SpellBookData = {
         },
     },
     HUNTER = {
-        total = 58,
+        total = 46,
         tabs = {
         {
             name = "Beast Mastery",
             icon = "Interface\\Icons\\Ability_Hunter_Beasttaming",
             spells = {
-                { name = "Tame Beast", icon = "Interface\\Icons\\Ability_Hunter_Beasttaming", id = 13481, ranks = {
-                { id = 13535 },
-                { learn = 10, id = 1515 },
-                { learn = 10, id = 13481 },
-                } },
                 { name = "Aspect of the Monkey", icon = "Interface\\Icons\\Ability_Hunter_Aspectofthemonkey", id = 13163, learnLv = 4 },
                 { name = "Aspect of the Hawk", icon = "Interface\\Icons\\Spell_Nature_Ravenform", id = 25296, learnLv = 10, ranks = {
                 { rank = 1, learn = 10, id = 13165 },
@@ -376,7 +366,6 @@ ns.SpellBookData = {
                 { rank = 1, learn = 46, id = 20043 },
                 { rank = 2, learn = 56, id = 20190 },
                 } },
-                { name = "Tranquilizing Shot", icon = "Interface\\Icons\\Spell_Nature_Drowsy", id = 19801, learnLv = 60 },
                 { name = "Intimidation", icon = "Interface\\Icons\\Ability_Devour", id = 19577, isTalent = true },
                 { name = "Bestial Wrath", icon = "Interface\\Icons\\Ability_Druid_Ferociousbite", id = 19574, isTalent = true },
             },
@@ -385,7 +374,6 @@ ns.SpellBookData = {
             name = "Marksmanship",
             icon = "Interface\\Icons\\Ability_Marksmanship",
             spells = {
-                { name = "Auto Shot", icon = "Interface\\Icons\\Ability_Whirlwind", id = 75, learnLv = 1 },
                 { name = "Serpent Sting", icon = "Interface\\Icons\\Ability_Hunter_Quickshot", id = 25295, learnLv = 4, ranks = {
                 { rank = 1, learn = 4, id = 1978 },
                 { rank = 2, learn = 10, id = 13549 },
@@ -514,12 +502,6 @@ ns.SpellBookData = {
                 { name = "Track Elementals", icon = "Interface\\Icons\\Spell_Frost_Summonwaterelemental", id = 19880, learnLv = 26 },
                 { name = "Frost Trap", icon = "Interface\\Icons\\Spell_Frost_Freezingbreath", id = 13809, learnLv = 28 },
                 { name = "Feign Death", icon = "Interface\\Icons\\Ability_Rogue_Feigndeath", id = 5384, learnLv = 30 },
-                { name = "Lacerate", icon = "Interface\\Icons\\Ability_Gouge", id = 1299332, learnLv = 30, ranks = {
-                { rank = 1, learn = 30, id = 24118 },
-                { rank = 2, learn = 40, id = 24119 },
-                { rank = 3, learn = 50, id = 24120 },
-                { rank = 4, learn = 60, id = 1299332 },
-                } },
                 { name = "Track Demons", icon = "Interface\\Icons\\Spell_Shadow_Summonfelhunter", id = 19878, learnLv = 32 },
                 { name = "Explosive Trap", icon = "Interface\\Icons\\Spell_Fire_Selfdestruct", id = 14317, learnLv = 34, ranks = {
                 { rank = 1, learn = 34, id = 13813 },
@@ -542,7 +524,7 @@ ns.SpellBookData = {
         },
     },
     MAGE = {
-        total = 61,
+        total = 43,
         tabs = {
         {
             name = "Arcane",
@@ -656,10 +638,7 @@ ns.SpellBookData = {
                 { name = "Conjure Mana Citrine", icon = "Interface\\Icons\\Inv_Misc_Gem_Opal_01", id = 10053, learnLv = 48 },
                 { name = "Portal: Darnassus", icon = "Interface\\Icons\\Spell_Arcane_Portaldarnassus", id = 11419, learnLv = 50, races = "侏儒/高阶会天裔/人类" },
                 { name = "Portal: Thunder Bluff", icon = "Interface\\Icons\\Spell_Arcane_Portalthunderbluff", id = 11420, learnLv = 50, races = "Orc/Troll/Undead" },
-                { name = "Teleport: Dalaran", icon = "Interface\\Icons\\Spell_Arcane_Teleporthalloftheguardian", id = 1297659, learnLv = 50, races = "侏儒/高阶会天裔/人类" },
-                { name = "Arcane Brilliance", icon = "Interface\\Icons\\Spell_Holy_Arcaneintellect", id = 23028, learnLv = 56 },
                 { name = "Conjure Mana Ruby", icon = "Interface\\Icons\\Inv_Misc_Gem_Ruby_01", id = 10054, learnLv = 58 },
-                { name = "Polymorph: Cow", icon = "Interface\\Icons\\Spell_Nature_Polymorph_Cow", id = 28270, learnLv = 60 },
                 { name = "Presence of Mind", icon = "Interface\\Icons\\Spell_Nature_Enchantarmor", id = 12043, isTalent = true },
                 { name = "Arcane Power", icon = "Interface\\Icons\\Spell_Nature_Lightning", id = 12042, isTalent = true },
             },
@@ -737,7 +716,6 @@ ns.SpellBookData = {
                 { rank = 2, learn = 50, id = 1237312 },
                 { rank = 3, learn = 60, id = 1237313 },
                 } },
-                { name = "Felfire", icon = "Interface\\Icons\\Spell_Fire_Fireball", id = 24530, learnLv = 60 },
                 { name = "Combustion", icon = "Interface\\Icons\\Spell_Fire_Sealoffire", id = 11129, isTalent = true },
             },
         },
@@ -819,20 +797,12 @@ ns.SpellBookData = {
             name = "理解",
             icon = "Interface\\Icons\\Spell_Holy_Mindsooth",
             spells = {
-                { name = "Comprehend Scroll", icon = "Interface\\Icons\\Inv_Misc_Questionmark", id = 1310030, learnLv = 6, ranks = {
-                { learn = 6, id = 1296017 },
-                { learn = 6, id = 1309973 },
-                { learn = 6, id = 1309965 },
-                { learn = 6, id = 1310029 },
-                { learn = 6, id = 1310030 },
-                } },
-                { name = "Study", icon = "Interface\\Icons\\Inv_Misc_Book_08", id = 1302508, learnLv = 6 },
             },
         },
         },
     },
     PALADIN = {
-        total = 51,
+        total = 48,
         tabs = {
         {
             name = "Holy",
@@ -1083,17 +1053,13 @@ ns.SpellBookData = {
             name = "坐骑",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
-                { name = "Summon Warhorse", icon = "Interface\\Icons\\Spell_Nature_Swiftness", id = 1279399, learnLv = 40, ranks = {
-                { learn = 40, id = 13819 },
-                { learn = 40, id = 1279399 },
-                } },
                 { name = "Summon Charger", icon = "Interface\\Icons\\Ability_Mount_Charger", id = 23214, learnLv = 60, races = "Dwarf/Human" },
             },
         },
         },
     },
     PRIEST = {
-        total = 56,
+        total = 44,
         tabs = {
         {
             name = "Discipline",
@@ -1181,10 +1147,6 @@ ns.SpellBookData = {
                 { rank = 4, learn = 60, id = 1316995 },
                 } },
                 { name = "Levitate", icon = "Interface\\Icons\\Spell_Holy_Layonhands", id = 1706, learnLv = 34 },
-                { name = "Prayer of Fortitude", icon = "Interface\\Icons\\Spell_Holy_Prayeroffortitude", id = 21564, learnLv = 48, ranks = {
-                { rank = 1, learn = 48, id = 21562 },
-                { rank = 2, learn = 60, id = 21564 },
-                } },
                 { name = "Prayer of Spirit", icon = "Interface\\Icons\\Spell_Holy_Prayerofspirit", id = 27681, learnLv = 60 },
                 { name = "Inner Focus", icon = "Interface\\Icons\\Spell_Frost_Windwalkon", id = 14751, isTalent = true },
                 { name = "Power Infusion", icon = "Interface\\Icons\\Spell_Holy_Powerinfusion", id = 10060, isTalent = true },
@@ -1302,16 +1264,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 52, id = 10964 },
                 { rank = 4, learn = 58, id = 10965 },
                 { rank = 5, learn = 60, id = 25314 },
-                } },
-                { name = "Lightwell", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27871, learnLv = 40, ranks = {
-                { rank = 1, learn = 40, id = 724 },
-                { rank = 2, learn = 50, id = 27870 },
-                { rank = 3, learn = 60, id = 27871 },
-                } },
-                { name = "Lightwell Renew", icon = "Interface\\Icons\\Spell_Holy_Summonlightwell", id = 27874, learnLv = 40, ranks = {
-                { rank = 1, learn = 40, id = 7001 },
-                { rank = 2, learn = 50, id = 27873 },
-                { rank = 3, learn = 60, id = 27874 },
                 } },
                 { name = "Prayer of Mending", icon = "Interface\\Icons\\Spell_Holy_Prayerofmendingtga", id = 1240827, learnLv = 40, isTalent = true, ranks = {
                 { rank = 1, learn = 40, id = 401859 },
@@ -1431,7 +1383,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 48, id = 1309635 },
                 { rank = 4, learn = 56, id = 1309636 },
                 } },
-                { name = "Prayer of Shadow Protection", icon = "Interface\\Icons\\Spell_Holy_Prayerofshadowprotection", id = 27683, learnLv = 56 },
                 { name = "Vampiric Embrace", icon = "Interface\\Icons\\Spell_Shadow_Unsummonbuilding", id = 15286, isTalent = true },
                 { name = "Silence", icon = "Interface\\Icons\\Spell_Shadow_Impphaseshift", id = 15487, isTalent = true },
                 { name = "Shadowform", icon = "Interface\\Icons\\Spell_Shadow_Shadowform", id = 15473, isTalent = true },
@@ -1440,7 +1391,7 @@ ns.SpellBookData = {
         },
     },
     ROGUE = {
-        total = 56,
+        total = 50,
         tabs = {
         {
             name = "Mutilate",
@@ -1605,7 +1556,6 @@ ns.SpellBookData = {
             icon = "Interface\\Icons\\Trade_Brewpoison",
             spells = {
                 { name = "Crippling Poison", icon = "Interface\\Icons\\Ability_Poisonsting", id = 3420, learnLv = 20 },
-                { name = "Instant Poison", icon = "Interface\\Icons\\Ability_Poisons", id = 8681, learnLv = 20 },
                 { name = "Poisons", icon = "Interface\\Icons\\Trade_Brewpoison", id = 2842, learnLv = 20 },
                 { name = "Mind-numbing Poison", icon = "Interface\\Icons\\Spell_Nature_Nullifydisease", id = 5763, learnLv = 24 },
                 { name = "Instant Poison II", icon = "Interface\\Icons\\Ability_Poisons", id = 8687, learnLv = 28 },
@@ -1624,14 +1574,13 @@ ns.SpellBookData = {
                 { name = "Mind-numbing Poison III", icon = "Interface\\Icons\\Spell_Nature_Nullifydisease", id = 11400, learnLv = 52 },
                 { name = "Deadly Poison IV", icon = "Interface\\Icons\\Ability_Rogue_Dualweild", id = 11358, learnLv = 54 },
                 { name = "Wound Poison IV", icon = "Interface\\Icons\\Inv_Misc_Herb_16", id = 13230, learnLv = 56 },
-                { name = "Deadly Poison V", icon = "Interface\\Icons\\Ability_Rogue_Dualweild", id = 25347, learnLv = 60 },
                 { name = "Instant Poison VI", icon = "Interface\\Icons\\Ability_Poisons", id = 11343, learnLv = 60 },
             },
         },
         },
     },
     SHAMAN = {
-        total = 56,
+        total = 53,
         tabs = {
         {
             name = "Elemental Combat",
@@ -1879,10 +1828,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 46, id = 10496 },
                 { rank = 4, learn = 56, id = 10497 },
                 } },
-                { name = "Reincarnation", icon = "Interface\\Icons\\Spell_Nature_Reincarnation", id = 21169, learnLv = 30, ranks = {
-                { learn = 30, id = 20608 },
-                { learn = 30, id = 21169 },
-                } },
                 { name = "Disease Cleansing Totem", icon = "Interface\\Icons\\Spell_Nature_Diseasecleansingtotem", id = 8170, learnLv = 38 },
                 { name = "Chain Heal", icon = "Interface\\Icons\\Spell_Nature_Healingwavegreater", id = 10623, learnLv = 40, ranks = {
                 { rank = 1, learn = 40, id = 1064 },
@@ -1901,7 +1846,7 @@ ns.SpellBookData = {
         },
     },
     WARLOCK = {
-        total = 56,
+        total = 53,
         tabs = {
         {
             name = "Affliction",
@@ -2081,7 +2026,6 @@ ns.SpellBookData = {
                 { rank = 3, learn = 60, id = 17728 },
                 } },
                 { name = "Inferno", icon = "Interface\\Icons\\Spell_Shadow_Summoninfernal", id = 1122, learnLv = 50 },
-                { name = "Portal of Summoning", icon = "Interface\\Icons\\Inv_Misc_Rune_10", id = 437169, learnLv = 60 },
                 { name = "Ritual of Doom", icon = "Interface\\Icons\\Spell_Shadow_Antimagicshell", id = 18540, learnLv = 60 },
                 { name = "Demonic Sacrifice", icon = "Interface\\Icons\\Spell_Shadow_Psychicscream", id = 18788, isTalent = true },
                 { name = "Fel Domination", icon = "Interface\\Icons\\Spell_Nature_Removecurse", id = 18708, isTalent = true },
@@ -2172,13 +2116,12 @@ ns.SpellBookData = {
         },
     },
     WARRIOR = {
-        total = 42,
+        total = 39,
         tabs = {
         {
             name = "Arms",
             icon = "Interface\\Icons\\Ability_Rogue_Eviscerate",
             spells = {
-                { name = "Battle Stance", icon = "Interface\\Icons\\Ability_Warrior_Offensivestance", id = 2457, learnLv = 1 },
                 { name = "Heroic Strike", icon = "Interface\\Icons\\Ability_Rogue_Ambush", id = 25286, learnLv = 1, ranks = {
                 { rank = 1, learn = 1, id = 78 },
                 { rank = 2, learn = 8, id = 284 },

@@ -171,28 +171,29 @@ end
 function ns.TalentTip(owner, nd, rank, treeName, need, noPre)
     if not owner or type(nd) ~= "table" then return end
     local L = ns.L or {}
-    local name, body = TipSpell(nd.spid)
     rank = tonumber(rank) or 0
     local maxRank = tonumber(nd.max) or 0
+    local nm = nd.n
+    if not nm then nm = TipSpell(nd.spid) end
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
-    GameTooltip:AddLine(name or nd.n or "", 1, 1, 1)
+    GameTooltip:AddLine(nm or "", 1, 1, 1)
     GameTooltip:AddLine(string.format("%s %s%d|r/%d", L["等级"] or "等级", TIP_WHITE, rank, maxRank), 1, 1, 1)
     GameTooltip:AddLine(" ")
-    if #body > 0 then
+    local d = nd.desc
+    local txt
+    if type(d) == "table" then
+        txt = d[math.min(math.max(rank, 1), #d)] or d[1]
+    elseif type(d) == "string" then
+        txt = d
+    end
+    if txt then
+        GameTooltip:AddLine(txt, 1, 1, 1, true)
+    else
+        local _, body = TipSpell(nd.spid)
         for i = 1, #body do
             GameTooltip:AddLine(body[i], 1, 1, 1, true)
         end
-    else
-        if nd.passive then GameTooltip:AddLine(L["被动"] or "被动", 1, 1, 1) end
-        local d = nd.desc
-        local txt
-        if type(d) == "table" then
-            txt = d[math.min(math.max(rank, 1), #d)] or d[1]
-        elseif type(d) == "string" then
-            txt = d
-        end
-        if txt then GameTooltip:AddLine(txt, 1, 1, 1, true) end
     end
     if noPre then
         GameTooltip:AddLine(" ")
@@ -201,5 +202,13 @@ function ns.TalentTip(owner, nd, rank, treeName, need, noPre)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(TIP_RED .. string.format(L["还需投入%d点天赋点数到%s天赋中"] or "还需投入%d点天赋点数到%s天赋中", need, treeName or "") .. "|r", 1, 1, 1, true)
     end
+    ns._talentTip = { owner = owner, nd = nd, tree = treeName, need = need, noPre = noPre, rank = rank }
     GameTooltip:Show()
+end
+
+function ns.ReliveTalentTip(newRank)
+    local c = ns._talentTip
+    if not c or not GameTooltip or not GameTooltip:IsShown() then return end
+    if c.owner and c.owner.IsMouseOver and not c.owner:IsMouseOver() then return end
+    ns.TalentTip(c.owner, c.nd, newRank or c.rank, c.tree, c.need, c.noPre)
 end

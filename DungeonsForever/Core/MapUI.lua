@@ -5348,6 +5348,7 @@ function M.SyncWorldQuestPins()
     local data = wpStatic()
     local cfg = wpCfg()
     local sc2 = cfg.scope
+    local takeOnly = sc2.take ~= false
     local lv = (UnitLevel and UnitLevel("player")) or 0
     local side = DG.PlayerSide and DG.PlayerSide() or nil
     local nOn = (sc2.lv and 1 or 0) + (sc2.reco and 1 or 0) + (sc2.enter and 1 or 0)
@@ -5402,6 +5403,7 @@ function M.SyncWorldQuestPins()
     end
     local function qHit(q)
         if DG.QuestRepeat and DG.QuestRepeat(q[1]) then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(q[1]) then return false end
         if side and q[2] and q[2] ~= side then return false end
         if not wpClassOK(q[15]) then return false end
         if DG.QuestRaceOK and not DG.QuestRaceOK(q[1]) then return false end
@@ -5434,6 +5436,7 @@ function M.SyncWorldQuestPins()
     end
     local function segOk(seg)
         if (DG.QuestState and DG.QuestState(seg)) ~= "todo" then return false end
+        if takeOnly and DG.QuestTakeable and not DG.QuestTakeable(seg) then return false end
         local sq = DG.QuestRowByID and DG.QuestRowByID(seg)
         local qlv
         if sq then

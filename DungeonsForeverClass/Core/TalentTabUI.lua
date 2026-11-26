@@ -24,6 +24,7 @@ local RelayoutPlan
 local PlanMaxOff
 local Refresh
 local OpenPlanPop
+local planCat
 local BuildRemainSeq
 local UpdatePlanRows
 
@@ -631,15 +632,60 @@ OpenPlanPop = function()
     local rows = {}
     local plans = TP and TP[UI.cls] or {}
     for i = 1, #plans do
-        rows[#rows + 1] = { label = plans[i].name or format(L["方案%d"], i), alloc = plans[i].alloc, seq = plans[i].seq, sel = i }
+        local nm = plans[i].name or format(L["方案%d"], i)
+        local cat = "other"
+        if string.find(nm, "·升级", 1, true) then cat = "leveling"
+        elseif string.find(nm, "·PvE", 1, true) then cat = "pve"
+        elseif string.find(nm, "·PvP", 1, true) then cat = "pvp" end
+        rows[#rows + 1] = { label = nm, alloc = plans[i].alloc, seq = plans[i].seq, sel = i, cat = cat }
     end
     local bl = BuildsOf()
     for i = 1, #bl do
-        rows[#rows + 1] = { label = bl[i].name, alloc = bl[i].alloc, blIdx = i }
+        rows[#rows + 1] = { label = bl[i].name, alloc = bl[i].alloc, blIdx = i, cat = "mine" }
     end
-    local w = 352
-    local y = 6
+    local w = 400
+    local has = { leveling = false, pve = false, pvp = false, mine = false }
     for _, r in ipairs(rows) do
+        if has[r.cat] ~= nil then has[r.cat] = true end
+    end
+    local cats = { "leveling", "pve", "pvp", "mine" }
+    local okCat = { all = true }
+    for _, c in ipairs(cats) do
+        if has[c] then okCat[c] = true end
+    end
+    if not (planCat and okCat[planCat]) then
+        planCat = "all"
+        for _, c in ipairs(cats) do
+            if has[c] then planCat = c break end
+        end
+    end
+    local catText = { all = L["全部"], leveling = L["升级"], pve = "PvE", pvp = "PvP", mine = L["我的"] }
+    local tabDefs = { "all" }
+    for _, c in ipairs(cats) do
+        if has[c] then tabDefs[#tabDefs + 1] = c end
+    end
+    local TAB_TOP, TAB_H, TAB_GAP, TAB_PAD, TAB_W = 4, 20, 4, 4, 50
+    local tx = TAB_PAD
+    for _, c in ipairs(tabDefs) do
+        local tb = NewButton(UI.planPop, catText[c], TAB_W, TAB_H, 12)
+        tb:SetPoint("TOPLEFT", UI.planPop, "TOPLEFT", tx, -TAB_TOP)
+        SetButtonSelected(tb, planCat == c, "tab")
+        local cc = c
+        tb:SetScript("OnClick", function()
+            if planCat ~= cc then
+                planCat = cc
+                OpenPlanPop()
+                ns.PlaySound(1)
+            end
+        end)
+        tx = tx + TAB_W + TAB_GAP
+    end
+    local show = {}
+    for _, r in ipairs(rows) do
+        if planCat == "all" or r.cat == planCat then show[#show + 1] = r end
+    end
+    local y = TAB_TOP + TAB_H + 6
+    for _, r in ipairs(show) do
         local bt = CreateFrame("Button", nil, UI.planPop)
         bt:SetSize(w - 8, 24)
         bt:SetPoint("TOPLEFT", UI.planPop, "TOPLEFT", 4, -y)
@@ -647,10 +693,35 @@ OpenPlanPop = function()
         local hl = bt:GetHighlightTexture()
         if hl then hl:SetAlpha(0.08) end
         local lb = MakeFS(bt, 14, C_TEXT, "LEFT")
-        lb:SetPoint("LEFT", bt, "LEFT", 3, 0)
-        lb:SetWidth(76)
+        lb:SetPoint("LEFT", bt, "LEFT", 22, 0)
+        lb:SetWidth(92)
+        lb:SetWordWrap(false)
         lb:SetJustifyH("LEFT")
         lb:SetText(r.label)
+        if r.alloc then
+            local bi, best = 1, -1
+            for t = 1, 3 do
+                local s = 0
+                for _, v in pairs(r.alloc[t] or {}) do s = s + (tonumber(v) or 0) end
+                if s > best then best = s bi = t end
+            end
+            local specIdx = bi
+            if string.upper(UI.cls or "") == "DRUID" and bi == 3 then specIdx = 4 end
+            local specs = ns.ClassTier and ns.ClassTier.specs and ns.ClassTier.specs[string.upper(UI.cls or "")]
+            local sp = specs and specs[specIdx]
+            local iconPath = sp and sp.icon
+            if not iconPath then
+                local tree = data and data.trees and data.trees[bi]
+                if tree and tree.icon then iconPath = "Interface\\Icons\\" .. tostring(tree.icon) end
+            end
+            if iconPath then
+                local ic = bt:CreateTexture(nil, "ARTWORK")
+                ic:SetSize(16, 16)
+                ic:SetPoint("LEFT", bt, "LEFT", 3, 0)
+                ic:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+                ic:SetTexture(iconPath)
+            end
+        end
         local total = 0
         local x = 120
         for t = 1, 3 do

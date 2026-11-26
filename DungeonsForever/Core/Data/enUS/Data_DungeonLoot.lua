@@ -2086,6 +2086,7 @@ ns.DungeonLoot = {
             { 252869, nil, true },
             { 251405, nil, true },
             { 273119, nil, true },
+            { 252871, nil, true },
         } },
     },
     ["blackrock_depths"] = {
@@ -2499,6 +2500,7 @@ ns.DungeonLoot = {
         } },
         { "Sabella No-Eyes", "无眼萨贝拉", "Rare", "269151", {
             { 280084, nil, true },
+            { 280083, nil, true },
         } },
         { "Trash mobs", "Trash mobs", "Any enemy in the dungeon", "", {
             { 287032, nil, true },
@@ -3275,7 +3277,10 @@ ns.DungeonLoot = {
             { 280028, nil, true },
             { 280029, nil, true },
         } },
-        { "King Op", "奥普国王", "Rare", "261993", {} },
+        { "King Op", "奥普国王", "Rare", "261993", {
+            { 280026, nil, true },
+            { 280027, nil, true },
+        } },
         { "Snowtalon", "雪爪", "", "262297", {
             { 280027, nil, true },
             { 280026, nil, true },
