@@ -1222,6 +1222,162 @@ function ns.EnsureDungeonQuestFlow()
         },
     },
 
+    lower_blackrock_spire = {
+        secA = {
+            { hd = "Before the Dungeon", st = {
+                { { t = "At Steamwheedle Port, find " }, { n = "Prospector Ironboot", id = 10460 }, { t = " and check that " }, { q = "The Final Tablets", id = 4788 }, { t = " is available; it's at the end of the Hakkar chain, so skip it if you broke the chain." } },
+                { { t = "At Morgan's Vigil, find " }, { n = "Helendis Riverhorn", id = 9562 }, { t = " and accept " }, { q = "Put Her Down", id = 4701 }, { t = "; outside the cave at Flame Crest, find " }, { n = "Ragged John", id = 9563 }, { t = " and accept " }, { q = "Mother's Milk", id = 4866 }, { t = "." } },
+                { { t = "Inside the cave, find " }, { n = "Kibler", id = 10260 }, { t = " and accept " }, { q = "En-Ay-Es-Tee-Why", id = 4862 }, { t = " and " }, { q = "Kibler's Exotic Pets", id = 4729 }, { t = "." } },
+                { { t = "On the way: in Everlook, find " }, { n = "Kilram", id = 11192 }, { t = " and accept " }, { q = "Snakestone of the Shadow Huntress", id = 5306 }, { t = "; at Flame Crest, find " }, { n = "Tinkee Steamboil", id = 10267 }, { t = " and accept " }, { q = "Broodling Essence", id = 4726 }, { t = "." } },
+            } },
+            { hd = "Inside the Dungeon", st = {
+                { { t = "Follow the main path to the drawbridge and find the patrolling " }, { n = "Warosh", id = 10799 }, { t = " and accept " }, { q = "Urok Doomhowl", id = 4867 }, { t = "." } },
+                { { t = "Before the drawbridge, go up the ramp and find the disguised orc " }, { n = "Scarshield Infiltrator", id = 10299 }, { t = " and accept " }, { q = "Seal of Ascension", id = 4742 }, { t = "." } },
+                { { t = "Search the sleeping orc by the drawbridge wall for " }, { i = "Roughshod Pike", id = 12533 }, { t = "; only one person needs it." } },
+                { { t = "Drop through the gap in the bridge and find " }, { n = "Bijou", id = 10257 }, { t = " and accept " }, { q = "Bijou's Belongings", id = 5001 }, { t = "; the chest is in a far corner deep in the troll maze." } },
+                { { t = "On the rocky slope, collect 15 " }, { i = "Spire Spider Egg", id = 12530 }, { t = " to complete " }, { q = "En-Ay-Es-Tee-Why", id = 4862 }, { t = "; let Mother Smolderweb poison you for " }, { q = "Mother's Milk", id = 4866 }, { t = " and don't cleanse it." } },
+                { { t = "Return to Bijou to turn in " }, { q = "Bijou's Belongings", id = 5001 }, { t = ", accept " }, { q = "Message to Maxwell", id = 5002 }, { t = ", then hearth out." } },
+                { { t = "At Morgan's Vigil, deliver the message to " }, { n = "Marshal Maxwell", id = 9560 }, { t = ", accept " }, { q = "Maxwell's Mission", id = 5081 }, { t = "; at Flame Crest, turn in " }, { q = "Mother's Milk", id = 4866 }, { t = " and " }, { q = "En-Ay-Es-Tee-Why", id = 4862 }, { t = "." } },
+                { { t = "Re-enter the dungeon, kill Highlord Omokk and loot " }, { i = "Omokk's Head", id = 12534 }, { t = " and " }, { i = "Gemstone of Spirestone", id = 12336 }, { t = "." } },
+                { { t = "In the troll area, take the room opposite, kill Shadow Hunter Vosh'gajin and take " }, { i = "Fifth Mosh'aru Tablet", id = 12740 }, { t = " from the wall, which also completes " }, { q = "Snakestone of the Shadow Huntress", id = 5306 }, { t = "." } },
+                { { t = "In the small room at the end of the ramp, kill War Master Voone and take " }, { i = "Sixth Mosh'aru Tablet", id = 12741 }, { t = " from the wall behind him; with both tablets, turn in " }, { q = "The Final Tablets", id = 4788 }, { t = "; loot " }, { i = "Gemstone of Smolderthorn", id = 12335 }, { t = "." } },
+                { { t = "Follow Bijou's path past Mother Smolderweb's area, climb onto the ogre skull platform and use " }, { i = "Roughshod Pike", id = 12533 }, { t = " and " }, { i = "Omokk's Head", id = 12534 }, { t = " to start the " }, { q = "Urok Doomhowl", id = 4867 }, { t = " challenge; loot " }, { i = "Warosh's Mojo", id = 12712 }, { t = "; the whole group must turn it in at the same time." } },
+                { { t = "The hole in the wall at the right end of the cross corridor is Halycon's den: capture a pup to complete " }, { q = "Kibler's Exotic Pets", id = 4729 }, { t = ", and kill her to complete " }, { q = "Put Her Down", id = 4701 }, { t = "." } },
+                { { t = "Cross the suspended bridge to the deepest point, kill Overlord Wyrmthalak and loot " }, { i = "General Drakkisath's Command", id = 12780 }, { t = " and " }, { i = "Gemstone of Bloodaxe", id = 12337 }, { t = "." } },
+            } },
+            { hd = "After the Dungeon", st = {
+                { { t = "At Morgan's Vigil, turn in " }, { q = "General Drakkisath's Command", id = 5089 }, { t = ", accept " }, { q = "General Drakkisath's Demise", id = 5102 }, { t = ", then turn in " }, { q = "Maxwell's Mission", id = 5081 }, { t = "." } },
+                { { t = "At Flame Crest, turn in " }, { q = "Kibler's Exotic Pets", id = 4729 }, { t = "; at Steamwheedle Port, turn in " }, { q = "The Final Tablets", id = 4788 }, { t = ", find " }, { n = "Yeh'kinya", id = 8579 }, { t = " and accept " }, { q = "Confront Yeh'kinya", id = 8181 }, { t = "." } },
+                { { t = "Once you have all three gemstones and the " }, { i = "Unadorned Seal of Ascension", id = 12219 }, { t = ", return to Lower Blackrock Spire, find " }, { n = "Scarshield Infiltrator", id = 10299 }, { t = " and turn in " }, { q = "Seal of Ascension", id = 4742 }, { t = "; the follow-up forges it into the Upper Blackrock Spire key." } },
+            } },
+        },
+    },
+
+    upper_blackrock_spire = {
+        secA = {
+            { hd = "Before the Dungeon", st = {
+                { { t = "To open Upper Blackrock Spire, at least one player must hold " }, { i = "Seal of Ascension", id = 12344 }, { t = "." } },
+                { { t = "First, in Lower Blackrock Spire, defeat " }, { n = "Overlord Wyrmthalak", id = 9568 }, { t = ", loot " }, { i = "General Drakkisath's Command", id = 12780 }, { t = " and accept " }, { q = "General Drakkisath's Command", id = 5089 }, { t = ", go to Morgan's Vigil (84,68) in Burning Steppes and turn it in to " }, { n = "Marshal Maxwell", id = 9560 }, { t = ", accept " }, { q = "General Drakkisath's Demise", id = 5102 }, { t = "." } },
+                { { t = "Advance the Onyxia attunement chain to " }, { q = "The Dragon's Eye", id = 6501 }, { t = " and visit Winterspring (54,51) to speak with " }, { n = "Haleh", id = 10929 }, { t = ", after which you'll hold " }, { q = "Drakefire Amulet", id = 6502 }, { t = "." } },
+                { { t = "At Morgan's Vigil (84,69), find " }, { n = "Mayara Brightwing", id = 9565 }, { t = " and accept " }, { q = "Doomrigger's Clasp", id = 4764 }, { t = "; its prerequisite " }, { q = "Mayara Brightwing", id = 4766 }, { t = " requires delivering a letter in Stormwind (77,47) first." } },
+                { { t = "At Flame Crest (65,24), find " }, { n = "Tinkee Steamboil", id = 10267 }, { t = " and accept " }, { q = "Broodling Essence", id = 4726 }, { t = ": use " }, { i = "Draco-Incarcinatrix 900", id = 12284 }, { t = " on Black Broodlings out in Burning Steppes, then kill them to collect 8 " }, { i = "Broodling Essence", id = 12283 }, { t = "." } },
+                { { t = "After turning that in, accept " }, { q = "Felnok Steelspring", id = 4808 }, { t = ", take " }, { i = "Tinkee's Letter", id = 12438 }, { t = " to Everlook, Winterspring (61,38) for " }, { n = "Felnok Steelspring", id = 10468 }, { t = ", then collect 8 " }, { i = "Uncracked Chillwind Horn", id = 12444 }, { t = " (" }, { q = "Chillwind Horns", id = 4809 }, { t = ")." } },
+                { { t = "After turning in the horns, accept " }, { q = "Return to Tinkee", id = 4810 }, { t = ", take " }, { i = "Felnok's Package", id = 12445 }, { t = " back to Flame Crest, then accept " }, { q = "Egg Freezing", id = 4734 }, { t = " and " }, { q = "Egg Collection", id = 4735 }, { t = "." } },
+                { { t = "While Molten Core is not yet open, " }, { q = "Eye of the Emberseer", id = 6821 }, { t = " and " }, { q = "Blackhand's Command", id = 7761 }, { t = " are not yet available." } },
+            } },
+            { hd = "Inside the Dungeon", st = {
+                { { t = "Inside, turn left to the upper level; the player holding " }, { i = "Seal of Ascension", id = 12344 }, { t = " opens the magic door of Dragonspire Hall. After you clear every side room on both levels, the door leading deeper opens automatically." } },
+                { { t = "In the Hall of Binding, click the Blackrock Altar, then kill the Blackhand Incarcerators and " }, { n = "Pyroguard Emberseer", id = 9816 }, { t = "; if you have " }, { q = "Eye of the Emberseer", id = 6821 }, { t = ", it completes as well." } },
+                { { t = "In the Rookery, target any dragon egg and use " }, { i = "Eggscilloscope Prototype", id = 12286 }, { t = " to complete " }, { q = "Egg Freezing", id = 4734 }, { t = ", then use " }, { i = "Collectronic Module", id = 12287 }, { t = " on frozen eggs and collect 8 to complete " }, { q = "Egg Collection", id = 4735 }, { t = "." } },
+                { { t = "Behind the fallen pillar on the right side of the Rookery is the chest with " }, { i = "Doomrigger's Clasp", id = 12352 }, { t = "." } },
+                { { t = "In Blackrock Stadium, kill " }, { n = "Warchief Rend Blackhand", id = 10429 }, { t = " (riding " }, { n = "Gyth", id = 10339 }, { t = ")." } },
+                { { t = "Loot " }, { i = "Head of Rend Blackhand", id = 227911 }, { t = " to automatically start " }, { q = "End of the Dark Horde", id = 84377 }, { t = "." } },
+                { { t = "In the room beside the stadium, talk to the little blue dragon " }, { n = "Awbee", id = 10740 }, { t = " and accept " }, { q = "The Matron Protectorate", id = 5160 }, { t = ", which sends you to Haleh in Winterspring." } },
+                { { t = "In the forge hall, kill The Beast; after it's skinned, " }, { n = "Pip Quickwit", id = 10776 }, { t = " appears and offers " }, { q = "Pip Quickwit, At Your Service!", id = 5047 }, { t = "." } },
+                { { t = "Cross the suspended bridge and kill the final boss, " }, { n = "General Drakkisath", id = 10363 }, { t = "." } },
+                { { t = "Killing the general completes both " }, { q = "General Drakkisath's Demise", id = 5102 }, { t = " and " }, { q = "Drakefire Amulet", id = 6502 }, { t = "; take the " }, { i = "Blood of the Black Dragon Champion", id = 16663 }, { t = "; if you have " }, { q = "Blackhand's Command", id = 7761 }, { t = ", click the command orb behind the general to complete it." } },
+            } },
+            { hd = "After the Dungeon", st = {
+                { { t = "Before leaving, backtrack to the Rookery to finish the remaining eggs for " }, { q = "Egg Collection", id = 4735 }, { t = " by targeting frozen eggs with " }, { i = "Collectronic Module", id = 12287 }, { t = "." } },
+                { { t = "Return to Flame Crest, find " }, { n = "Tinkee Steamboil", id = 10267 }, { t = " and turn in " }, { q = "Egg Freezing", id = 4734 }, { t = " and " }, { q = "Egg Collection", id = 4735 }, { t = ", accept " }, { q = "Leonid Barthalomew", id = 5522 }, { t = ", take " }, { i = "Frozen Eggs", id = 13761 }, { t = " to Light's Hope Chapel in Eastern Plaguelands (75,52)." } },
+                { { t = "At Morgan's Vigil, find " }, { n = "Mayara Brightwing", id = 9565 }, { t = " and turn in " }, { q = "Doomrigger's Clasp", id = 4764 }, { t = ", accept " }, { q = "Delivery to Ridgewell", id = 4765 }, { t = " and take it back to Stormwind." } },
+                { { t = "Find " }, { n = "Marshal Maxwell", id = 9560 }, { t = " and turn in " }, { q = "General Drakkisath's Demise", id = 5102 }, { t = "; in Winterspring, find " }, { n = "Haleh", id = 10929 }, { t = " and turn in " }, { q = "Drakefire Amulet", id = 6502 }, { t = " and " }, { q = "The Matron Protectorate", id = 5160 }, { t = "." } },
+                { { t = "In Everlook (61,38), find " }, { n = "Malyfous Darkhammer", id = 10637 }, { t = " and turn in " }, { q = "Pip Quickwit, At Your Service!", id = 5047 }, { t = "." } },
+                { { t = "Back in Stormwind, give " }, { i = "Head of Rend Blackhand", id = 227911 }, { t = " to " }, { n = "Master Mathias Shaw", id = 332 }, { t = ", then take it to the city gates for " }, { n = "Major Mattingly", id = 14394 }, { t = "." } },
+            } },
+        },
+    },
+
+    scholomance = {
+        secA = {
+            { hd = "Before the Dungeon", st = {
+                { { t = "Inside the chapel at Light's Hope Chapel, find " }, { n = "Leonid Barthalomew the Revered", id = 11036 }, { t = " and turn in " }, { q = "Leonid Barthalomew", id = 5522 }, { t = "." } },
+                { { t = "Step outside and find " }, { n = "Betina Bigglezink", id = 11035 }, { t = " and turn in " }, { q = "Betina Bigglezink", id = 5531 }, { t = ", accept " }, { q = "Dawn's Gambit", id = 4771 }, { t = " and " }, { q = "Plagued Hatchlings", id = 5529 }, { t = "." } },
+                { { t = "Fly to Chillwind Camp in Western Plaguelands and get an Argent Dawn Commission from the Argent Dawn officer; nearby, find " }, { n = "Weldon Barov", id = 11023 }, { t = " and accept " }, { q = "Barov Family Fortune", id = 5343 }, { t = ": collect the four deeds inside the dungeon." } },
+                { { t = "Head to Scholomance on Caer Darrow; before entering, at the door find " }, { n = "Eva Sarkhoff", id = 11216 }, { t = " and accept " }, { q = "Doctor Theolen Krastinov, the Butcher", id = 5382 }, { t = "." } },
+            } },
+            { hd = "Inside the Dungeon", st = {
+                { { t = "Go through the Chamber of Summoning deeper into the Scholomance." } },
+                { { t = "Cross the bridge and go through the first hall into the school's main hall." } },
+                { { t = "From the desk in the right corner of the room before the hatchling room, take " }, { i = "The Deed to Tarren Mill", id = 13451 }, { t = "; kill 20 Plagued Hatchlings to complete " }, { q = "Plagued Hatchlings", id = 5529 }, { t = "." } },
+                { { t = "Go deep into the Ossuary, kill Rattlegore and take the Viewing Room Key (one person loots it; it opens the door)." } },
+                { { t = "Open the Viewing Room door with the key, take the front-right door down to the Laboratory and kill Ras Frostwhisper; by the wall, loot " }, { i = "The Deed to Brill", id = 13471 }, { t = "." } },
+                { { t = "Return to the Viewing Room and place " }, { i = "Dawn's Gambit", id = 12368 }, { t = ", leave the room, then go up to the lecture hall and kill Vectus to complete " }, { q = "Dawn's Gambit", id = 4771 }, { t = "." } },
+                { { t = "Enter the Headmaster's Study through the right-side door: in the 3 o'clock room on the lower level, kill " }, { n = "Alexi Barov", id = 11022 }, { t = ", loot " }, { i = "The Deed to Caer Darrow", id = 13448 }, { t = "; in the 3 o'clock room on the upper level, find and burn the two remains on the floor, then kill Doctor Theolen Krastinov to complete " }, { q = "Doctor Theolen Krastinov, the Butcher", id = 5382 }, { t = "." } },
+                { { t = "In the center of the lower level, kill the final boss, Darkmaster Gandling." } },
+            } },
+            { hd = "After the Dungeon", st = {
+                { { t = "Leave the way you came, find " }, { n = "Eva Sarkhoff", id = 11216 }, { t = " and turn in " }, { q = "Doctor Theolen Krastinov, the Butcher", id = 5382 }, { t = ", accept " }, { q = "Krastinov's Bag of Horrors", id = 5515 }, { t = "." } },
+                { { t = "Return to the school's main hall and take the stairs down to the crypt; click the torch on the wall to open a chest in the small alcove to the right of the Viewing Room door." } },
+                { { t = "In the middle alcove at the bottom, kill Jandice Barov and loot the Bag of Horrors to complete " }, { q = "Krastinov's Bag of Horrors", id = 5515 }, { t = "." } },
+                { { t = "After leaving the dungeon, find " }, { n = "Eva Sarkhoff", id = 11216 }, { t = " and turn in " }, { q = "Krastinov's Bag of Horrors", id = 5515 }, { t = ", accept " }, { q = "Kirtonos the Herald", id = 5384 }, { t = "." } },
+                { { t = "Go to the deepest part of the Ossuary to take the last deed, " }, { i = "The Deed to Southshore", id = 13450 }, { t = "." } },
+                { { t = "Then go to the balcony outside the Chamber of Summoning; the player holding the Blood of Innocents lights the brazier to summon Kirtonos the Herald. Kill him to complete " }, { q = "Kirtonos the Herald", id = 5384 }, { t = "." } },
+                { { t = "Leave the dungeon and turn in " }, { q = "Kirtonos the Herald", id = 5384 }, { t = " to receive the Spectral Essence; with it equipped you can see Magistrate Marduke beside the hidden mausoleum on Caer Darrow. Talk to him to accept " }, { q = "The Lich, Ras Frostwhisper", id = 5466 }, { t = "." } },
+                { { t = "Return to Light's Hope Chapel and turn in " }, { q = "Dawn's Gambit", id = 4771 }, { t = " and " }, { q = "Plagued Hatchlings", id = 5529 }, { t = " to " }, { n = "Betina Bigglezink", id = 11035 }, { t = "; also hand in " }, { i = "Healthy Dragon Scale", id = 13920 }, { t = " to complete " }, { q = "Healthy Dragon Scale", id = 5582 }, { t = "." } },
+                { { t = "Once all four deeds are collected, return to Chillwind Camp, find " }, { n = "Weldon Barov", id = 11023 }, { t = " and turn in " }, { q = "Barov Family Fortune", id = 5343 }, { t = ", accept " }, { q = "The Last Barov", id = 5344 }, { t = "; take your current group to the Bulwark, draw out and kill " }, { n = "Alexi Barov", id = 11022 }, { t = ", loot his head, and bring it back to turn in." } },
+            } },
+        },
+    },
+
+    stratholme_main = {
+        secA = {
+            { hd = "Before the Dungeon", st = {
+                { { t = "Of Love and Family prerequisites: at the hut by the Thondroril River, find " }, { n = "Tirion Fordring" }, { t = " and accept " }, { q = "Demon Dogs", id = 5542 }, { t = ", " }, { q = "Blood Tinged Skies", id = 5543 }, { t = ", " }, { q = "Carrion Grubbage", id = 5544 }, { t = "." } },
+                { { t = "After turning in all three, complete in order " }, { q = "Redemption", id = 5742 }, { t = ", " }, { q = "Of Forgotten Memories", id = 5781 }, { t = ", " }, { q = "Of Lost Honor", id = 5845 }, { t = " and turn them in, then accept " }, { q = "Of Love and Family", id = 5846 }, { t = " and go to Caer Darrow to find " }, { n = "Artist Renfray" }, { t = " to accept the dungeon quest " }, { q = "Of Love and Family", id = 5848 }, { t = "." } },
+                { { t = "At Light's Hope Chapel, find " }, { n = "Caretaker Alen" }, { t = " and accept " }, { q = "The Restless Souls", id = 5281 }, { t = ", then go to Plaguewood to find " }, { n = "Egan", id = 11140 }, { t = ", turn it in and accept " }, { q = "The Restless Souls", id = 5282 }, { t = " and receive " }, { i = "Egan's Blaster", id = 13289 }, { t = "." } },
+                { { t = "In the chapel, find " }, { n = "Duke Nicholas Zverenhoff", id = 11039 }, { t = " and accept " }, { q = "The Archivist", id = 5251 }, { t = "." } },
+                { { t = "In the camp, find " }, { n = "Smokey LaRue", id = 11033 }, { t = " and accept " }, { q = "The Great Ezra Grimm", id = 5214 }, { t = "." } },
+                { { t = "Find " }, { n = "Betina Bigglezink", id = 11035 }, { t = " and accept " }, { q = "The Flesh Does Not Lie", id = 5212 }, { t = ", find " }, { n = "Leonid Barthalomew the Revered", id = 11036 }, { t = " and accept " }, { q = "Houses of the Holy", id = 5243 }, { t = "." } },
+                { { t = "In Everlook, Winterspring, find " }, { n = "Lilith the Lithe", id = 11191 }, { t = " and accept " }, { q = "Sweet Serenity", id = 5305 }, { t = "." } },
+            } },
+            { hd = "Inside the Dungeon", st = {
+                { { t = "Enter the Scarlet side through the main gate and pick up " }, { i = "Plagued Flesh Sample", id = 13174 }, { t = " along the way; collect 20 to complete " }, { q = "The Flesh Does Not Lie", id = 5212 }, { t = "." } },
+                { { t = "Loot the supply crates around the city to gather " }, { i = "Stratholme Holy Water", id = 13180 }, { t = " x5 to complete " }, { q = "Houses of the Holy", id = 5243 }, { t = "." } },
+                { { t = "On the wandering ghostly citizens, use " }, { i = "Egan's Blaster", id = 13289 }, { t = " and free 15 souls to complete " }, { q = "The Restless Souls", id = 5282 }, { t = " (progress is shared by the whole group)." } },
+                { { t = "Turn left and go to the fountain at the end, clear the courier, and loot the Scarlet key that opens the gate (one person takes it)." } },
+                { { t = "Click the tobacco crate by the wall, then kill " }, { t = "Fras Siabi" }, { t = " when he appears and take " }, { i = "Grimm's Premium Tobacco", id = 13172 }, { t = " to complete " }, { q = "The Great Ezra Grimm", id = 5214 }, { t = "." } },
+                { { t = "Take the passage to the upper city, open the fortress gate with the Scarlet key, and enter the Scarlet Bastion." } },
+                { { t = "From the small chest in the corner of the left room at the end of the Hall of Lights, loot " }, { i = "Medallion of Faith", id = 12845 }, { t = " (one person loots it)." } },
+                { { t = "Go deep into the Armory, click the blacksmithing plans on the armory floor, and kill " }, { t = "the Crimson Hammersmith" }, { t = " when he appears and take " }, { i = "Crimson Hammersmith's Apron", id = 13351 }, { t = " to complete " }, { q = "Sweet Serenity", id = 5305 }, { t = "." } },
+                { { t = "In the left room inside the Bastion, kill " }, { t = "Archivist Galford" }, { t = ", then click the book on the table to burn the archives and complete " }, { q = "The Archivist", id = 5251 }, { t = "." } },
+                { { t = "Click the painting on the nearby wall to loot " }, { i = "Of Love and Family", id = 14679 }, { t = " to complete " }, { q = "Of Love and Family", id = 5848 }, { t = " (take the painting before burning the archives)." } },
+            } },
+            { hd = "After the Dungeon", st = {
+                { { t = "First leave the dungeon and return to Light's Hope Chapel, find " }, { n = "Duke Nicholas Zverenhoff", id = 11039 }, { t = " and turn in " }, { q = "The Archivist", id = 5251 }, { t = "." } },
+                { { t = "Then turn in the rest you have completed: " }, { q = "The Restless Souls", id = 5282 }, { t = " (" }, { n = "Egan", id = 11140 }, { t = "), " }, { q = "The Flesh Does Not Lie", id = 5212 }, { t = " (" }, { n = "Betina Bigglezink", id = 11035 }, { t = "), " }, { q = "Houses of the Holy", id = 5243 }, { t = " (" }, { n = "Leonid Barthalomew the Revered", id = 11036 }, { t = "), " }, { q = "The Great Ezra Grimm", id = 5214 }, { t = " (" }, { n = "Smokey LaRue", id = 11033 }, { t = "), " }, { q = "Sweet Serenity", id = 5305 }, { t = " (" }, { n = "Lilith the Lithe", id = 11191 }, { t = ")." } },
+                { { t = "Back on the Scarlet side, kill the final boss " }, { t = "Balnazzar" }, { t = ", loot from his corpse " }, { i = "Head of Balnazzar", id = 13250 }, { t = ", then click it to accept " }, { q = "The Truth Comes Crashing Down", id = 5262 }, { t = "." } },
+            } },
+        },
+    },
+
+    stratholme_service = {
+        secA = {
+            { hd = "Before the Dungeon", st = {
+                { { t = "In Caer Darrow, find " }, { n = "Magistrate Marduke" }, { t = " (visible only with the Spectral Essence equipped) to accept " }, { q = "The Human, Ras Frostwhisper", id = 5461 }, { t = ", then go to the Stromgarde ruins in Arathi Highlands to find " }, { i = "Keepsake of Remembrance", id = 13585 }, { t = " and turn it in, then accept " }, { q = "The Dying, Ras Frostwhisper", id = 5462 }, { t = "." } },
+                { { t = "At Light's Hope Chapel, find " }, { n = "Leonid Barthalomew the Revered", id = 11036 }, { t = " and turn in " }, { q = "The Dying, Ras Frostwhisper", id = 5462 }, { t = ", accept " }, { q = "Menethil's Gift", id = 5463 }, { t = "." } },
+                { { t = "Find " }, { n = "Duke Nicholas Zverenhoff", id = 11039 }, { t = " and turn in " }, { q = "The Truth Comes Crashing Down", id = 5262 }, { t = " and accept " }, { q = "Above and Beyond", id = 5263 }, { t = "; find " }, { n = "Betina Bigglezink", id = 11035 }, { t = " and turn in " }, { q = "The Flesh Does Not Lie", id = 5212 }, { t = " and accept " }, { q = "The Active Agent", id = 5213 }, { t = "; if you haven't taken " }, { q = "Houses of the Holy", id = 5243 }, { t = ", pick it up now." } },
+                { { t = "Someone in the group must hold " }, { i = "Medallion of Faith", id = 12845 }, { t = " to hand to Aurius inside; enter through the side gate with the Key to the City." } },
+            } },
+            { hd = "Inside the Dungeon", st = {
+                { { t = "Enter through the side gate and clear Elders' Square; the player holding " }, { i = "Medallion of Faith", id = 12845 }, { t = " goes to the Chapel of Alonsus and talks to the kneeling " }, { n = "Aurius", id = 10917 }, { t = " to hand it in." } },
+                { { t = "Exit, turn right, and open the Scarlet iron gate with the key." } },
+                { { t = "Keep to the right; at the first ziggurat kill Baroness Anastari, then enter the ziggurat." } },
+                { { t = "Go back to the fork and turn left; at the second ziggurat kill Nerub'enkan, and from the small archive box inside take " }, { i = "Scourge Data", id = 13176 }, { t = " (for The Active Agent)." } },
+                { { t = "Turn left and go deep through the trap room passage, keeping to the right." } },
+                { { t = "At the third ziggurat kill Maleki the Pallid (clearing all three opens the Slaughterhouse)." } },
+                { { t = "Deep on the right in front of the Slaughterhouse gate, kill Magistrate Barthilas and take the Key to the City; open the gate again only once the whole group is inside (so no one is locked out)." } },
+                { { t = "Clear the Slaughterhouse and kill Ramstein the Gorger; the red-cross crate in the square holds " }, { i = "Stratholme Holy Water", id = 13180 }, { t = "." } },
+                { { t = "Once the Baron's fortress gate opens, enter the room and kill the final boss, Baron Rivendare." } },
+                { { t = "After killing the Baron, take " }, { i = "Head of Baron Rivendare", id = 13251 }, { t = " to complete " }, { q = "Above and Beyond", id = 5263 }, { t = "; on the pentagram in the Baron's room, place " }, { i = "Keepsake of Remembrance", id = 13585 }, { t = " to complete " }, { q = "Menethil's Gift", id = 5463 }, { t = ", receive " }, { i = "Soulbound Keepsake", id = 13624 }, { t = " and accept " }, { q = "Menethil's Gift", id = 5464 }, { t = "; talk to Aurius' corpse to complete " }, { q = "Aurius' Reckoning", id = 5125 }, { t = "." } },
+            } },
+            { hd = "After the Dungeon", st = {
+                { { t = "Return to Light's Hope Chapel, find " }, { n = "Duke Nicholas Zverenhoff", id = 11039 }, { t = " and turn in " }, { q = "Above and Beyond", id = 5263 }, { t = "." } },
+                { { t = "Find " }, { n = "Betina Bigglezink", id = 11035 }, { t = " and turn in " }, { q = "The Active Agent", id = 5213 }, { t = "; find " }, { n = "Leonid Barthalomew the Revered", id = 11036 }, { t = " and turn in " }, { q = "Menethil's Gift", id = 5464 }, { t = "." } },
+            } },
+        },
+    },
+
     uldaman = {
         secH = {
             { hd = "Before the Dungeon", st = {
@@ -1869,6 +2025,32 @@ function ns.EnsureDungeonQuestFlow()
                     { { t = "Return to the Dalaran ruins in Alterac Mountains and turn in " }, { q = "Blackmaw Magic", id = 97173 }, { t = " to " }, { n = "Archmage Timear", id = 31439 }, { t = "; Horde return to Mulgore and turn in the quest of the same name to " }, { n = "Muln Earthfury", id = 259118 }, { t = "." } },
                     { { t = "Return to Ursolan, find " }, { n = "Gatekeeper Rageroar", id = 6651 }, { t = " and turn in " }, { q = "Blackmaw Reclamation", id = 92065 }, { t = "; this wraps up the long Timbermaw chain." } },
                     { { t = "Root caps go to " }, { n = "Mathrengyl Bearwalker", id = 4217 }, { t = " in Darnassus or " }, { n = "Nara Wildmane", id = 5770 }, { t = " in Thunder Bluff; totems go to " }, { n = "Lorekeeper Nok", id = 249853 }, { t = " in Ursolan." } },
+                },
+            },
+        },
+    },
+    shapers_terrace = {
+        side = nil,
+        secA = {
+            {
+                hd = "Before the Dungeon",
+                st = {
+                    { { t = "Alliance: in the Hall of Explorers in Ironforge, find the wandering " }, { n = "Curator Thorius", id = 8256 }, { t = " and accept two dungeon quests: " }, { q = "Panic at the Digsite", id = 95924 }, { t = " and " }, { q = "Mapping the Way Forward", id = 95925 }, { t = ", neither with prerequisites; the third, " }, { q = "Digestible Research", id = 95790 }, { t = ", is started from a book on the floor inside the dungeon. Turn in all three to him after the run." } },
+                    { { t = "Fly to Un'Goro Crater and head to the North Pylon north of Marshal's Refuge; behind the pylon a new mountain path leads up to the Shaper's Terrace." } },
+                },
+            },
+            {
+                hd = "Inside the Dungeon",
+                st = {
+                    { { t = "On entering, stand on the high ledge, then jump down into the pool; click the book on the ground in front of the tent by the pool to accept " }, { q = "Digestible Research", id = 95790 }, { t = ". " }, { i = "Partially Digested Journal Page", id = 271972 }, { t = " drop from Ravasaur corpses along the way and are shared-loot for the group; collect 15." } },
+                    { { t = "Ravasaur Matriarchs and Ironhide Ravasaurs roam in packs along the way; clear 6 Matriarchs and 9 Ironhides as you go. The boss-level " }, { n = "Venomridge", id = 261813 }, { t = " is near the yellow crystal wall at the southeast edge; kill it to complete " }, { q = "Panic at the Digsite", id = 95924 }, { t = "." } },
+                    { { t = "Use " }, { i = "Explorers' League Cartographer's Kit", id = 271770 }, { t = " to check in at five landmarks and complete " }, { q = "Mapping the Way Forward", id = 95925 }, { t = ": the westernmost " }, { n = "The Doors", id = 263461 }, { t = ", at the southeast edge the half-buried " }, { n = "Destroyed Watcher", id = 263462 }, { t = ", in the titan structure to the north the " }, { n = "Regrowth Vestibule", id = 263460 }, { t = ", in the middle of the instance the " }, { n = "Drained Crystal", id = 263277 }, { t = ", and on the final platform the " }, { n = "Pillar of Assimilation", id = 263458 }, { t = ". Just walk to the right spot and click; do them in whatever order you reach them." } },
+                },
+            },
+            {
+                hd = "After the Dungeon",
+                st = {
+                    { { t = "Return to Ironforge with all three quests and find " }, { n = "Curator Thorius", id = 8256 }, { t = " to turn in: " }, { q = "Panic at the Digsite", id = 95924 }, { t = ", " }, { q = "Mapping the Way Forward", id = 95925 }, { t = ", " }, { q = "Digestible Research", id = 95790 }, { t = ". All rewards are optional blue items." } },
                 },
             },
         },
