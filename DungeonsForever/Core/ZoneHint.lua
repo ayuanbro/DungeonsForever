@@ -2666,6 +2666,12 @@ ns.Init(function()
         end
     end)
     if ns.ZoneOrb and ns.ZoneOrb.Init then ns.ZoneOrb.Init() end
+    if worldAt == nil then
+        worldAt = (GetTime and GetTime()) or 0
+        if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+            C_Timer.After(6.5, function() Z.ScheduleSoft(0.1, true) end)
+        end
+    end
     Z.LoginCheck(0)
 end)
 

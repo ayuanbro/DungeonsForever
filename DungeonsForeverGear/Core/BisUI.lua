@@ -1990,6 +1990,7 @@ local function LoadFilterPrefs()
     local lv = s.fFilterLv
     BG.filterLv = (type(lv) == "number" and lv >= 1 and lv <= 60) and math.floor(lv)
         or ((UnitLevel and UnitLevel("player")) or 60)
+    BG.bwHidePvpInAll = (s.fHidePvpAll ~= false)
     if s.fSrcVer ~= 4 then
         if s.fSrcVer ~= 3 then
             local ss = s.fSrcSet
@@ -2061,6 +2062,7 @@ local function SaveFilterPrefs()
         if v then it[k] = true end
     end
     s.fInstSet = it
+    s.fHidePvpAll = BG.bwHidePvpInAll and true or false
     if BG.bwArmorSel then
         local m = 0
         for u = 1, 4 do if BG.bwArmorSel[u] then m = m + (2 ^ (u - 1)) end end
@@ -2092,6 +2094,20 @@ local function PlayerFac()
         __pfac = (ok and fg == "Horde") and "h" or "a"
     end
     return __pfac
+end
+
+function BG.VendorFacOK(id)
+    local fn = ns.EnsureGearVendors
+    local GV = type(fn) == "function" and fn() or ns.GearVendors
+    local row = GV and GV[id]
+    if type(row) ~= "table" or #row == 0 then return true end
+    local me = PlayerFac()
+    for i = 1, #row do
+        local v = row[i]
+        local f = type(v) == "table" and v[3] or nil
+        if f == nil or f == me then return true end
+    end
+    return false
 end
 
 local function GearSrcReady()
@@ -2181,6 +2197,7 @@ local function UsableAt(id, lv, catReq)
     local qid = ns.GearSrcQ and ns.GearSrcQ[id]
     local fac = qid and ns.GearQuestRace and ns.GearQuestRace[qid]
     if fac and fac ~= PlayerFac() then return false end
+    if not BG.VendorFacOK(id) then return false end
     return true
 end
 
@@ -2877,7 +2894,7 @@ local AUTO_BUDGET_MS = 6
 local AUTO_TOP_N = 40
 
 BG.AUTO_SRC = { dungeon = AUTO_SRC_DG, known = AUTO_SRC_KNOWN, dq = AUTO_SRC_DQ }
-BG.AUTO_GEN_REV = 32
+BG.AUTO_GEN_REV = 33
 
 local function ClampLv(lv)
     lv = math.floor(tonumber(lv) or 60)
@@ -3175,6 +3192,7 @@ local function AutoRawOK(id, cap)
     local qid = ns.GearSrcQ and ns.GearSrcQ[id]
     local fac = qid and ns.GearQuestRace and ns.GearQuestRace[qid]
     if fac and fac ~= PlayerFac() then return false end
+    if not BG.VendorFacOK(id) then return false end
     return true
 end
 
@@ -4252,6 +4270,7 @@ local function PaintBrowser()
             else
                 local kind = CatKind(r.id)
                 if BG.bwSrcTab ~= nil and kind ~= BG.bwSrcTab then pass = false end
+                if pass and BG.bwSrcTab == nil and BG.bwHidePvpInAll and kind == "pvp" then pass = false end
                 if pass and lv and not UsableAt(r.id, lv, r.req or 0) then pass = false end
                 if pass and kind == "boss" then
                     if type(BG.bwInstSet) ~= "table" then BG.BWEnsureInstSet() end
@@ -6346,12 +6365,15 @@ function BG.BuildBwFilter()
     scrim:SetFrameStrata("FULLSCREEN_DIALOG")
     scrim:SetFrameLevel(240)
     scrim:EnableMouse(true)
+    local sbg = scrim:CreateTexture(nil, "BACKGROUND")
+    sbg:SetAllPoints()
+    sbg:SetColorTexture(0, 0, 0, 0.45)
     scrim:Hide()
     scrim:SetScript("OnMouseDown", function() if BG.CloseBwFilter then BG.CloseBwFilter() end end)
     local pop = CreateFrame("Frame", "DungeonsForever_BisBwFilter", host, "BackdropTemplate")
     pop:SetFrameStrata("FULLSCREEN_DIALOG")
     pop:SetFrameLevel(242)
-    pop:SetSize(760, 470)
+    pop:SetSize(990, 440)
     pop:SetPoint("CENTER", host, "CENTER", 0, 0)
     pop:SetMovable(true)
     pop:EnableMouse(true)
@@ -6383,6 +6405,8 @@ function BG.BuildBwFilter()
         lvEb:SetSize(48, 24)
         lvEb:SetPoint("LEFT", lvLab, "RIGHT", 8, 0)
         lvEb:SetNumeric(true)
+        local efs = lvEb.GetFontString and lvEb:GetFontString() or nil
+        if efs and efs.SetFont then efs:SetFont(ns.FONT, 14, "") end
         lvEb:SetText(tostring(BG.filterLv or PlayerLevel() or 60))
         lvEb:SetScript("OnEnterPressed", function(self) BG.bwFilterApplyLv(); self:ClearFocus() end)
         lvEb:SetScript("OnEditFocusLost", function() BG.bwFilterApplyLv() end)
@@ -6420,7 +6444,7 @@ function BG.BuildBwFilter()
     for i = 1, #ARM do
         local u, lab = ARM[i][1], ARM[i][2]
         local bt = CreateFrame("Button", nil, pop)
-        bt:SetSize(74, 20)
+        bt:SetSize(54, 20)
         local bx = CreateFrame("Frame", nil, bt)
         bx:SetSize(14, 14)
         bx:SetPoint("LEFT", bt, "LEFT", 2, 0)
@@ -6433,7 +6457,7 @@ function BG.BuildBwFilter()
         bt.tick = bx:CreateTexture(nil, "OVERLAY")
         bt.tick:SetAllPoints()
         bt.tick:SetTexture(MARK)
-        bt.label = MakeFS(bt, 13, C_TEXT, "LEFT")
+        bt.label = MakeFS(bt, 14, C_TEXT, "LEFT")
         bt.label:SetPoint("LEFT", bx, "RIGHT", 5, 0)
         bt.label:SetWordWrap(false)
         bt.label:SetText(lab)
@@ -6461,21 +6485,75 @@ function BG.BuildBwFilter()
             if BG.RequestRender then BG.RequestRender() end
         end)
         bt:SetPoint("TOPLEFT", pop, "TOPLEFT", ax, y)
-        ax = ax + 84
+        ax = ax + 57
         BG.bwArmorChecks[u] = bt
     end
     y = y - 30
+    local pvpChk = CreateFrame("Button", nil, pop)
+    pvpChk:SetSize(205, 20)
+    pvpChk:SetPoint("TOPLEFT", pop, "TOPLEFT", 16, y)
+    local pvx = CreateFrame("Frame", nil, pvpChk)
+    pvx:SetSize(14, 14)
+    pvx:SetPoint("LEFT", pvpChk, "LEFT", 2, 0)
+    pvpChk.ring = pvx:CreateTexture(nil, "ARTWORK")
+    pvpChk.ring:SetAllPoints()
+    pvpChk.ring:SetTexture(RING)
+    pvpChk.disc = pvx:CreateTexture(nil, "ARTWORK")
+    pvpChk.disc:SetAllPoints()
+    pvpChk.disc:SetTexture(DISC)
+    pvpChk.tick = pvx:CreateTexture(nil, "OVERLAY")
+    pvpChk.tick:SetAllPoints()
+    pvpChk.tick:SetTexture(MARK)
+    pvpChk.label = MakeFS(pvpChk, 14, C_TEXT, "LEFT")
+    pvpChk.label:SetPoint("LEFT", pvx, "RIGHT", 5, 0)
+    pvpChk.label:SetWordWrap(false)
+    pvpChk.label:SetText(L["全部中不显示 PVP"])
+    local function paintPvp(on)
+        pvpChk.ring:SetShown(not on)
+        pvpChk.disc:SetShown(on)
+        pvpChk.tick:SetShown(on)
+        if on then
+            pvpChk.disc:SetVertexColor(0.91, 0.78, 0.42)
+            pvpChk.tick:SetVertexColor(1, 1, 1, 1)
+            pvpChk.label:SetTextColor(Unpack(C_TEXT))
+        else
+            pvpChk.ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
+            pvpChk.label:SetTextColor(0.55, 0.58, 0.65, 1)
+        end
+    end
+    pvpChk.SetChk = paintPvp
+    if BG.bwHidePvpInAll == nil then BG.bwHidePvpInAll = true end
+    paintPvp(BG.bwHidePvpInAll)
+    pvpChk:SetScript("OnClick", function()
+        BG.bwHidePvpInAll = not BG.bwHidePvpInAll
+        paintPvp(BG.bwHidePvpInAll)
+        ns.PlaySound(1)
+        SaveFilterPrefs()
+        if BG.RequestRender then BG.RequestRender() end
+    end)
+    BG.bwPvpChk = pvpChk
+    local rightX = 250
+    local yR = -42
     local dTitle = MakeFS(pop, 14, C_GOLD, "LEFT")
-    dTitle:SetPoint("TOPLEFT", pop, "TOPLEFT", 16, y)
+    dTitle:SetPoint("TOPLEFT", pop, "TOPLEFT", rightX, yR)
     dTitle:SetText(L["副本筛选"])
-    y = y - 20
+    yR = yR - 22
     BG.BWEnsureInstSet()
     local defs = BG.InstDefs()
-    local groupDefs = { { "dungeon", L["5 人本"] }, { "raid", L["团本"] }, { "world", L["世界首领"] } }
+    local rowH = 18
+    local innerCols, colW = 4, 180
     BG.bwFilterChecks = {}
-    local innerCols, colW = 5, 145
-    local rowH = 16
-    local function MkChk(parent, w, label, key)
+    local function LevelHex(lo, hi, gkey)
+        if gkey == "raid" or gkey == "world" then return "ffffff" end
+        lo = tonumber(lo)
+        hi = tonumber(hi)
+        if not lo or not hi then return "ffffff" end
+        local plv = tonumber((UnitLevel and UnitLevel("player")) or (PlayerLevel and PlayerLevel()) or 60) or 60
+        if hi < plv then return "9a9a9a" end
+        if lo > plv then return "ff4040" end
+        return "ffffff"
+    end
+    local function MkChk(parent, w, txt, key)
         local bt = CreateFrame("Button", nil, parent)
         bt:SetSize(w, rowH)
         local bx = CreateFrame("Frame", nil, bt)
@@ -6490,11 +6568,11 @@ function BG.BuildBwFilter()
         bt.tick = bx:CreateTexture(nil, "OVERLAY")
         bt.tick:SetAllPoints()
         bt.tick:SetTexture(MARK)
-        bt.label = MakeFS(bt, 12, C_TEXT, "LEFT")
+        bt.label = MakeFS(bt, 14, C_TEXT, "LEFT")
         bt.label:SetPoint("LEFT", bx, "RIGHT", 4, 0)
         bt.label:SetWordWrap(false)
-        bt.label:SetWidth(w - 20)
-        bt.label:SetText(label)
+        bt.label:SetWidth(w - 18)
+        bt.label:SetText(txt)
         bt.key = key
         local function paint(on)
             bt.ring:SetShown(not on)
@@ -6503,10 +6581,8 @@ function BG.BuildBwFilter()
             if on then
                 bt.disc:SetVertexColor(0.91, 0.78, 0.42)
                 bt.tick:SetVertexColor(1, 1, 1, 1)
-                bt.label:SetTextColor(Unpack(C_TEXT))
             else
                 bt.ring:SetVertexColor(0.42, 0.41, 0.38, 0.9)
-                bt.label:SetTextColor(0.55, 0.58, 0.65, 1)
             end
         end
         bt.SetChk = paint
@@ -6515,50 +6591,103 @@ function BG.BuildBwFilter()
             paint(BG.bwInstSet[key] and true or false)
             ns.PlaySound(1)
             if BG.RequestRender then BG.RequestRender() end
+            if BG.bwRefreshGroups then BG.bwRefreshGroups() end
         end)
         paint(BG.bwInstSet[key] and true or false)
         return bt
     end
+    local groupDefs = { { "dungeon", L["5 人本"] }, { "raid", L["团本"] }, { "world", L["世界首领"] } }
+    BG.bwGroups = {}
+    BG.bwGroupOpen = { dungeon = true, raid = true, world = true }
     for _, gd in ipairs(groupDefs) do
         local gkey, glabel = gd[1], gd[2]
         local list = defs[gkey] or {}
-        local head = CreateFrame("Frame", nil, pop)
-        head:SetPoint("TOPLEFT", pop, "TOPLEFT", 16, y)
-        head:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -16, y)
-        head:SetHeight(18)
-        local hf = MakeFS(head, 13, C_GOLD, "LEFT")
-        hf:SetPoint("LEFT", head, "LEFT", 0, 0)
+        local head = CreateFrame("Button", nil, pop)
+        head:SetPoint("TOPLEFT", pop, "TOPLEFT", rightX, 0)
+        head:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -12, 0)
+        head:SetHeight(20)
+        local arrow = head:CreateTexture(nil, "ARTWORK")
+        arrow:SetTexture("Interface\\AddOns\\DungeonsForever\\Media\\textures\\arrow.tga")
+        arrow:SetSize(13, 13)
+        arrow:SetVertexColor(Unpack(C_GOLD))
+        arrow:SetPoint("LEFT", head, "LEFT", 0, 0)
+        local hf = MakeFS(head, 14, C_GOLD, "LEFT")
+        hf:SetPoint("LEFT", arrow, "RIGHT", 4, 0)
         hf:SetText(glabel .. "  " .. tostring(#list))
-        local allB = MkBtn2(head, L["全选"], 44)
-        allB:SetHeight(18)
         local noneB = MkBtn2(head, L["全不选"], 56)
         noneB:SetHeight(18)
         noneB:SetPoint("RIGHT", head, "RIGHT", 0, 0)
-        allB:SetPoint("RIGHT", noneB, "LEFT", -8, 0)
-        y = y - 20
+        local allB = MkBtn2(head, L["全选"], 44)
+        allB:SetHeight(18)
+        allB:SetPoint("RIGHT", noneB, "LEFT", -6, 0)
+        local selFs = MakeFS(head, 14, C_DIM, "RIGHT")
+        selFs:SetPoint("RIGHT", allB, "LEFT", -8, 0)
+        selFs:SetWordWrap(false)
         local checks = {}
         for i = 1, #list do
             local e = list[i]
-            local c = (i - 1) % innerCols
-            local r = math.floor((i - 1) / innerCols)
-            local chk = MkChk(pop, colW, BG.InstLabel(e), e.key)
-            chk:SetPoint("TOPLEFT", pop, "TOPLEFT", 16 + c * colW, y - r * rowH)
+            local lo = tonumber(e.levelMin)
+            local hi = tonumber(e.levelMax)
+            local hex = LevelHex(lo, hi, gkey)
+            local txt = "|cff" .. hex .. BG.InstLabel(e) .. "|r"
+            local chk = MkChk(pop, colW, txt, e.key)
             checks[#checks + 1] = chk
             BG.bwFilterChecks[#BG.bwFilterChecks + 1] = chk
         end
-        local rowsn = math.ceil(#list / innerCols)
-        y = y - rowsn * rowH - 6
+        local grp = { key = gkey, head = head, arrow = arrow, checks = checks, allB = allB, noneB = noneB, selFs = selFs, list = list }
+        BG.bwGroups[#BG.bwGroups + 1] = grp
         allB:SetScript("OnClick", function()
             ns.PlaySound(1)
             for _, ck in ipairs(checks) do BG.bwInstSet[ck.key] = true; ck.SetChk(true) end
             if BG.RequestRender then BG.RequestRender() end
+            BG.bwRefreshGroups()
         end)
         noneB:SetScript("OnClick", function()
             ns.PlaySound(1)
             for _, ck in ipairs(checks) do BG.bwInstSet[ck.key] = false; ck.SetChk(false) end
             if BG.RequestRender then BG.RequestRender() end
+            BG.bwRefreshGroups()
+        end)
+        head:SetScript("OnMouseDown", function()
+            BG.bwGroupOpen[gkey] = not BG.bwGroupOpen[gkey]
+            BG.bwRefreshGroups()
         end)
     end
+    BG.bwRefreshGroups = function()
+        local yy = -64
+        for gi = 1, #(BG.bwGroups or {}) do
+            local g = BG.bwGroups[gi]
+            g.head:ClearAllPoints()
+            g.head:SetPoint("TOPLEFT", pop, "TOPLEFT", rightX, yy)
+            g.head:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -12, yy)
+            local on = BG.bwGroupOpen[g.key] and true or false
+            if on then
+                g.arrow:SetRotation(math.rad(180))
+            else
+                g.arrow:SetRotation(math.rad(-90))
+            end
+            local sel = 0
+            for _, ck in ipairs(g.checks) do if BG.bwInstSet[ck.key] then sel = sel + 1 end end
+            g.selFs:SetText(tostring(sel) .. "/" .. tostring(#g.list))
+            yy = yy - 22
+            if on then
+                for i = 1, #g.checks do
+                    local c = (i - 1) % innerCols
+                    local rr = math.floor((i - 1) / innerCols)
+                    local chk = g.checks[i]
+                    chk:ClearAllPoints()
+                    chk:SetPoint("TOPLEFT", pop, "TOPLEFT", rightX + c * colW, yy - rr * rowH)
+                    chk:Show()
+                end
+                local rowsN = math.ceil(#g.checks / innerCols)
+                yy = yy - rowsN * rowH - 6
+            else
+                for _, chk in ipairs(g.checks) do chk:Hide() end
+                yy = yy - 6
+            end
+        end
+    end
+    BG.bwRefreshGroups()
     local close = MkBtn2(pop, L["关闭"], 84)
     close:SetPoint("BOTTOMRIGHT", pop, "BOTTOMRIGHT", -12, 12)
     close:SetScript("OnClick", function() ns.PlaySound(1); if BG.CloseBwFilter then BG.CloseBwFilter() end end)
@@ -6582,9 +6711,12 @@ function BG.BuildBwFilter()
         BG.onlyUsable = true
         BG.bwArmorSel = BG.ArmorDefaultSet(BG.cls)
         BG.bwArmorSelKey = BG.ArmorKey()
+        BG.bwHidePvpInAll = true
+        if BG.bwPvpChk then BG.bwPvpChk.SetChk(true) end
         for u, bt in pairs(BG.bwArmorChecks or {}) do bt.SetChk(BG.bwArmorSel[u] and true or false) end
         if lvEb then lvEb:SetText(tostring(BG.filterLv)) end
         for _, ck in ipairs(BG.bwFilterChecks or {}) do ck.SetChk(BG.bwInstSet[ck.key] and true or false) end
+        if BG.bwRefreshGroups then BG.bwRefreshGroups() end
         SaveFilterPrefs()
         if BG.RequestRender then BG.RequestRender() end
     end)
@@ -6596,6 +6728,9 @@ function BG.BuildBwFilter()
         BG.EnsureArmorSel()
         for u, bt in pairs(BG.bwArmorChecks or {}) do bt.SetChk(BG.bwArmorSel[u] and true or false) end
         for _, ck in ipairs(BG.bwFilterChecks or {}) do ck.SetChk(BG.bwInstSet[ck.key] and true or false) end
+        BG.bwGroupOpen = { dungeon = true, raid = true, world = true }
+        if BG.bwPvpChk then BG.bwPvpChk.SetChk(BG.bwHidePvpInAll and true or false) end
+        if BG.bwRefreshGroups then BG.bwRefreshGroups() end
         scrim:Show()
         pop:Show()
     end
@@ -7297,16 +7432,28 @@ function BG.ScoreVsBisAll(id, link)
     if type(id) ~= "number" then return nil end
     local slot = SlotOfAny(id)
     if type(slot) ~= "string" then return nil end
+    local plv = 60
+    if type(UnitLevel) == "function" then
+        local ok, v = pcall(UnitLevel, "player")
+        if ok and type(v) == "number" and v > 0 then plv = v end
+    end
+    local function bisUsable(x)
+        if type(x) ~= "number" then return false end
+        if BG.IsT05(x) and plv < 60 then return false end
+        if not BG.VendorFacOK(x) then return false end
+        return true
+    end
+    if not bisUsable(id) then return nil end
     local bases, blinks = {}, {}
     if PAIR_SLOT[slot] then
         local b1, l1 = InvIdOf(INV_SLOT_NAME[slot])
         local b2, l2 = InvIdOf(INV_SLOT_NAME[PAIR_SLOT[slot]])
         if b1 == id or b2 == id then return nil end
-        if b1 then bases[1] = b1 blinks[1] = l1 end
-        if b2 then bases[#bases + 1] = b2 blinks[#blinks + 1] = l2 end
+        if b1 and bisUsable(b1) then bases[1] = b1 blinks[1] = l1 end
+        if b2 and bisUsable(b2) then bases[#bases + 1] = b2 blinks[#blinks + 1] = l2 end
     else
         local baseId = EquippedInSlot(slot, id)
-        if type(baseId) ~= "number" or baseId == id then return nil end
+        if type(baseId) ~= "number" or baseId == id or not bisUsable(baseId) then return nil end
         local eid, el = InvIdOf(INV_SLOT_NAME[slot])
         bases[1] = baseId
         blinks[1] = (eid == baseId) and el or nil
@@ -7488,7 +7635,8 @@ function BG.PreRaidPlan()
     local items, n, slotOk = {}, 0, true
     for k, v in pairs(raw) do
         local id = (type(v) == "table") and v[1] or v
-        if type(id) == "number" and not BG.EraBlocked(id) then
+        if type(id) == "number" and not BG.EraBlocked(id)
+            and not (BG.IsT05(id) and (PlayerLevel() or 60) < 60) then
             local dk
             if k == "main" then
                 local s = SlotOfAny(id)
