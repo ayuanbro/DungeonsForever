@@ -244,6 +244,13 @@ function Z.RefreshSoft(force)
     local ctx = Z.Context()
     local nowT = (GetTime and GetTime()) or 0
     local key = Z.Key(ctx)
+    if key and (Z.IsBlocked(key) or Z.IsSessionSkipped(key)) then
+        softRes.key, softRes.t = key, nowT
+        if ns.ZoneOrb and ns.ZoneOrb.Update then
+            ns.ZoneOrb.Update({ ctx = ctx, key = key, items = {}, total = 0 })
+        end
+        return
+    end
     if not force and key and softRes.key == key and (nowT - softRes.t) < 1 then return end
     local res = Z.Collect(ctx)
     res.key = key
@@ -1235,10 +1242,11 @@ local function PLearn(ctx)
     local function put(row, src, q)
         local base = row.base or row.id
         local key = ItemKey("spell", base)
-        if Z.IsIgnored(key) then return end
+        -- Also honor legacy "learn:<id>" entries saved before ikind was set explicitly.
+        if Z.IsIgnored(key) or Z.IsIgnored(ItemKey("learn", base)) then return end
         n = n + 1
         local it = {
-            id = row.id, base = base, ikey = key,
+            id = row.id, base = base, ikey = key, ikind = "spell",
             name = row.name or "", icon = row.icon,
             learn = row.learn, rank = row.rank,
         }
@@ -2464,8 +2472,12 @@ function Z.Check(reason, attempt)
     local ctx = Z.Context()
     local key = Z.Key(ctx)
     if not key then return false end
-    if Z.IsBlocked(key) then return false end
-    if Z.IsSessionSkipped(key) then return false end
+    if Z.IsBlocked(key) or Z.IsSessionSkipped(key) then
+        if ns.ZoneOrb and ns.ZoneOrb.Update then
+            ns.ZoneOrb.Update({ ctx = ctx, key = key, items = {}, total = 0 })
+        end
+        return false
+    end
 
     local res = Z.Collect(ctx)
     res.key = key
@@ -2543,6 +2555,11 @@ end
 function Z.Refresh()
     local ctx = Z.Context()
     local key = Z.Key(ctx)
+    if key and (Z.IsBlocked(key) or Z.IsSessionSkipped(key)) then
+        local empty = { ctx = ctx, key = key, items = {}, total = 0 }
+        if ns.ZoneOrb and ns.ZoneOrb.Update then ns.ZoneOrb.Update(empty) end
+        return empty
+    end
     local res = Z.Collect(ctx)
     res.key = key
     if ns.ZoneOrb and ns.ZoneOrb.Update then ns.ZoneOrb.Update(res) end
