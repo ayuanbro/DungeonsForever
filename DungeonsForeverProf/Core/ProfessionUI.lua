@@ -1663,9 +1663,15 @@ function PD.EnsureTipNameRefresh()
                 end)
             end
         end
-        if PD.__nmWant and PD.__nmWant[itemID] then
-            PD.__nmWant[itemID] = nil
-            if PD.built and C_Timer and C_Timer.NewTimer and not PD.__nmRT then
+        local relName = (PD.__nmWant and PD.__nmWant[itemID]) and true or false
+        if not relName and PD.notReady then
+            for i = 1, #PD.notReady do
+                if PD.notReady[i] == itemID then relName = true break end
+            end
+        end
+        if relName then
+            if PD.__nmWant then PD.__nmWant[itemID] = nil end
+            if PD.built and ns.PageVisible(PD.page) and C_Timer and C_Timer.NewTimer and not PD.__nmRT then
                 PD.__nmRT = C_Timer.NewTimer(0.2, function()
                     PD.__nmRT = nil
                     if PD.built then PD.RequestRender() end
@@ -8146,7 +8152,6 @@ function PD.SweepNames()
         local _, ok = DG.ItemName(id)
         if ok then got = true; break end
     end
-    PD.notReady = nil
     if got then
         PD.RequestRender()
     end
@@ -20054,11 +20059,20 @@ function PD.RequestRows(rows)
         if type(gi) == "function" then pcall(gi, id) end
         wait[#wait + 1] = id
     end
+    local function wantAny(x)
+        if type(x) == "table" then x = x[1] end
+        if type(x) == "number" then want(x) end
+    end
     local n = math.min(#rows, PD.capNow or PD.ROW_CAP)
     for i = 1, n do
         local spec = rows[i]
-        if spec.it then want(spec.it[1]) end
-        for _, m in ipairs(spec._mats or {}) do want(m[1]) end
+        if spec.it ~= nil then wantAny(spec.it) end
+        for _, m in ipairs(spec._mats or {}) do wantAny(m) end
+        if spec.cards then
+            for _, cd in ipairs(spec.cards) do
+                if type(cd) == "table" then wantAny(cd.it) end
+            end
+        end
     end
     PD.notReady = (#wait > 0) and wait or nil
     PD.__nmWant = {}

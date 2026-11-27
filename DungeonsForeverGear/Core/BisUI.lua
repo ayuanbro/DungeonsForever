@@ -617,6 +617,35 @@ local statCache, scoreCache, scoreKey = {}, {}, nil
 local statSeen = {}
 local askedItem = {}
 local dpsCache, dpsMiss, dpsGen = {}, {}, 0
+BG.speedCache = BG.speedCache or {}
+BG.SPEED_TABLE = {
+    ["warrior:arms"] = { 7.56, 3.3 },
+    ["warrior:fury"] = { 1.29, 2.4 },
+    ["warrior:prot"] = { -0.29, 2.4 },
+    ["paladin:prot"] = { -2.36, 2.4 },
+    ["paladin:ret"] = { 9.39, 3.3 },
+    ["hunter:bm"] = { 3.15, 2.8 },
+    ["hunter:mm"] = { 13.97, 2.8 },
+    ["hunter:surv"] = { 4.98, 2.8 },
+    ["rogue:assa"] = { -1.87, 2.4 },
+    ["rogue:combat"] = { 7.58, 2.4 },
+    ["rogue:sub"] = { 10.82, 2.4 },
+    ["shaman:enh"] = { 13.60, 2.4 },
+}
+function BG.SpeedWeaponInfo(id)
+    local fn = GetItemInfoInstant or (C_Item and C_Item.GetItemInfoInstant)
+    if type(fn) ~= "function" then return nil end
+    local ok, _, _, _, eq = pcall(fn, id)
+    if not ok or type(eq) ~= "string" then return nil end
+    local isTwo = (eq == "INVTYPE_2HWEAPON")
+    local isRanged = (eq == "INVTYPE_RANGED" or eq == "INVTYPE_RANGEDRIGHT"
+        or eq == "INVTYPE_THROWN" or eq == "INVTYPE_WAND")
+    local isOne = (eq == "INVTYPE_WEAPON" or eq == "INVTYPE_WEAPONMAINHAND"
+        or eq == "INVTYPE_WEAPONOFFHAND")
+    if not (isTwo or isRanged or isOne) then return nil end
+    local ref = isTwo and 3.3 or (isRanged and 2.8 or 2.4)
+    return ref, isTwo, isRanged
+end
 
 local function StatBucket(key)
     if type(key) ~= "string" then return nil end
@@ -678,6 +707,7 @@ local function ScanDps(itemID)
     if not tip then return nil end
     BG.__dpsDepth = (BG.__dpsDepth or 0) + 1
     local dps = nil
+    local dmgMin, dmgMax = nil, nil
     local okScan = pcall(function()
         if tip.SetOwner and not pcall(tip.SetOwner, tip, UIParent, "ANCHOR_NONE") then return end
         local set = false
@@ -688,6 +718,14 @@ local function ScanDps(itemID)
         for i = 1, n do
             local fs = _G["DFBisDpsTipTextLeft" .. i]
             local t = (fs and fs.GetText) and fs:GetText() or nil
+            if type(t) == "string" then
+                local sp = tonumber(string.match(t, "速度%s*([%d%.]+)"))
+                    or tonumber(string.match(t, "Speed%s*([%d%.]+)"))
+                if sp and sp > 0 then BG.speedCache[itemID] = sp end
+                local a, b = string.match(t, "(%d+)%s*%-%s*(%d+)%s*伤害")
+                if not a then a, b = string.match(t, "(%d+)%s*%-%s*(%d+)%s*Damage") end
+                if a and b then dmgMin, dmgMax = tonumber(a), tonumber(b) end
+            end
             if type(t) == "string" and t ~= ""
                 and (string.find(t, "每秒伤害", 1, true)
                     or string.find(t, "每秒傷害", 1, true)
@@ -702,6 +740,10 @@ local function ScanDps(itemID)
         pcall(tip.Hide, tip)
     end)
     BG.__dpsDepth = BG.__dpsDepth - 1
+    if dps and dmgMin and dmgMax and dmgMax > 0 and BG.speedCache[itemID] == nil then
+        local sp2 = (dmgMin + dmgMax) / 2 / dps
+        if sp2 > 0 and sp2 < 10 then BG.speedCache[itemID] = sp2 end
+    end
     if not okScan or dps == nil then
         local pending = false
         pcall(function()
@@ -864,6 +906,22 @@ function BG.ScoreOfStats(st, id, w, armorRef)
             end
         end
         if dw > 0 then sum = sum + dps * dw end
+    end
+    local spd = BG.speedCache[id]
+    if type(spd) == "number" then
+        local ref, isTwo, isRanged = BG.SpeedWeaponInfo(id)
+        if ref then
+            local specKey = (BG.cls or "") .. ":" .. tostring(BG.tspec or "")
+            local cfg = BG.SPEED_TABLE[specKey]
+            local sw = cfg and cfg[1] or 0
+            if BG.cls == "hunter" and not isRanged then sw = 0 end
+            if sw ~= 0 then
+                local r = ref
+                if cfg and cfg[2] then r = cfg[2] end
+                if specKey == "shaman:enh" and isTwo then r = 3.3 end
+                sum = sum + (spd - r) * 10 * sw
+            end
+        end
     end
     return sum
 end
@@ -1494,7 +1552,48 @@ function BG.InstPlace(place)
     return false
 end
 
+function BG.EnsurePvpIds()
+    if BG.__pvpIds then return BG.__pvpIds end
+    local set, seen = {}, {}
+    local function collect(t)
+        if type(t) == "number" then set[t] = true return end
+        if type(t) ~= "table" then return end
+        if seen[t] then return end
+        seen[t] = true
+        for _, v in pairs(t) do collect(v) end
+    end
+    local ps = ns.PvPSetData
+    if type(ps) == "table" then collect(ps) end
+    local pr = ns.PvPRankData
+    if type(pr) == "table" then
+        if type(pr.marks) == "table" then
+            for i = 1, #pr.marks do
+                local m = pr.marks[i]
+                if type(m) == "table" and type(m.id) == "number" then set[m.id] = true end
+            end
+        end
+        if type(pr.ranks) == "table" then
+            for _, r in pairs(pr.ranks) do
+                if type(r) == "table" then
+                    local arrs = { r.a, r.h, r.s }
+                    for ai = 1, 3 do
+                        local f = arrs[ai]
+                        if type(f) == "table" then
+                            for _, id in ipairs(f) do
+                                if type(id) == "number" then set[id] = true end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    BG.__pvpIds = set
+    return set
+end
+
 local function CatKind(id)
+    if BG.EnsurePvpIds()[id] then return "pvp" end
     local _, so = CatSrcOf(id)
     if so then return "boss" end
     local src = CatSrcOf(id)

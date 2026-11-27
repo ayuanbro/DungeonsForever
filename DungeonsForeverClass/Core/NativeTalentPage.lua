@@ -120,16 +120,6 @@ local skinRegistered = false
 
 local euiBG = { 0.05, 0.05, 0.06, 0.62 }
 
-local function SkinTabEUI()
-    local b = NP.tab
-    if not (b and skinFacade and skinFacade.Tab) then return false end
-    local ok = pcall(skinFacade.Tab, b, { darkActive = true })
-    if ok and skinFacade.SetTabSelection then
-        pcall(skinFacade.SetTabSelection, b, b.__check == true)
-    end
-    return ok
-end
-
 local function SkinButtonEUI(b)
     if not b or b.__dfSkin then return end
     b.__dfSkin = true
@@ -152,6 +142,37 @@ local function SkinButtonEUI(b)
     local PP = _G.EllesmereUI and _G.EllesmereUI.PanelPP
     if PP and PP.CreateBorder then
         pcall(PP.CreateBorder, b, 0.30, 0.30, 0.30, 0.85, 1, 'OVERLAY', 7)
+    end
+end
+
+local function NativeTabSkinned()
+    local T = NP.frame or (_G.PlayerSpellsFrame and _G.PlayerSpellsFrame.TalentsFrame)
+    local ts = T and T.TabSystem
+    local t = ts and ts.tabs and ts.tabs[1]
+    if not (t and t.Left and t.Left.GetTexture) then return false end
+    local tex = t.Left:GetTexture()
+    return tex == nil or tex == '' or tex == 0
+end
+
+local function SkinTabEUI()
+    local b = NP.tab
+    if not (b and skinFacade and skinFacade.Tab) then return false end
+    if not NativeTabSkinned() then return false end
+    local ok = pcall(skinFacade.Tab, b, { darkActive = true })
+    if ok and skinFacade.SetTabSelection then
+        pcall(skinFacade.SetTabSelection, b, b.__check == true)
+    end
+    return ok
+end
+
+local function ScheduleTabSkin()
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.3, SkinTabEUI)
+        C_Timer.After(1.0, SkinTabEUI)
+        C_Timer.After(2.0, SkinTabEUI)
+        C_Timer.After(3.5, SkinTabEUI)
+    else
+        SkinTabEUI()
     end
 end
 
@@ -2235,13 +2256,13 @@ end
 local function TabMark(tab, on)
     if not tab then return end
     if tab.SetTabSelected then pcall(tab.SetTabSelected, tab, on and true or false) end
-    if skinFacade and skinFacade.SetTabSelection then pcall(skinFacade.SetTabSelection, tab, on and true or false) end
+    if NativeTabSkinned() and skinFacade and skinFacade.SetTabSelection then pcall(skinFacade.SetTabSelection, tab, on and true or false) end
 end
 
 local function NativeTabSelect(on)
     local ts = NP.frame and NP.frame.TabSystem
     local tabs = ts and ts.tabs
-    if not (tabs and skinFacade and skinFacade.SetTabSelection) then return end
+    if not (tabs and NativeTabSkinned() and skinFacade and skinFacade.SetTabSelection) then return end
     for i = 1, #tabs do
         local t = tabs[i]
         if t then
@@ -2744,6 +2765,7 @@ local function BuildTab(ts)
     btn.__dfMine = true
     NP.tab = btn
     SkinTabEUI()
+    ScheduleTabSkin()
     return true
 end
 
@@ -2759,6 +2781,7 @@ local function Follow()
             if pfShown then
                 if NP.needBuild and NP.Init then NP.Init() end
                 if NP.ours then NP.SyncShow() end
+                ScheduleTabSkin()
             elseif NP.RequestNativeTab then
                 NP.RequestNativeTab()
             end

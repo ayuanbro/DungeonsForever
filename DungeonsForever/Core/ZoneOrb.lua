@@ -1773,6 +1773,10 @@ local function RowPresent(ikind)
     return false
 end
 
+local function RowShownNow(ikind)
+    return panel ~= nil and panel:IsShown() and not InCombat() and RowPresent(ikind)
+end
+
 function O.Update(res)
     do
         local MWm = ns.MapWindowModule
@@ -1895,12 +1899,13 @@ function O.Update(res)
             end
         end
     end
-    if onc.on ~= false then
+    local cueVisible = panel ~= nil and panel:IsShown() and not InCombat()
+    if onc.on ~= false and cueVisible then
         if sawFood and not lastFood and onc.voice == true and onc.foodVoice ~= false then
-            O.SayVoice(FOOD_CUE, nil, function() return RowPresent("food") end)
+            O.SayVoice(FOOD_CUE, nil, function() return RowShownNow("food") end)
         end
         if sawRested and not lastRested and onc.voice == true and onc.restedVoice ~= false then
-            O.SayVoice(RESTED_CUE, nil, function() return RowPresent("rested") end)
+            O.SayVoice(RESTED_CUE, nil, function() return RowShownNow("rested") end)
         end
     end
     lastFood, lastRested = sawFood, sawRested

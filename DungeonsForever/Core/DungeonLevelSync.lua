@@ -44,7 +44,7 @@ local syncBusy = false
 local syncAt = -1e9
 
 local function applyStep(list, state)
-    local over = debugprofilestop() + 3
+    local over = debugprofilestop() + 1
     while state.idx <= #list do
         local d = list[state.idx]
         local lfg = d and LFG_ID[d.id]

@@ -226,6 +226,12 @@ end
 
 local softQueued = false
 local softForce = false
+local softDirty = nil
+local softFull = false
+local hintDirty = false
+local function inCombatNow()
+    return (type(InCombatLockdown) == "function") and InCombatLockdown() or false
+end
 local tentShown = false
 local tentPokeAt = nil
 local TENT_GAP = 60
@@ -239,13 +245,19 @@ local function TentIn(res)
 end
 
 local softRes = { key = nil, t = 0 }
+local SOFT_MIN = 1.0
+local kindCache = {}
 
-function Z.RefreshSoft(force)
+function Z.RefreshSoft(force, dirty)
     local ctx = Z.Context()
     local nowT = (GetTime and GetTime()) or 0
     local key = Z.Key(ctx)
-    if not force and key and softRes.key == key and (nowT - softRes.t) < 1 then return end
-    local res = Z.Collect(ctx)
+    if softRes.key ~= nil and key ~= softRes.key then
+        for k in pairs(kindCache) do kindCache[k] = nil end
+        dirty = nil
+    end
+    if not force and key and softRes.key == key and (nowT - softRes.t) < SOFT_MIN then return end
+    local res = Z.Collect(ctx, dirty)
     res.key = key
     softRes.key, softRes.t = key, nowT
     if ns.ZoneOrb and ns.ZoneOrb.Update then ns.ZoneOrb.Update(res) end
@@ -277,17 +289,44 @@ function Z.RefreshSoft(force)
     if ns.ZoneOrb and ns.ZoneOrb.Reveal then ns.ZoneOrb.Reveal(res, "tent") end
 end
 
-function Z.ScheduleSoft(delay, force)
+function Z.ScheduleSoft(delay, force, dirty)
+    if inCombatNow() then hintDirty = true return end
     if force then softForce = true end
+    if dirty == nil then
+        softFull = true
+    else
+        softDirty = softDirty or {}
+        for k in pairs(dirty) do softDirty[k] = true end
+    end
     if softQueued then return end
     softQueued = true
-    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
-        C_Timer.After(delay or 1.5, function()
-            softQueued = false
-            local f = softForce
+    local nowT = (GetTime and GetTime()) or 0
+    local wait = delay or 1.5
+    if softRes.t > 0 and (nowT - softRes.t) < SOFT_MIN then
+        local gap = SOFT_MIN - (nowT - softRes.t)
+        if wait < gap then wait = gap end
+    end
+    local function fire()
+        softQueued = false
+        if inCombatNow() then
+            hintDirty = true
             softForce = false
-            Z.RefreshSoft(f)
-        end)
+            softFull = false
+            softDirty = nil
+            return
+        end
+        local f = softForce
+        softForce = false
+        local d
+        if softFull then d = nil else d = softDirty end
+        softFull = false
+        softDirty = nil
+        Z.RefreshSoft(f, d)
+    end
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(wait, fire)
+    else
+        fire()
     end
 end
 
@@ -937,7 +976,7 @@ local function FinishQuestScan(sc)
     local nowT = (GetTime and GetTime()) or 0
     if n == 0 then
         questCache.key, questCache.t, questCache.res = sc.ck, nowT, nil
-        Z.RefreshSoft(true)
+        Z.ScheduleSoft(0, true)
         return
     end
     table.sort(hits, function(a, b)
@@ -1058,14 +1097,14 @@ local function FinishQuestScan(sc)
         text = string.format(anyInst and L["本副本待办 %d 个任务"] or L["本图可接 %d 个副本任务"], n),
     }
     questCache.key, questCache.t, questCache.res = sc.ck, nowT, res
-    Z.RefreshSoft(true)
+    Z.ScheduleSoft(0, true)
 end
 
 local function QuestScanTick(sc)
     if qscan ~= sc then return true end
     local all = sc.all
     if type(all) ~= "table" then qscan = nil return true end
-    local over = debugprofilestop() + 3
+    local over = debugprofilestop() + 1
     while true do
         if sc.phase <= 2 then
             local slugs = sc.slugs
@@ -1529,15 +1568,20 @@ end
 Z.Register("profcd", PProfCD)
 
 local WELL_FED_SPELL = 19705
+local WELL_FED_SPELL_ALT = 1294007
 local wellFedName = nil
 
 local function ResolveWellFedName()
     if wellFedName then return wellFedName end
     local f = C_Spell and C_Spell.GetSpellInfo
     if f then
-        local ok, si = pcall(f, WELL_FED_SPELL)
-        if ok and type(si) == "table" and si.name and si.name ~= "" then
-            wellFedName = si.name
+        local ids = { WELL_FED_SPELL, WELL_FED_SPELL_ALT }
+        for i = 1, #ids do
+            local ok, si = pcall(f, ids[i])
+            if ok and type(si) == "table" and si.name and si.name ~= "" then
+                wellFedName = si.name
+                break
+            end
         end
     end
     return wellFedName
@@ -1628,7 +1672,7 @@ local function HasWellFed()
         local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
         if not ok then return false end
         if not a then break end
-        if not Sealed(a.spellId) and a.spellId == WELL_FED_SPELL then return true end
+        if not Sealed(a.spellId) and (a.spellId == WELL_FED_SPELL or a.spellId == WELL_FED_SPELL_ALT) then return true end
         if name and not Sealed(a.name) and a.name == name then return true end
     end
     return false
@@ -1965,7 +2009,38 @@ end
 local function EquipTo(name, slot)
     local C = rawget(_G, "C_Item")
     local f = (type(C) == "table" and C.EquipItemByName) or rawget(_G, "EquipItemByName")
-    if f then pcall(f, name, slot) end
+    if not f then return false end
+    local ok = pcall(f, name, slot)
+    if not ok and type(name) == "number" then ok = pcall(f, "item:" .. tostring(name), slot) end
+    return ok
+end
+
+local function CharName()
+    local n = (type(UnitName) == "function" and UnitName("player")) or nil
+    return n or "?"
+end
+
+local function PushCarrotLog(slot, orig)
+    local c = CFG()
+    if type(c.carrotLog) ~= "table" then c.carrotLog = {} end
+    local log = c.carrotLog
+    log[#log + 1] = { t = (GetTime and GetTime()) or 0, slot = slot, orig = orig or false, char = CharName() }
+    local MAXL = 12
+    while #log > MAXL do table.remove(log, 1) end
+end
+
+local function LastCarrotLog(slot)
+    local c = CFG()
+    local log = c.carrotLog
+    if type(log) ~= "table" then return nil end
+    local who = CharName()
+    for i = #log, 1, -1 do
+        local e = log[i]
+        if type(e) == "table" and e.char == who and (slot == nil or e.slot == slot) and e.orig and e.orig ~= false then
+            return e
+        end
+    end
+    return nil
 end
 
 local function SwapSay()
@@ -1987,9 +2062,10 @@ function CT.DoEquip()
     if not FindInBags(CARROT_ID) then return false end
     local slot = (InvID(13) == nil and 13) or (InvID(14) == nil and 14) or 14
     CT.slot, CT.orig, CT.id = slot, InvID(slot), CARROT_ID
-    CT.wait, CT.nextTry = nil, nil
+    CT.wait, CT.nextTry, CT.pendingRestore = nil, nil, nil
     CT.armedAt = (GetTime and GetTime()) or 0
     SaveSwap()
+    PushCarrotLog(slot, CT.orig)
     EquipTo(TrinketName(CARROT_ID, L["棍子上的胡萝卜"]), slot)
     SwapSay()
     Z.ScheduleSoft(0.3, true)
@@ -2013,7 +2089,9 @@ function CT.DoRestore()
     end
     if orig then
         if not FindInBags(orig) then CT.wait = true; return false end
-        EquipTo(TrinketName(orig, L["原饰品"]), slot)
+        local nm = TrinketName(orig, nil)
+        if not nm then CT.wait = true; return false end
+        EquipTo(nm, slot)
     else
         local bag, s = FreeBagSlot()
         local pick = BagFn("PickupContainerItem")
@@ -2022,12 +2100,47 @@ function CT.DoRestore()
         pcall(pick, bag, s)
         if ClearCursor then pcall(ClearCursor) end
     end
-    CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
-    CT.nextTry, CT.armedAt = nil, nil
-    SaveSwap()
-    SwapSay()
+    CT.pendingRestore = true
+    CT.wait = nil
+    CT.nextTry = ((GetTime and GetTime()) or 0) + 0.8
+    if type(C_Timer) == "table" and type(C_Timer.After) == "function" then
+        C_Timer.After(0.9, function() pcall(CT.Settle) end)
+    end
     Z.ScheduleSoft(0.3, true)
     return true
+end
+
+function CT.Settle()
+    if not CT.slot or not CT.pendingRestore then return end
+    local cur = InvID(CT.slot)
+    local done
+    if CT.orig ~= nil then
+        done = (cur == CT.orig)
+    else
+        done = (cur == nil and not CarrotOn() and FindInBags(CT.id) ~= nil)
+    end
+    if done then
+        CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
+        CT.nextTry, CT.armedAt, CT.pendingRestore = nil, nil, nil
+        SaveSwap()
+        SwapSay()
+        Z.ScheduleSoft(0.3, true)
+    else
+        CT.pendingRestore = nil
+        CT.wait = true
+    end
+end
+
+function CT.Heal()
+    if CT.slot then return end
+    if not CarrotOn() then return end
+    local cslot = (InvID(13) == CARROT_ID and 13) or (InvID(14) == CARROT_ID and 14)
+    if not cslot then return end
+    local e = LastCarrotLog(cslot)
+    if e and e.orig and e.orig ~= false and FindInBags(e.orig) then
+        CT.slot, CT.orig, CT.id = cslot, e.orig, CARROT_ID
+        SaveSwap()
+    end
 end
 
 function CT.Sync(force)
@@ -2038,17 +2151,23 @@ function CT.Sync(force)
     CT.was, CT.wait = m, nil
     if CT.slot then
         local cur = InvID(CT.slot)
-        if cur ~= CT.id then
-            local alt = (CT.slot == 13) and 14 or 13
+        local alt = (CT.slot == 13) and 14 or 13
+        if cur == CT.id then
             if InvID(alt) == CT.id then
                 CT.slot = alt
                 SaveSwap()
-            elseif cur ~= nil and not CarrotOn() and FindInBags(CT.id) and (now - (CT.armedAt or -1e9)) > 1.5 then
-                CT.slot, CT.orig, CT.id = nil, nil, nil
-                SaveSwap()
-            else
-                CT.wait = true
             end
+        elseif CT.pendingRestore and ((CT.orig ~= nil and cur == CT.orig) or (CT.orig == nil and cur == nil and not CarrotOn() and FindInBags(CT.id) ~= nil)) then
+            CT.slot, CT.orig, CT.id, CT.wait = nil, nil, nil, nil
+            CT.nextTry, CT.armedAt, CT.pendingRestore = nil, nil, nil
+            SaveSwap()
+            SwapSay()
+        elseif cur ~= nil and not CarrotOn() and FindInBags(CT.id) and (now - (CT.armedAt or -1e9)) > 1.5 then
+            CT.slot, CT.orig, CT.id = nil, nil, nil
+            CT.nextTry, CT.pendingRestore = nil, nil
+            SaveSwap()
+        else
+            CT.wait = true
         end
     end
     if m then
@@ -2341,11 +2460,12 @@ local function SimCollect(ctx)
     return out
 end
 
-function Z.Collect(ctx)
+function Z.Collect(ctx, dirty)
     ctx = ctx or Z.Context()
     if sim then return SimCollect(ctx) end
     local out = { ctx = ctx, items = {}, total = 0 }
     local c = CFG()
+    local full = (dirty == nil)
     local order = { "collect", "turnin", "quest", "keyitem", "spell", "learn", "profcd", "talent", "buff", "mount", "tent" }
     for i = 1, #order do
         local kind = order[i]
@@ -2355,11 +2475,20 @@ function Z.Collect(ctx)
         if kind == "buff" then on = (c.food or c.rested or c.camp or c.renew) end
         if kind == "mount" then on = true end
         if on and providers[kind] then
-            local ok, res = pcall(providers[kind], ctx)
-            if ok and type(res) == "table" and (res.n or 0) > 0 then
+            local res
+            if (not full) and (not dirty[kind]) and kindCache[kind] ~= nil then
+                res = kindCache[kind]
+            else
+                local ok, r = pcall(providers[kind], ctx)
+                res = (ok and type(r) == "table") and r or nil
+                kindCache[kind] = res
+            end
+            if type(res) == "table" and (res.n or 0) > 0 then
                 out.items[#out.items + 1] = res
                 out.total = out.total + res.n
             end
+        elseif not on then
+            kindCache[kind] = nil
         end
     end
     return out
@@ -2611,15 +2740,16 @@ ns.Init(function()
         if event == "PLAYER_ENTERING_WORLD" then
             worldAt = (GetTime and GetTime()) or 0
             questCache.t = -1e9
+            CT.Heal()
             CT.Sync(true)
             Z.LoginCheck(0)
         elseif event == "UNIT_AURA" then
             CT.Sync()
-            Z.ScheduleSoft(5)
+            Z.ScheduleSoft(5, false, { buff = true })
         elseif event == "PLAYER_UPDATE_RESTING" then
             Z.ScheduleSoft(0.5, true)
         elseif event == "ITEM_COOLDOWN_UPDATE" or event == "SPELL_UPDATE_COOLDOWN" then
-            Z.ScheduleSoft(1.2)
+            Z.ScheduleSoft(1.2, false, { profcd = true })
         elseif event == "PLAYER_TARGET_CHANGED" then
             local CW = ns.CampWatch
             if CW and CW.TentUnit and CW.TentUnit() then
@@ -2649,6 +2779,7 @@ ns.Init(function()
                 pending = nil
                 Z.Check("regen", 0)
             end
+            hintDirty = false
             Z.ScheduleSoft(0.6)
         elseif event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
             CT.Sync(true)
