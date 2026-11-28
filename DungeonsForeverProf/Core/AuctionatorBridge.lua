@@ -269,7 +269,9 @@ local function ValidBatchHead(batch)
         or type(batch.mk)~="string" or batch.mk=="" or type(batch.ob)~="string" or batch.ob==""
         or not WholeNumber(batch.t) or batch.t<=0 or batch.t>now
         or not WholeNumber(batch.completedAt) or batch.completedAt<batch.t or batch.completedAt>now
-        or not WholeNumber(batch.expected) or batch.received~=batch.expected or type(batch.items)~="table" then return false end
+        or not WholeNumber(batch.expected) or not WholeNumber(batch.received)
+        or batch.received>batch.expected or (batch.expected>0 and batch.received==0)
+        or type(batch.items)~="table" then return false end
     if batch.dv~=nil and batch.dv~=1 then return false end
     return true
 end
@@ -623,13 +625,13 @@ local function ExpectedFullRows(scan)
     end
 end
 local function FullRow(scan,row)
-    if type(row)~="table" then scan.complete=false;return end
+    if type(row)~="table" then return end
     local info=row.auctionInfo or row.replicateInfo
-    if type(info)~="table" then scan.complete=false;return end
+    if type(info)~="table" then return end
     local linkID=type(row.itemLink)=="string" and tonumber(row.itemLink:match("item:(%d+)"))
     local id=info[17]
     if not WholeNumber(id) or id==0 then id=linkID end
-    if not WholeNumber(id) or id==0 or linkID and linkID~=id then scan.complete=false;return end
+    if not WholeNumber(id) or id==0 or linkID and linkID~=id then return end
     local item=scan.items[id]
     if not item then item={q=0};scan.items[id]=item end
     local qty=info[3]
@@ -654,13 +656,20 @@ local function ImportFullRows(scan,rows)
         ImportFailed("incomplete");return
     end
     scan.items={};scan.complete=true;scan.index=1
-    local rowCount=0
+    local rowCount,maxIndex=0,0
     for index in pairs(rows) do
-        if not WholeNumber(index) or index<1 then scan.complete=false end
+        if not WholeNumber(index) or index<1 then
+            scan.complete=false
+        else
+            if index>maxIndex then maxIndex=index end
+        end
         rowCount=rowCount+1
     end
-    if rowCount~=scan.expected then scan.complete=false end
-    fullState={status="processing",done=0,total=scan.expected,startedAt=time and time() or 0}
+    -- Auctionator's ModernAH full scan strips entries with missing Blizzard item data before firing ScanComplete,
+    -- so received rowCount may legitimately be less than GetNumReplicateItems().
+    if rowCount>scan.expected or (scan.expected>0 and rowCount==0) then scan.complete=false end
+    local scanTotal=maxIndex>0 and maxIndex or scan.expected
+    fullState={status="processing",done=0,total=scanTotal,startedAt=time and time() or 0}
     local lastDecile=0
     local generation=fullGeneration
     local function Clock()
@@ -677,17 +686,17 @@ local function ImportFullRows(scan,rows)
         local startAt=Clock()
         local index=scan.index
         local counter=0
-        while index<=scan.expected do
-            FullRow(scan,rows[index])
+        while index<=maxIndex do
+            if rows[index]~=nil then FullRow(scan,rows[index]) end
             index=index+1
             counter=counter+1
             if counter>=3000 then break end
             if counter%64==0 and Clock()-startAt>=8 then break end
         end
-        scan.index=index;fullState.done=index-1
-        local decile=math.floor((index-1)/scan.expected*10)
+        scan.index=index;fullState.done=math.min(index-1,scanTotal)
+        local decile=scanTotal>0 and math.floor(fullState.done/scanTotal*10) or 10
         if decile~=lastDecile then lastDecile=decile;ScanStatusChanged() end
-        if scan.index<=scan.expected then
+        if scan.index<=maxIndex then
             if C_Timer and C_Timer.NewTimer then fullTimer=C_Timer.NewTimer(0,step)
             else ImportFailed("unavailable") end
             return
