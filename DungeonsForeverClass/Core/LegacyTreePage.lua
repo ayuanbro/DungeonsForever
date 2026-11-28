@@ -11,8 +11,9 @@ local Plans = ns.LegacyPlans
 
 local WHITE = 'Interface\\Buttons\\WHITE8x8'
 local BRAND = 'Interface\\AddOns\\DungeonsForever\\Media\\Brand\\DungeonsForever'
-local FH = 'Fonts\\ARKai_T.ttf'
-local FN = 'Fonts\\ARHei.ttf'
+local SafeFont = ns.SafeFont or function(p) return p end
+local FH = SafeFont('Fonts\\ARKai_T.ttf')
+local FN = SafeFont('Fonts\\ARHei.ttf')
 
 local PAGE_W, BODY_H, PAGE_H = 775, 441, 492
 local SEASON_CAP = 16
@@ -70,8 +71,8 @@ local Emblem
 
 local function FS(parent, size, color, font)
     local f = parent:CreateFontString(nil, 'OVERLAY')
-    local ok = pcall(f.SetFont, f, font or FH, size, '')
-    if not ok and ns.FONT then pcall(f.SetFont, f, ns.FONT, size, '') end
+    local ok, res = pcall(f.SetFont, f, font or FH, size, '')
+    if (not ok or res == false or not f:GetFont()) and ns.FONT then pcall(f.SetFont, f, ns.FONT, size, '') end
     f:SetTextColor(color[1], color[2], color[3])
     return f
 end
@@ -386,6 +387,7 @@ local function BuildColumn(t)
     c.name:SetPoint('TOP', c.root, 'TOP', 0, 14)
     c.name:SetJustifyH('CENTER')
     c.name:SetText(L[TREE_NAME[t]] or TREE_NAME[t])
+    if ns.FitFS then ns.FitFS(c.name, COLW - 8) end
 
     c.line = c.root:CreateTexture(nil, 'ARTWORK', nil, 1)
     c.line:SetTexture(WHITE)
@@ -531,6 +533,7 @@ BuildStrip = function()
     w.title = FS(page, 13, { 0.91, 0.79, 0.54 })
     w.title:SetPoint('TOPLEFT', page, 'TOPLEFT', LEFT0, ROW_Y - 4)
     w.title:SetText(L['推荐方案'])
+    if ns.FitFS then ns.FitFS(w.title, 54) end
 
     w.tabs = {}
     local list = Plans or {}

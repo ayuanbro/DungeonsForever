@@ -25,6 +25,7 @@ local SCHEME_LABEL = {
 function RA.SchemeOrder() return SCHEME_ORDER end
 function RA.SchemeLabel(s)
     local k = (s and SCHEME_LABEL[s]) and SCHEME_LABEL[s] or "最省钱"
+    local L = ns.L
     return type(L) == "table" and L[k] or k
 end
 

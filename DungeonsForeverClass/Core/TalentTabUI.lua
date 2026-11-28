@@ -1134,6 +1134,7 @@ local function FitPlanName(fs, s, vv, w)
     fs:SetWidth(maxw)
     local DG = Host.DG
     if DG and DG.FitText then
+        fs.__fullText = s
         fs:SetText(DG.FitText(s, 14, maxw))
     else
         fs:SetText(s)
@@ -1154,7 +1155,7 @@ local function BuildPlanRows(parent, w)
             bt:SetSize(w - 4, ROW_H - 2)
             bt:ClearAllPoints()
             bt:SetPoint("TOPLEFT", parent, "TOPLEFT", 2, -(y))
-            bt.num:SetText("◇")
+            bt.num:SetText(ns.SYM.dia0)
             bt.ic:SetTexture("Interface\\Icons\\" .. op.nd.icon)
             bt.ic:SetDesaturated(true)
             bt.bg = bt.bg or bt:CreateTexture(nil, "BACKGROUND")

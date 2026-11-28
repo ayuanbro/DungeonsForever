@@ -609,9 +609,9 @@ ns.SpellBookData = {
                 { rank = 5, learn = 52, id = 10192 },
                 { rank = 6, learn = 60, id = 10193 },
                 } },
-                { name = "Teleport: Ironforge", icon = "Interface\\Icons\\Spell_Arcane_Teleportironforge", id = 3562, learnLv = 20, races = "侏儒/高阶会天裔/人类" },
+                { name = "Teleport: Ironforge", icon = "Interface\\Icons\\Spell_Arcane_Teleportironforge", id = 3562, learnLv = 20, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Teleport: Orgrimmar", icon = "Interface\\Icons\\Spell_Arcane_Teleportorgrimmar", id = 3567, learnLv = 20, races = "Orc/Troll/Undead" },
-                { name = "Teleport: Stormwind", icon = "Interface\\Icons\\Spell_Arcane_Teleportstormwind", id = 3561, learnLv = 20, races = "侏儒/高阶会天裔/人类" },
+                { name = "Teleport: Stormwind", icon = "Interface\\Icons\\Spell_Arcane_Teleportstormwind", id = 3561, learnLv = 20, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Teleport: Undercity", icon = "Interface\\Icons\\Spell_Arcane_Teleportundercity", id = 3563, learnLv = 20, races = "Orc/Troll/Undead" },
                 { name = "Counterspell", icon = "Interface\\Icons\\Spell_Frost_Iceshock", id = 2139, learnLv = 24 },
                 { name = "Arcane Wrath", icon = "Interface\\Icons\\Ability_Mage_Netherwindpresence", id = 1326082, learnLv = 25, isTalent = true, ranks = {
@@ -621,7 +621,7 @@ ns.SpellBookData = {
                 { rank = 4, learn = 60, id = 1326082 },
                 } },
                 { name = "Conjure Mana Agate", icon = "Interface\\Icons\\Inv_Misc_Gem_Emerald_01", id = 759, learnLv = 28 },
-                { name = "Teleport: Darnassus", icon = "Interface\\Icons\\Spell_Arcane_Teleportdarnassus", id = 3565, learnLv = 30, races = "侏儒/高阶会天裔/人类" },
+                { name = "Teleport: Darnassus", icon = "Interface\\Icons\\Spell_Arcane_Teleportdarnassus", id = 3565, learnLv = 30, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Teleport: Thunder Bluff", icon = "Interface\\Icons\\Spell_Arcane_Teleportthunderbluff", id = 3566, learnLv = 30, races = "Orc/Troll/Undead" },
                 { name = "Mage Armor", icon = "Interface\\Icons\\Spell_Magearmor", id = 22783, learnLv = 34, ranks = {
                 { rank = 1, learn = 34, id = 6117 },
@@ -629,12 +629,12 @@ ns.SpellBookData = {
                 { rank = 3, learn = 58, id = 22783 },
                 } },
                 { name = "Conjure Mana Jade", icon = "Interface\\Icons\\Inv_Misc_Gem_Emerald_02", id = 3552, learnLv = 38 },
-                { name = "Portal: Ironforge", icon = "Interface\\Icons\\Spell_Arcane_Portalironforge", id = 11416, learnLv = 40, races = "侏儒/高阶会天裔/人类" },
+                { name = "Portal: Ironforge", icon = "Interface\\Icons\\Spell_Arcane_Portalironforge", id = 11416, learnLv = 40, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Portal: Orgrimmar", icon = "Interface\\Icons\\Spell_Arcane_Portalorgrimmar", id = 11417, learnLv = 40, races = "Orc/Troll/Undead" },
-                { name = "Portal: Stormwind", icon = "Interface\\Icons\\Spell_Arcane_Portalstormwind", id = 10059, learnLv = 40, races = "侏儒/高阶会天裔/人类" },
+                { name = "Portal: Stormwind", icon = "Interface\\Icons\\Spell_Arcane_Portalstormwind", id = 10059, learnLv = 40, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Portal: Undercity", icon = "Interface\\Icons\\Spell_Arcane_Portalundercity", id = 11418, learnLv = 40, races = "Orc/Troll/Undead" },
                 { name = "Conjure Mana Citrine", icon = "Interface\\Icons\\Inv_Misc_Gem_Opal_01", id = 10053, learnLv = 48 },
-                { name = "Portal: Darnassus", icon = "Interface\\Icons\\Spell_Arcane_Portaldarnassus", id = 11419, learnLv = 50, races = "侏儒/高阶会天裔/人类" },
+                { name = "Portal: Darnassus", icon = "Interface\\Icons\\Spell_Arcane_Portaldarnassus", id = 11419, learnLv = 50, races = "Gnome/High Order Skyborne/Human" },
                 { name = "Portal: Thunder Bluff", icon = "Interface\\Icons\\Spell_Arcane_Portalthunderbluff", id = 11420, learnLv = 50, races = "Orc/Troll/Undead" },
                 { name = "Conjure Mana Ruby", icon = "Interface\\Icons\\Inv_Misc_Gem_Ruby_01", id = 10054, learnLv = 58 },
                 { name = "Presence of Mind", icon = "Interface\\Icons\\Spell_Nature_Enchantarmor", id = 12043, isTalent = true },
@@ -792,7 +792,7 @@ ns.SpellBookData = {
             },
         },
         {
-            name = "理解",
+            name = "Comprehension",
             icon = "Interface\\Icons\\Spell_Holy_Mindsooth",
             spells = {
             },
@@ -1048,7 +1048,7 @@ ns.SpellBookData = {
             },
         },
         {
-            name = "坐骑",
+            name = "Mounts",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
                 { name = "Summon Charger", icon = "Interface\\Icons\\Ability_Mount_Charger", id = 23214, learnLv = 60, races = "Dwarf/Human" },
@@ -2100,7 +2100,7 @@ ns.SpellBookData = {
             },
         },
         {
-            name = "坐骑",
+            name = "Mounts",
             icon = "Interface\\Icons\\Ability_Hunter_Catlikereflexes",
             spells = {
                 { name = "Summon Felsteed", icon = "Interface\\Icons\\Spell_Nature_Swiftness", id = 5784, learnLv = 40 },

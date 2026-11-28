@@ -23,4 +23,6 @@ Core\Data\Data_FactionQuests.lua
 Core\Data\Data_FactionNpcs.lua
 Core\Data\zhTW\Data_Factions.lua [AllowLoadTextLocale zhTW]
 Core\Data\enUS\Data_Factions.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_FactionQuests.lua [AllowLoadTextLocale enUS]
+Core\Data\enUS\Data_FactionNpcs.lua [AllowLoadTextLocale enUS]
 Core\FactionUI.lua

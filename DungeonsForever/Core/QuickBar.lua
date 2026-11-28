@@ -7,7 +7,7 @@ local L = ns.L
 local QB = {}
 ns.QuickBar = QB
 
-QB.W = 160
+QB.W = ns.WIDE_UI and 196 or 160
 QB.SLOT1 = 4
 QB.SLOT2 = 228
 QB.PAD = 8
@@ -350,7 +350,11 @@ local function PopShown(pop)
 end
 
 function QB:SlotX()
-    if PopShown(ns.SettingsPopup) then return self.SLOT2 end
+    if PopShown(ns.SettingsPopup) then
+        -- 设置弹窗在英文下更宽，快捷栏按实际宽度让位 / settings popup is wider on English: step aside by its real width
+        local w = ns.SettingsPopup.GetWidth and ns.SettingsPopup:GetWidth() or 0
+        return math.max(self.SLOT2, math.ceil(w) + 8)
+    end
     local LF = ns.LootFilterUI
     if LF and LF.ConfigPopup and PopShown(LF:ConfigPopup()) then return self.SLOT2 end
     if ns.ExploreMapConfigPopup and PopShown(ns.ExploreMapConfigPopup()) then return self.SLOT2 end
@@ -462,6 +466,7 @@ function QB:Render()
                     wantIcon and self.NAME_ICON_X or self.TEXT_PAD, 0)
             end
             if wantIcon then SetIcon(r.icon, sp.icon) end
+            r.name.__fullText = sp.text
             r.name:SetText(FitName(sp.text, NameW(wantIcon), self.FS_NAME, sp.act == "dungeon"))
             if sp.dead then
                 r.name:SetTextColor(C_DIM[1], C_DIM[2], C_DIM[3])
@@ -561,7 +566,7 @@ function QB:OnMainShow()
 end
 
 local SET_PAD, SET_ROW_H, SET_HDR_H = 14, 24, 22
-local SET_COL2_X = 106
+local SET_COL2_X = ns.WIDE_UI and 150 or 106
 
 local function Toggle(parent)
     local tg = CreateFrame("CheckButton", nil, parent)
@@ -611,6 +616,7 @@ function QB:EnsureSettings()
             at:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 6 - SET_PAD, yv)
         end
         at.label:SetText(aLabel)
+        if bLabel and ns.FitFS then ns.FitFS(at.label, SET_COL2_X - (SET_PAD - 6 + 36 + 6) - 4) end
         at:SetChecked(aIsOn() and true or false)
         at:SetScript("OnClick", function(self)
             ns.PlaySound(1)
@@ -627,6 +633,7 @@ function QB:EnsureSettings()
             bt2.label:SetPoint("LEFT", bt2, "RIGHT", 6, 0)
             bt2.label:SetJustifyH("LEFT")
             bt2.label:SetText(bLabel)
+            if ns.FitFS then ns.FitFS(bt2.label, (ns.SET_POP_W or 220) - 12 - SET_COL2_X - 36 - 6 - 4) end
             bt2:SetChecked(bIsOn() and true or false)
             bt2:SetScript("OnClick", function(self)
                 ns.PlaySound(1)
@@ -922,7 +929,7 @@ function QB:EnsureSettings()
         bfs:SetJustifyH("LEFT")
         local arw = Fs(bt, 12, C_DIM)
         arw:SetPoint("RIGHT", bt, "RIGHT", -8, 0)
-        arw:SetText("\226\150\188")
+        arw:SetText(ns.Sym("\226\150\188"))
 
         local function Summary()
             local on = {}
@@ -933,7 +940,7 @@ function QB:EnsureSettings()
             end
             if #on == 0 then return L["未选择"] end
             if #on == #groups then return L["全部分组"] end
-            return table.concat(on, "、")
+            return table.concat(on, L["、"])
         end
 
         local function Paint()

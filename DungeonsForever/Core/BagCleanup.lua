@@ -61,9 +61,9 @@ function BC.MoneyText(c)
     local g = math.floor(c / 10000)
     local s = math.floor((c % 10000) / 100)
     local co = c % 100
-    if g > 0 then return string.format("%d金%d银%02d铜", g, s, co) end
-    if s > 0 then return string.format("%d银%02d铜", s, co) end
-    return string.format("%d铜", co)
+    if g > 0 then return string.format(L["%d金%d银%02d铜"], g, s, co) end
+    if s > 0 then return string.format(L["%d银%02d铜"], s, co) end
+    return string.format(L["%d铜"], co)
 end
 
 local cache = { t = 0, data = nil }

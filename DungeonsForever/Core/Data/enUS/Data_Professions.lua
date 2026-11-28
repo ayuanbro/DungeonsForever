@@ -255,10 +255,10 @@ ns.ProfData = {
             sub = 5,
             kinds = { Recipe=36, Blueprint=4 },
             ranks = {
-                { "Apprentice", "75", "从烹饪训练师处学习。", nil },
-                { "Adept", "150", "从烹饪训练师处学习。", nil },
-                { "Expert", "225", "通过书籍《{book}》学习，需要烹饪 125，联盟在银风庇护所、部落在坠影村有售。", 16072 },
-                { "Master", "300", "烹饪达到 225 后，从加基森的迪尔格·奎克里弗处接取任务，完成后获得（需要 35 级）。", nil },
+                { "Apprentice", "75", "Learned from a Cooking trainer.", nil },
+                { "Adept", "150", "Learned from a Cooking trainer.", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires Cooking 125. Sold in Silverwind Refuge (Alliance) and Shadowprey Village (Horde).", 16072 },
+                { "Master", "300", "After reaching 225 Cooking, take the quest from Dirge Quikcleave in Gadgetzan. Learned on completion (requires level 35).", nil },
             },
             camp = {
                 { 279981, "Apprentice Campfire Kit", "inv_camelot_camping_welcomingcampfire", 1, "A cooking campfire that can hold 3 camp objects", "", "A cooking campfire that can hold 3 camp objects", "", "", "3", { { 4470, 1 } }, nil },
@@ -289,10 +289,10 @@ ns.ProfData = {
             },
             perks = { "legacy-perk-luremaster", "legacy-perk-working-overtime", "legacy-perk-dedicated-study" },
             tips = { "The Aquarium needs one Raw Brilliant Smallfish (fishable in starting-zone fresh water in Classic Era) and an Empty Bottle bought from a vendor.", "The Tackle Rack or Fishing Hut is built on top of the Aquarium, keeping its +8% all-stats effect.", "Watch your lure: \"Lure Master\"'s extra-catch chance requires the lure to be active.", "If you want this skill point to land on Fishing, check which of your gathering / crafting skills is lowest before using \"Specialty Study\".", "The following points are not yet confirmed." },
-            verify = { "游戏内训练师与供应商的位置（无限服实测点位）", "Catch tables and the skill each zone requires", "What the Tackle Rack and Fishing Hut add to your catches", "Where patterns drop, and how to learn Find Fish", "Catches that \"Lure Master\" can proc" },
+            verify = { "In-game trainer and vendor locations (field-tested on the Infinite server)", "Catch tables and the skill each zone requires", "What the Tackle Rack and Fishing Hut add to your catches", "Where patterns drop, and how to learn Find Fish", "Catches that \"Lure Master\" can proc" },
             unknowns = { "What can be caught, and the tier-2 effects." },
             steps_title = "How to fish",
-            steps_note = "训练师与供应商的点位均按无限服实测校准，瓦拉纳尔的那位来自内测玩家分享；其余为客户端自身的文本。",
+            steps_note = "All trainer and vendor locations are calibrated from field tests on the Infinite server; the one in Valanar comes from a beta tester. Everything else is the client's own text.",
             steps = {
                 { "Learning to Fish", "Learn from a fishing trainer — every capital has one, and there is one by the pond in the floating city of Varanar. After learning it you also gain \"Lures & Tackle\", used to place fishing objects at camp." },
                 { "Equipping the rod", "Buy a fishing rod from the fishing supplier near the trainer and equip it from your bags. It takes both hands — no rod, no fishing." },
@@ -302,8 +302,8 @@ ns.ProfData = {
             ranks = {
                 { "Apprentice", "75", "Learn from a fishing trainer.", nil },
                 { "Adept", "150", "Learn from a fishing trainer.", nil },
-                { "Expert", "225", "通过书籍《{book}》学习，需要 20 级且钓鱼 125，藏宝海湾有售。", 16083 },
-                { "Master", "300", "钓鱼达到 225 后，从尘泥沼泽的纳特·帕格处接取任务，完成后获得。", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires level 20 and Fishing 125. Sold in Booty Bay.", 16083 },
+                { "Master", "300", "After reaching 225 Fishing, take the quest from Nat Pagle in Dustwallow Marsh. Learned on completion.", nil },
             },
             fishing = {
                 spells = {
@@ -354,10 +354,10 @@ ns.ProfData = {
             sub = 7,
             kinds = { Manual=9, Blueprint=2 },
             ranks = {
-                { "Apprentice", "75", "从急救训练师处学习。", nil },
-                { "Adept", "150", "从急救训练师处学习。", nil },
-                { "Expert", "225", "通过书籍《{book}》学习，需要急救 125，联盟在激流堡、部落在蕨墙村有售。", 16084 },
-                { "Master", "300", "急救达到 225 后，向医生接取晋级任务，联盟在塞拉摩岛、部落在落锤镇，完成后获得（需要 35 级）。", nil },
+                { "Apprentice", "75", "Learned from a First Aid trainer.", nil },
+                { "Adept", "150", "Learned from a First Aid trainer.", nil },
+                { "Expert", "225", "Learned from the book \"{book}\"; requires First Aid 125. Sold in Stromgarde (Alliance) and Brackenwall Village (Horde).", 16084 },
+                { "Master", "300", "After reaching 225 First Aid, take the rank-up quest from the doctor (Alliance: Theramore Isle; Horde: Hammerfall). Learned on completion (requires level 35).", nil },
             },
             camp = {
                 { 279968, "First Aid Kit", "inv_misc_bandage_11", 20, "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude (value at level 60, scales with level)", "56 Stamina", "Gives 56 Stamina to everyone sitting nearby, like Power Word: Fortitude", "", "Power Word: Fortitude", "", { { 1251, 3 }, { 159, 1 } }, nil },
@@ -393,23 +393,23 @@ ns.ProfData = {
             },
         },
         ["poisons"] = {
-            name = "毒药",
+            name = "Poisons",
             icon = 136242,
             kind = "secondary",
             section = "crafting",
-            summary = "盗贼的辅助专业：技能越高能调制的毒药越强。材料向毒药商人与黑市贩子购买，调成腐蚀、削弱与消磨敌人的药剂，涂在武器上生效。1.60 新增萎缩、迟钝、解离与玄秘毒药。",
-            status = "待实地核对",
+            summary = "The rogue's secondary profession: the higher your skill, the stronger the poisons you can make. Buy materials from poison vendors and black market dealers, then brew agents that corrode, weaken and wear down enemies; apply them to your weapons to take effect. Patch 1.60 adds Atrophic, Numbing, Sebacious and Occult Poisons.",
+            status = "To be verified in-game",
             recipes = 26,
             sub = 1,
             kinds = { Recipe = 26 },
         },
 
         ["comprehension"] = {
-            name = "理解",
+            name = "Comprehension",
             icon = 135933,
             kind = "secondary",
-            summary = "解读散落世界各处的魔法卷轴：理解技能越高，能解译的卷轴越强。卷轴读取后消耗，提供各类增益效果；在图书馆中研究可以提升理解技能。",
-            status = "待实地核对",
+            summary = "Decipher magical scrolls scattered across the world: the higher your Comprehension skill, the more powerful the scrolls you can decipher. Scrolls are consumed when read and grant a variety of buffs; studying in libraries raises your Comprehension skill.",
+            status = "To be verified in-game",
             recipes = 7,
             sub = 2,
             kinds = { Recipe = 7 },

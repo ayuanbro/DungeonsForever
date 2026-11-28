@@ -2877,11 +2877,11 @@ local function PaintQuestDetail(rec)
     if lv > 0 then
         lvSeg = lvSeg .. " · " .. lvHex .. string.format(L["任务等级 Lv%s"], tostring(lv)) .. "|r"
     end
-    Body(HEX_GREY .. L["可接等级"] .. "：|r" .. lvSeg, C_MAIN, 4)
+    Body(HEX_GREY .. L["可接等级"] .. L["：|r"] .. lvSeg, C_MAIN, 4)
 
     local diff = DiffText(lv, needLv)
     if diff ~= "" then
-        Body(HEX_GREY .. L["任务难度"] .. "：|r" .. diff, C_MAIN, 4)
+        Body(HEX_GREY .. L["任务难度"] .. L["：|r"] .. diff, C_MAIN, 4)
     end
 
     local fac, facInk = L["双阵营共有"], nil
@@ -2908,11 +2908,11 @@ local function PaintQuestDetail(rec)
     end
     local facTxt = fac
     if facInk then facTxt = InkHex(facInk) .. fac .. "|r" end
-    Body(HEX_GREY .. L["阵营"] .. "：|r" .. facTxt, C_MAIN, 4)
+    Body(HEX_GREY .. L["阵营"] .. L["：|r"] .. facTxt, C_MAIN, 4)
 
     local cls = ClassStr(qrec.requiredClasses)
     if cls then
-        Body(HEX_GREY .. L["职业"] .. "：|r" .. cls, C_MAIN, 4)
+        Body(HEX_GREY .. L["职业"] .. L["：|r"] .. cls, C_MAIN, 4)
     end
     if qrec.IsRepeatable then
         Body(HEX_GREY .. L["可重复"] .. "|r", C_MAIN, 4)
@@ -3048,7 +3048,7 @@ local function PlaceInfoText(id, kind)
         elseif fa == "H" then
             txt = L["部落"]
         end
-        parts[#parts + 1] = L["阵营"] .. "：" .. txt
+        parts[#parts + 1] = L["阵营"] .. L["："] .. txt
     end
     return table.concat(parts, " · ")
 end
@@ -3082,7 +3082,7 @@ local function PaintPlaceDetail(rec)
     if infoTxt ~= "" then Body(infoTxt, C_SUB) end
 
     if #pts == 0 then
-        Head(L["刷新位置"] .. "：" ..
+        Head(L["刷新位置"] .. L["："] ..
             ((boss and boss.dungeon) or L["没有收录刷新位置"]))
     else
         Head(L["刷新位置"])

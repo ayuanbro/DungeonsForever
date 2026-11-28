@@ -70,12 +70,14 @@ local f
 local bagPaintPending
 local cueState = {}
 
-local W, W_BASE = 375, 375
+-- 英文界面加宽，避免材料名/来源被截断 / Wider on English UI so material names and sources aren't truncated
+local W_BASE = ns.WIDE_UI and 470 or 375
+local W = W_BASE
 local PAD = 12
-local SRC_COL_W = 68
-local SRC_TEXT_W = 56
-local NUM_CAP = 56
-local TAG_CAP = 46
+local SRC_COL_W = ns.WIDE_UI and 98 or 68
+local SRC_TEXT_W = ns.WIDE_UI and 86 or 56
+local NUM_CAP = ns.WIDE_UI and 64 or 56
+local TAG_CAP = ns.WIDE_UI and 66 or 46
 local BTN_W = { 92, 66, 66 }
 local BTN_GAP = 4
 local MAT_MAX = 6

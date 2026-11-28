@@ -20,10 +20,11 @@ local BTN_GAP = 8
 local MAXS = (LF.MAX_SCHEMES or 6)
 
 local CFG_PAD = 12
-local CFG_CONTENT_W = 196
+local CFG_POP_W = ns.WIDE_UI and 280 or 220
+local CFG_CONTENT_W = CFG_POP_W - 24
 local CFG_ICON_SZ, CFG_ICON_GAP = 22, 6
 local CFG_PAGE = 4
-local CFG_COLS, CFG_COL_W = 2, 94
+local CFG_COLS, CFG_COL_W = 2, (CFG_CONTENT_W - 8) / 2
 local CFG_ROW_H, CFG_HEAD_H, CFG_GROUP_GAP = 24, 26, 8
 local CFG_ROW1_Y, CFG_HDR_Y, CFG_SCROLL_TOP = -32, -8, 58
 
@@ -320,13 +321,13 @@ function UI:EnsureConfig()
     popup:SetFrameStrata("HIGH")
     popup:EnableMouse(true)
     popup:SetScript("OnMouseWheel", function() end)
-    popup:SetWidth(220)
+    popup:SetWidth(CFG_POP_W)
     if ns.MainFrame then
         popup:SetPoint("TOPLEFT", host, "TOPRIGHT", 4, 0)
         popup:SetPoint("BOTTOMLEFT", host, "BOTTOMRIGHT", 4, 0)
     else
         popup:SetPoint("CENTER")
-        popup:SetSize(220, 600)
+        popup:SetSize(CFG_POP_W, 600)
     end
     popup:Hide()
     if ns.hui and ns.hui.SkinPopup then ns.hui.SkinPopup(popup, 8, "both", ns.hui.layer.L0) end
@@ -448,6 +449,14 @@ function UI:EnsureConfig()
 
     local schemeSet = NewBtn(popup, L["方案设置"], 68, 20)
     schemeSet:SetPoint("RIGHT", reset, "LEFT", -6, 0)
+    if ns.WIDE_UI then
+        -- 英文按钮按文字宽度放宽，标题在剩余空间内缩小 / English buttons fit their text; the title shrinks into what is left
+        for _, b in ipairs({ reset, schemeSet }) do
+            local f = b:GetFontString()
+            if f then b:SetWidth(math.max(b:GetWidth(), math.ceil(f:GetStringWidth() or 0) + 16)) end
+        end
+        if ns.FitFS then ns.FitFS(title, CFG_POP_W - 16 - CFG_PAD - reset:GetWidth() - schemeSet:GetWidth() - 14) end
+    end
     schemeSet:SetScript("OnClick", function(self)
         ns.PlaySound(1)
         local id = LF.GetStore().chooseID
@@ -508,11 +517,17 @@ function UI:EnsureConfig()
             for _, k in ipairs(D.KeyList(dim)) do
                 local tg = MakeToggle(content)
                 tg.dim, tg.key = dim, k.key
-                tg.label:SetText(k.label)
+                tg.label:SetText(L[k.label])
+                if ns.WIDE_UI and ns.FitFS then ns.FullText(tg.label, L[k.label]); ns.FitFS(tg.label, CFG_COL_W - 42) end
                 tg:SetScript("OnClick", function(self)
                     local st = LF.GetStore()
                     local sch = st.chooseID and st[st.chooseID]
-                    if not sch then self:SetChecked(false); return end
+                    if not sch then
+                        -- 未选方案时点击给出提示，而不是静默无反应 / with no preset selected, say so instead of silently ignoring the click
+                        self:SetChecked(false)
+                        UI:ConfigHint(L["请先点上方方案图标启用"])
+                        return
+                    end
                     local on = not (type(sch[self.dim]) == "table" and sch[self.dim][self.key] == 1)
                     LF.SetOption(sch, self.dim, self.key, on)
                     self:SetChecked(on)
@@ -721,13 +736,15 @@ function UI:RefreshConfig()
             local on = false
             if sch and type(sch[tg.dim]) == "table" and sch[tg.dim][tg.key] == 1 then on = true end
             tg:SetChecked(on)
-            if sch then tg:Enable() else tg:Disable() end
+            -- 保持可点（点击时提示先选方案），未选方案时变暗 / stay clickable (clicking explains what to do), dimmed with no preset
+            tg:SetAlpha(sch and 1 or 0.45)
+            if tg.label then tg.label:SetAlpha(sch and 1 or 0.45) end
         end
     end
 
     if cfg.classBtn then
         local vc = LF.ViewClass()
-        cfg.classBtn.label:SetText(L["过滤职业"] .. "：" .. (LF.ClassName(vc) or L["跟随角色"]))
+        cfg.classBtn.label:SetText(L["过滤职业"] .. L["："] .. (LF.ClassName(vc) or L["跟随角色"]))
         cfg.classBtn:Enable()
     end
 end
