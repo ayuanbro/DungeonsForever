@@ -176,8 +176,8 @@ ns.SpellBookData = {
                 } },
 { name = "原始撕咬", icon = "Interface\\Icons\\Ability_Racial_Cannibalize", id = 1238070, learnLv = 25, isTalent = true, ranks = {
                 { rank = 1, learn = 25, id = 407995 },
-                { rank = 2, learn = 36, id = 1238069 },
-                { rank = 3, learn = 48, id = 1238070 },
+                { rank = 2, learn = 50, id = 1238069 },
+                { rank = 3, learn = 60, id = 1238070 },
                 } },
                 { name = "急奔", icon = "Interface\\Icons\\Ability_Druid_Dash", id = 9821, learnLv = 26, ranks = {
                 { rank = 1, learn = 26, id = 1850 },

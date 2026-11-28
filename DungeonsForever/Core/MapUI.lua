@@ -1739,6 +1739,7 @@ local function BuildPins()
         pinBtns[i] = bt
     end
     frame.pinBtns = pinBtns
+    if ns.MapPlayer then ns.MapPlayer.Attach(frame) end
 end
 
 local function BuildListRows(host)
@@ -4965,6 +4966,7 @@ function M.Paint(d)
     frame.baseW, frame.baseH = cw, ch
     local zw, zh = cw * ZM.k, ch * ZM.k
     frame.pinW, frame.pinH = zw, zh
+    if ns.MapPlayer then ns.MapPlayer.Set(frame, M.curId, M.CurFloorNum and M.CurFloorNum() or nil) end
     local lx, ly = ZM.Limits(cw, ch)
     ZM.ClampTo(lx, ly)
 
@@ -5864,5 +5866,377 @@ end
 M.FloorName = FloorName
 M.PaintBossPin = bpPaint
 M.BossPinDisplay = bpDisp
+
+local MC = {}
+ns.MapCalib = MC
+MC.__started = false
+MC.__calibOn = false
+
+local function cdet(a, b, c, d, e, f, g, h, i)
+    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+end
+
+local function csolve(a, b, c, d, e, f, g, h, i, j, k, l)
+    local D = cdet(a, b, c, d, e, f, g, h, i)
+    if D == 0 or D ~= D then return end
+    local x = cdet(j, b, c, k, e, f, l, h, i) / D
+    local y = cdet(a, j, c, d, k, f, g, l, i) / D
+    local z = cdet(a, b, j, d, e, k, g, h, l) / D
+    return x, y, z
+end
+
+local function calibStore()
+    local db = DungeonsForeverDB
+    if type(db) ~= "table" then return end
+    if type(db.mapCalib) ~= "table" then db.mapCalib = {} end
+    return db.mapCalib
+end
+
+local function calibKey(id, floor)
+    return tostring(id) .. "|" .. tostring(floor)
+end
+
+MC.DATA = {
+    ["stratholme_service|2"] = { a = -4.3268145184139e-05, b = -0.00095151775297313, c = -2.6187947927705, d = -0.0013947742530947, e = -5.0400859182148e-05, f = 5.6577199267647 },
+}
+
+function MC.Get(id, floor)
+    local key = calibKey(id, floor)
+    local t = calibStore()
+    if t and t[key] then return t[key] end
+    if MC.DATA then return MC.DATA[key] end
+end
+
+function MC.Save(id, floor, aff)
+    local t = calibStore()
+    if not t then return end
+    t[calibKey(id, floor)] = aff
+end
+
+function MC.Clear(id, floor)
+    local t = calibStore()
+    if not t then return end
+    t[calibKey(id, floor)] = nil
+end
+
+function MC.Solve(pts)
+    if type(pts) ~= "table" or #pts < 3 then return end
+    local sxx, sxy, sx, syy, sy, n = 0, 0, 0, 0, 0, #pts
+    local tx, ty, t1, ux, uy, u1 = 0, 0, 0, 0, 0, 0
+    for i = 1, #pts do
+        local p = pts[i]
+        sxx = sxx + p.wx * p.wx
+        sxy = sxy + p.wx * p.wy
+        sx = sx + p.wx
+        syy = syy + p.wy * p.wy
+        sy = sy + p.wy
+        tx = tx + p.wx * p.px
+        ty = ty + p.wy * p.px
+        t1 = t1 + p.px
+        ux = ux + p.wx * p.py
+        uy = uy + p.wy * p.py
+        u1 = u1 + p.py
+    end
+    local A, B, C = csolve(sxx, sxy, sx, sxy, syy, sy, sx, sy, n, tx, ty, t1)
+    local D, E, F = csolve(sxx, sxy, sx, sxy, syy, sy, sx, sy, n, ux, uy, u1)
+    if not A or not D then return end
+    return { a = A, b = B, c = C, d = D, e = E, f = F }
+end
+
+function MC.Apply(aff, wx, wy)
+    if type(aff) ~= "table" then return end
+    return aff.a * wx + aff.b * wy + aff.c, aff.d * wx + aff.e * wy + aff.f
+end
+
+local function instanceID()
+    if type(IsInInstance) == "function" and not IsInInstance() then return end
+    if type(GetInstanceInfo) ~= "function" then return end
+    local ok, r1, r2, r3, r4, r5, r6, r7, id = pcall(GetInstanceInfo)
+    if ok then return tonumber(id) end
+end
+
+function MC.World()
+    local DN = ns.PathLocator
+    if not (DN and DN.IsRunning and DN.IsRunning()) then return end
+    local x, y, z, h, age = DN.Get()
+    if type(x) == "number" and (not age or age < 2) then return x, y end
+end
+
+function MC.InInstance()
+    return instanceID() ~= nil
+end
+
+function MC.LocationEnabled()
+    local db = DungeonsForeverDB
+    return type(db) == "table" and db.mapLocOn ~= false
+end
+
+function MC.CurrentSlug()
+    local id = instanceID()
+    if not id then return end
+    local W = ns.SubzoneWing
+    if type(W) ~= "table" then return end
+    local t = W[id]
+    if type(t) ~= "table" then return end
+    local st = (type(GetSubZoneText) == "function") and GetSubZoneText() or nil
+    local zn = (type(GetMinimapZoneText) == "function") and GetMinimapZoneText() or nil
+    if st and t[st] then return t[st] end
+    if zn and t[zn] then return t[zn] end
+end
+
+function MC.Keep(on)
+    local DN = ns.PathLocator
+    if not DN then return end
+    if on then
+        local id = instanceID()
+        if id and DN.Available and DN.Available() and not DN.IsRunning() then
+            if pcall(DN.Start, id) then MC.__started = true end
+        end
+    elseif MC.__started then
+        if DN.IsRunning and DN.IsRunning() then pcall(DN.Stop) end
+        MC.__started = false
+    end
+end
+
+local cpts = {}
+
+function MC.TrySolve()
+    if #cpts < 3 then return end
+    local aff = MC.Solve(cpts)
+    if not aff then
+        print("|cffff8080[DF]|r 三点太接近/共线，解不出，请换更分散的点再 add")
+        return
+    end
+    local minx, maxx, miny, maxy = 1, 0, 1, 0
+    for i = 1, #cpts do
+        local p = cpts[i]
+        if p.px < minx then minx = p.px end
+        if p.px > maxx then maxx = p.px end
+        if p.py < miny then miny = p.py end
+        if p.py > maxy then maxy = p.py end
+    end
+    local w, h = maxx - minx, maxy - miny
+    local mc = math.max(math.abs(aff.a), math.abs(aff.b), math.abs(aff.d), math.abs(aff.e))
+    if w < 0.15 or h < 0.15 or mc > 0.02 then
+        print(string.format("|cffff8080[DF]|r 这些点太集中/共线（横跨 %.0f%%、纵跨 %.0f%%），解出来会偏，先不保存。请走到横向和纵向都更远的位置继续 /dfpos add。", w * 100, h * 100))
+        return
+    end
+    MC.Save(MC.__calibId, MC.__calibFloor, aff)
+    MC.__calibOn = false
+    print(string.format("|cff46bf72[DF]|r 标定完成并已保存（%d 点，横跨 %.0f%% 纵跨 %.0f%%）。/dfpos on 显示绿点。", #cpts, w * 100, h * 100))
+    return true
+end
+
+function MC.Begin()
+    local MP = ns.MapPlayer
+    local v = MP and MP.ActiveView and MP.ActiveView()
+    if not v then
+        print("|cffff8080[DF]|r 先打开副本地图（在副本内）再标定")
+        return
+    end
+    if not MC.InInstance() then
+        print("|cffff8080[DF]|r 你当前不在副本内，无法标定")
+        return
+    end
+    local cur = MC.CurrentSlug()
+    if cur and v.__mpId ~= cur then
+        print("|cffff8080[DF]|r 当前显示的不是你所在副本的图（应为本图：" .. tostring(cur) .. "）")
+        return
+    end
+    cpts = {}
+    MC.__calibOn = true
+    MC.__calibId, MC.__calibFloor = v.__mpId, v.__mpFloor
+    MC.Keep(true)
+    print("|cff46bf72[DF]|r 标定开始：" .. tostring(v.__mpId) .. " 第 " .. tostring(v.__mpFloor) .. " 层")
+    print("走到 Boss 附近，在地图上点选该 Boss 图标（选中会变大），再输入 /dfpos add；换 3 个分散的 Boss（横向、纵向都要拉开，别排成一条线）。点太挤会提示不保存。")
+end
+
+function MC.Add()
+    if not MC.__calibOn then
+        print("|cffff8080[DF]|r 先 /dfpos cal 开始标定")
+        return
+    end
+    local MP = ns.MapPlayer
+    local v = MP and MP.ActiveView and MP.ActiveView()
+    local id = (v and v.__mpId) or MC.__calibId
+    local floor = (v and v.__mpFloor) or MC.__calibFloor
+    if id ~= MC.__calibId then
+        print("|cffff8080[DF]|r 当前显示的不是标定开始的图，请 /dfpos cal 重新开始")
+        return
+    end
+    if #cpts > 0 and floor ~= MC.__calibFloor then
+        print("|cffff8080[DF]|r 点数要标在同一层：当前第 " .. tostring(floor) .. " 层，已记录第 " .. tostring(MC.__calibFloor) .. " 层，请切回该层再 add")
+        return
+    end
+    local px, py, pname
+    local pins = M.PinsFor and M.PinsFor(id, floor)
+    local sel = M.detailEn
+    if sel and type(pins) == "table" then
+        for i = 1, #pins do
+            local p = pins[i]
+            if p.en == sel then
+                px, py, pname = p.left / 100, p.top / 100, (p.zh or p.en)
+                break
+            end
+        end
+    end
+    if not px then
+        local nm = UnitName("target")
+        local cid = (type(UnitCreatureID) == "function") and UnitCreatureID("target") or nil
+        local function sec(vv) return type(_G.issecretvalue) == "function" and _G.issecretvalue(vv) or false end
+        if sec(nm) then nm = nil end
+        if sec(cid) then cid = nil end
+        if type(pins) == "table" then
+            if cid then
+                for i = 1, #pins do
+                    local p = pins[i]
+                    if p.npc and p.npc ~= "" and tonumber(p.npc) == cid then
+                        px, py, pname = p.left / 100, p.top / 100, (p.zh or p.en)
+                        break
+                    end
+                end
+            end
+            if not px and nm and type(nm) == "string" then
+                for i = 1, #pins do
+                    local p = pins[i]
+                    if (p.zh and p.zh == nm) or (p.en and p.en == nm) then
+                        px, py, pname = p.left / 100, p.top / 100, (p.zh or p.en)
+                        break
+                    end
+                end
+            end
+        end
+    end
+    if not px then
+        print("|cffff8080[DF]|r 先在地图上点选一个 Boss 图标（让它变大/选中），再 /dfpos add")
+        return
+    end
+    MC.__calibFloor = floor
+    local wx, wy = MC.World()
+    if not wx then
+        print("|cffff8080[DF]|r 世界定位还没就绪，稍等 1-2 秒再 /dfpos add")
+        return
+    end
+    cpts[#cpts + 1] = { px = px, py = py, wx = wx, wy = wy }
+    print(string.format("|cff46bf72[DF]|r 记录 %d/3：%s  图 %.1f%%,%.1f%%  世界 %.1f,%.1f", #cpts, tostring(pname or "?"), px * 100, py * 100, wx, wy))
+    MC.TrySolve()
+end
+
+local calibOverlay
+
+local function destroyOverlay()
+    local ov = calibOverlay
+    calibOverlay = nil
+    if not ov then return end
+    ov:Hide()
+    ov:ClearAllPoints()
+    ov:SetParent(UIParent)
+end
+
+local function overlayClick()
+    local ov = calibOverlay
+    local canvas = ov and ov.__canvas
+    if not canvas then return end
+    local cx, cy = GetCursorPosition()
+    if type(cx) ~= "number" or type(cy) ~= "number" then return end
+    if type(_G.issecretvalue) == "function" and (_G.issecretvalue(cx) or _G.issecretvalue(cy)) then return end
+    local us = (UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale()) or 1
+    if not us or us <= 0 then us = 1 end
+    cx, cy = cx / us, cy / us
+    local left, right, top, bottom = canvas:GetLeft(), canvas:GetRight(), canvas:GetTop(), canvas:GetBottom()
+    if not (left and right and top and bottom and right ~= left and top ~= bottom) then return end
+    local px = (cx - left) / (right - left)
+    local py = (top - cy) / (top - bottom)
+    if px < 0 then px = 0 elseif px > 1 then px = 1 end
+    if py < 0 then py = 0 elseif py > 1 then py = 1 end
+    local wx, wy = MC.World()
+    if not wx then
+        print("|cffff8080[DF]|r 世界定位还没就绪，稍等一下再点")
+        return
+    end
+    cpts[#cpts + 1] = { px = px, py = py, wx = wx, wy = wy }
+    print(string.format("|cff46bf72[DF]|r 记录 %d/3：图 %.1f%%,%.1f%%  世界 %.1f,%.1f", #cpts, px * 100, py * 100, wx, wy))
+    if #cpts >= 3 and MC.TrySolve() then destroyOverlay() end
+end
+
+function MC.ClickStart()
+    local MP = ns.MapPlayer
+    local v = MP and MP.ActiveView and MP.ActiveView()
+    if not v then print("|cffff8080[DF]|r 先打开副本地图再点标定") return end
+    if not MC.InInstance() then print("|cffff8080[DF]|r 你当前不在副本内，无法标定") return end
+    local cur = MC.CurrentSlug()
+    if cur and v.__mpId ~= cur then print("|cffff8080[DF]|r 当前显示的不是你所在副本的图（应为本图：" .. tostring(cur) .. "）") return end
+    cpts = {}
+    MC.__calibOn = true
+    MC.__calibId, MC.__calibFloor = v.__mpId, v.__mpFloor
+    MC.Keep(true)
+    destroyOverlay()
+    local canvas = v.canvas
+    local ov = CreateFrame("Button", nil, canvas)
+    ov:SetAllPoints(canvas)
+    ov:SetFrameLevel((canvas:GetFrameLevel() or 1) + 40)
+    ov:EnableMouse(true)
+    ov:RegisterForClicks("LeftButtonUp")
+    ov.__canvas = canvas
+    ov:SetScript("OnClick", overlayClick)
+    ov:Show()
+    calibOverlay = ov
+    print("|cff46bf72[DF]|r 点击标定：" .. tostring(v.__mpId) .. " 第 " .. tostring(v.__mpFloor) .. " 层")
+    print("站到一个你能在图上认出的位置，在地图上点一下；换 3 个不同位置各点一次。")
+end
+
+function MC.Stop()
+    MC.__calibOn = false
+    cpts = {}
+    destroyOverlay()
+    MC.Keep(false)
+    print("|cff46bf72[DF]|r 标定已停止")
+end
+
+function MC.Info()
+    local MP = ns.MapPlayer
+    local v = MP and MP.ActiveView and MP.ActiveView()
+    if not v then print("|cff46bf72[DF]|r 没有打开的副本图") return end
+    local aff = MC.Get(v.__mpId, v.__mpFloor)
+    local wx, wy = MC.World()
+    print(string.format("|cff46bf72[DF]|r 图=%s 层=%s 已标定=%s 开关=%s 世界=%s,%s", tostring(v.__mpId), tostring(v.__mpFloor), tostring(aff ~= nil), tostring(MC.LocationEnabled()), tostring(wx), tostring(wy)))
+end
+
+SLASH_DFPOS1 = "/dfpos"
+SlashCmdList["DFPOS"] = function(msg)
+    msg = (msg or ""):lower():gsub("%s+", "")
+    if msg == "" or msg == "cal" then MC.Begin()
+    elseif msg == "add" then MC.Add()
+    elseif msg == "click" then MC.ClickStart()
+    elseif msg == "stop" then MC.Stop()
+    elseif msg == "on" then
+        local db = DungeonsForeverDB
+        if type(db) == "table" then db.mapLocOn = true end
+        local MP = ns.MapPlayer
+        local v = MP and MP.ActiveView and MP.ActiveView()
+        if v and not MC.Get(v.__mpId, v.__mpFloor) then
+            print("|cffffb84d[DF]|r 当前图还没标定，绿点不会显示。先 /dfpos cal，走到 Boss 附近点选其图标再 /dfpos add，共 3 个。")
+        else
+            print("|cff46bf72[DF]|r 副本地图定位：开（会占用导航箭头）")
+        end
+    elseif msg == "off" then
+        local db = DungeonsForeverDB
+        if type(db) == "table" then db.mapLocOn = false end
+        MC.Keep(false)
+        print("|cff46bf72[DF]|r 副本地图定位：关")
+    elseif msg == "help" then
+        print("|cff46bf72[DF]|r 副本地图定位命令：")
+        print("  /dfpos cal  开始标定（副本内，用当前这张图）")
+        print("  走到 Boss 附近 -> 点地图上的 Boss 图标选中 -> /dfpos add ，换 3 个分散 Boss")
+        print("  /dfpos click  备用：直接在地图上点你所在位置 3 次")
+        print("  /dfpos on | off  开关实时绿点（占用导航箭头）")
+        print("  /dfpos info | clear | stop")
+    elseif msg == "clear" then
+        local MP = ns.MapPlayer
+        local v = MP and MP.ActiveView and MP.ActiveView()
+        if v then MC.Clear(v.__mpId, v.__mpFloor) end
+        print("|cff46bf72[DF]|r 已清除当前图标定")
+    else MC.Info() end
+end
 
 if ns.Init then ns.Init(function() M.LoadMapState() end) end

@@ -685,12 +685,21 @@ end
 
 function W.SubzoneLayerFor(id)
     local tbl = M.SUBZONE_LAYER
-    if not (id and type(tbl) == "table" and type(tbl[id]) == "table") then return nil end
     local sk = subZoneKey()
-    if not sk then return nil end
-    local idx = tbl[id][sk]
-    if type(idx) ~= "number" then return nil end
-    return idx
+    if id and type(tbl) == "table" and type(tbl[id]) == "table" and sk then
+        local idx = tbl[id][sk]
+        if type(idx) == "number" then return idx end
+    end
+    if id == "city_of_dalaran" then
+        local raw = subZoneText()
+        local low = (type(raw) == "string") and raw:lower() or ""
+        if low:find("下水道", 1, true) or low:find("腹地", 1, true)
+            or low:find("underbelly", 1, true) or low:find("sewer", 1, true) then
+            return 2
+        end
+        return 1
+    end
+    return nil
 end
 
 function W.ResolveCandidates()
@@ -1228,6 +1237,7 @@ local function syncPins(view, id, floor, cw, ch)
     end
     M.RefreshPulse(view)
     M.ResolvePendingArrive(view)
+    if ns.MapPlayer then ns.MapPlayer.Set(view, id, floor) end
 end
 
 local function syncBar(view, id, layers, idx)
@@ -3552,6 +3562,240 @@ local function tryHook()
         return
     end
     W.Hook()
+end
+
+local MP = {}
+ns.MapPlayer = MP
+MP.views = {}
+
+local function treeShown(f)
+    local guard = 0
+    while f and guard < 32 do
+        guard = guard + 1
+        if not f:IsShown() then return false end
+        f = f:GetParent()
+    end
+    return true
+end
+
+local function isSecret(v)
+    return type(_G.issecretvalue) == "function" and _G.issecretvalue(v) or false
+end
+
+local function chainHas(top, node)
+    local guard = 0
+    while type(node) == "number" and node > 0 and guard < 16 do
+        guard = guard + 1
+        if node == top then return true end
+        local ok, info = pcall(C_Map.GetMapInfo, node)
+        if not ok or type(info) ~= "table" then return false end
+        node = info.parentMapID
+    end
+    return false
+end
+
+local function project(m, x, y, disp)
+    if m == disp then return x, y end
+    if not (C_Map and C_Map.GetMapRectOnMap and C_Map.GetMapInfo) then return end
+    if not (chainHas(disp, m) or chainHas(m, disp)) then return end
+    local ok, l, r, t, b = pcall(C_Map.GetMapRectOnMap, m, disp)
+    if not ok or type(l) ~= "number" or type(r) ~= "number" or r == l then return end
+    if type(t) ~= "number" or type(b) ~= "number" then return end
+    return l + x * (r - l), t + y * (b - t)
+end
+
+local function playerMapPos()
+    if not (C_Map and C_Map.GetBestMapForUnit and C_Map.GetPlayerMapPosition) then return end
+    local okM, m = pcall(C_Map.GetBestMapForUnit, "player")
+    if not okM or type(m) ~= "number" or m <= 0 or isSecret(m) then return end
+    local okP, p = pcall(C_Map.GetPlayerMapPosition, m, "player")
+    if not okP or type(p) ~= "table" then return end
+    local x, y = p.x, p.y
+    if (type(x) ~= "number" or type(y) ~= "number") and p.GetXY then
+        local okXY, gx, gy = pcall(p.GetXY, p)
+        if okXY then x, y = gx, gy end
+    end
+    if type(x) ~= "number" or type(y) ~= "number" then return end
+    if isSecret(x) or isSecret(y) then return end
+    if x == 0 and y == 0 then return end
+    return m, x, y
+end
+
+local SIZE_STEPS = { 16, 20, 26, 34, 44 }
+function MP.Size()
+    local db = DungeonsForeverDB
+    local v = (type(db) == "table") and tonumber(db.mapLocSize) or nil
+    if not v or v < 8 then v = 26 end
+    return v
+end
+function MP.CycleSize()
+    local db = DungeonsForeverDB
+    if type(db) ~= "table" then return MP.Size() end
+    local cur = MP.Size()
+    local nxt = SIZE_STEPS[1]
+    for i = 1, #SIZE_STEPS do
+        if SIZE_STEPS[i] == cur then nxt = SIZE_STEPS[i % #SIZE_STEPS + 1]; break end
+    end
+    if nxt == 26 then db.mapLocSize = nil else db.mapLocSize = nxt end
+    return nxt
+end
+
+local function markerFor(view)
+    if view.__mpMark then return view.__mpMark end
+    local canvas = view.canvas
+    if not canvas then return end
+    local f = CreateFrame("Frame", nil, canvas)
+    local s0 = MP.Size()
+    f:SetSize(s0, s0)
+    f:SetFrameLevel((canvas:GetFrameLevel() or 1) + 20)
+    local cr, cg, cb = 0.25, 1, 0.4
+    do
+        local ok, cname, cfile = pcall(UnitClass, "player")
+        local classFile = ok and cfile or nil
+        local cc
+        if classFile and C_ClassColor and C_ClassColor.GetClassColor then
+            local okc, v = pcall(C_ClassColor.GetClassColor, classFile)
+            if okc then cc = v end
+        end
+        if not cc and classFile then
+            local RCC = rawget(_G, "RAID_CLASS_COLORS")
+            if RCC then cc = RCC[classFile] end
+        end
+        if cc and type(cc.r) == "number" then cr, cg, cb = cc.r, cc.g, cc.b end
+    end
+    local bl = 0.299 * cr + 0.587 * cg + 0.114 * cb
+    local br, bg, bb = 1, 1, 1
+    if bl > 0.72 then br, bg, bb = 0.08, 0.08, 0.1 end
+    local glow = f:CreateTexture(nil, "BACKGROUND")
+    glow:SetTexture(M.PIN_GLOW_TEX)
+    glow:SetBlendMode("ADD")
+    glow:SetVertexColor(cr, cg, cb)
+    glow:SetAlpha(0.55)
+    glow:SetAllPoints()
+    f.glow = glow
+    local ring = f:CreateTexture(nil, "OVERLAY")
+    ring:SetTexture(M.PIN_RING_TEX)
+    ring:SetBlendMode("BLEND")
+    ring:SetVertexColor(br, bg, bb)
+    ring:SetAllPoints()
+    f.ring = ring
+    local dot = f:CreateTexture(nil, "OVERLAY", nil, 1)
+    dot:SetSize(s0 * 0.66, s0 * 0.66)
+    dot:SetPoint("CENTER")
+    dot:SetColorTexture(cr, cg, cb, 1)
+    if ns.hui and ns.hui.RoundIcon then pcall(ns.hui.RoundIcon, dot) end
+    f.dot = dot
+    f:Hide()
+    view.__mpMark = f
+    return f
+end
+
+function MP.Attach(view)
+    if not (view and view.canvas) then return end
+    if view.__mpMark then return end
+    markerFor(view)
+    MP.views[view] = true
+    if not MP.driver then
+        local d = CreateFrame("Frame", nil, UIParent)
+        d:SetSize(1, 1)
+        d:SetScript("OnUpdate", function(_, dt)
+            MP.acc = (MP.acc or 0) + (dt or 0)
+            if MP.acc < 0.1 then return end
+            MP.acc = 0
+            for v in pairs(MP.views) do pcall(MP.Sync, v) end
+            local MC = ns.MapCalib
+            if MC and MC.Keep then
+                local av = MP.ActiveView()
+                local keep = false
+                if MC.__calibOn then
+                    keep = true
+                elseif av and MC.Get(av.__mpId, av.__mpFloor)
+                    and (not MC.InInstance or MC.InInstance())
+                    and (not MC.LocationEnabled or MC.LocationEnabled()) then
+                    keep = true
+                end
+                pcall(MC.Keep, keep)
+            end
+        end)
+        d:Show()
+        MP.driver = d
+    end
+end
+
+function MP.ActiveView()
+    for v in pairs(MP.views) do
+        if v.__mpMark and v.canvas and v.__mpId and treeShown(v) and treeShown(v.canvas) then
+            return v
+        end
+    end
+end
+
+function MP.Set(view, id, floor)
+    if not view then return end
+    view.__mpId, view.__mpFloor = id, floor
+    if not view.__mpMark then MP.Attach(view) end
+    pcall(MP.Sync, view)
+end
+
+function MP.Sync(view)
+    local f = view.__mpMark
+    if not f then return end
+    local sz = MP.Size()
+    if f:GetWidth() ~= sz then
+        f:SetSize(sz, sz)
+        if f.dot then f.dot:SetSize(sz * 0.66, sz * 0.66) end
+    end
+    local canvas = view.canvas
+    if not (canvas and treeShown(view) and treeShown(canvas)) then
+        f:Hide()
+        return
+    end
+    local id = view.__mpId
+    if not id then
+        f:Hide()
+        return
+    end
+    local cw, ch = canvas:GetWidth() or 0, canvas:GetHeight() or 0
+    if cw <= 0 or ch <= 0 then
+        f:Hide()
+        return
+    end
+    local px, py
+    local MC = ns.MapCalib
+    if MC then
+        local aff = MC.Get(id, view.__mpFloor)
+        if aff then
+            local cur = MC.CurrentSlug and MC.CurrentSlug()
+            if (not cur) or cur == id then
+                local wx, wy = MC.World()
+                if wx then px, py = MC.Apply(aff, wx, wy) end
+            end
+        end
+    end
+    if not px and type(id) == "number" then
+        local m, x, y = playerMapPos()
+        if m then px, py = project(m, x, y, id) end
+    end
+    if px then
+        if view.__mpSmId == id and view.__mpSmFloor == view.__mpFloor and view.__mpSx then
+            local dx, dy = px - view.__mpSx, py - view.__mpSy
+            if math.abs(dx) + math.abs(dy) < 0.25 then
+                if math.abs(dx) + math.abs(dy) < 0.002 then
+                    px, py = view.__mpSx, view.__mpSy
+                else
+                    px, py = view.__mpSx + dx * 0.4, view.__mpSy + dy * 0.4
+                end
+            end
+        end
+        view.__mpSmId, view.__mpSmFloor, view.__mpSx, view.__mpSy = id, view.__mpFloor, px, py
+    end
+    if not px or px < -0.02 or px > 1.02 or py < -0.02 or py > 1.02 then
+        f:Hide()
+        return
+    end
+    f:ClearAllPoints()
+    f:SetPoint("CENTER", canvas, "TOPLEFT", px * cw, -py * ch)
+    f:Show()
 end
 
 W.Render = {

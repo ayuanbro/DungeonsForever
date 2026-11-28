@@ -472,6 +472,14 @@ local function showSettingsMenu(btn)
             end,
         },
         {
+            text = format(L["自身圆点大小：%d"], (ns.MapPlayer and ns.MapPlayer.Size and ns.MapPlayer.Size()) or 26),
+            color = "|cffe0c060",
+            func = function()
+                if ns.MapPlayer and ns.MapPlayer.CycleSize then ns.MapPlayer.CycleSize() end
+                showSettingsMenu(btn)
+            end,
+        },
+        {
             text = L["副本地图自动打开迷你地图"],
             checked = not (s and s.autoMini == false),
             func = function()
@@ -2002,6 +2010,7 @@ function MW.Open(id, layer)
     if mini and mini:IsShown() then mini:Hide() end
     MW.miniClosed = nil
     if MW.curId ~= id then MW.subFollow = true end
+    if not layer then MW.subFollow = true end
     MW.curId = id
     local Wm = ns.MapWorldModule
     if Wm then
@@ -2013,7 +2022,8 @@ function MW.Open(id, layer)
     local d = Rl.detailOf(id)
     if d then M.curD = d end
     local e = M.EntryLayer(id)
-    MW.curLayer = layer or e or 1
+    local sl = MW.SubzoneLayerFor(id)
+    MW.curLayer = layer or sl or e or 1
     if ns.MapZoom then ns.MapZoom.Reset() end
     applyScale(MW.winScale or 1)
     M.sideTask = nil
