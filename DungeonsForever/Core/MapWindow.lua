@@ -2141,6 +2141,7 @@ zoneDriver:SetScript("OnEvent", function(_, ev)
         if mini and mini:IsShown() then mini:Hide() end
     end
     if not IsInInstance() then return end
+    if ns.DMCoordActive and ns.DMCoordActive() then return end
     C_Timer.After(1.2, function()
         local Wm = ns.MapWorldModule
         if not (Wm and Wm.Resolve) then return end
@@ -2212,3 +2213,195 @@ SlashCmdList["DFMAP"] = function(msg)
     end
     MW.Open(id)
 end
+
+local function __DMCoord()
+    local function ddb()
+        local d = rawget(_G, "DungeonsForeverDB")
+        if type(d) ~= "table" then return nil end
+        return d
+    end
+    local function curInstID()
+        if type(GetInstanceInfo) ~= "function" then return nil end
+        local ok, a, b, c, d, e, f, g, id = pcall(GetInstanceInfo)
+        if ok and type(id) == "number" then return id end
+        return nil
+    end
+    local function curXYZ()
+        local DN = ns.PathLocator
+        if not (DN and DN.IsRunning and DN.IsRunning()) then return nil end
+        local x, y, z, h, age = DN.Get()
+        if type(x) ~= "number" or type(y) ~= "number" or type(z) ~= "number" then return nil end
+        if age and age > 2 then return nil end
+        return x, y, z
+    end
+    local function floorLayer(slug, floor)
+        if not (slug and floor) then return nil end
+        local layers = M.LayersFor and M.LayersFor(slug)
+        if type(layers) == "table" then
+            for i = 1, #layers do
+                if M.FloorNumAt and M.FloorNumAt(slug, i) == floor then return i end
+            end
+        end
+        return floor
+    end
+    local function nearest(iid, x, y, z)
+        local dbv = ddb()
+        local list = dbv and dbv.mapZones and dbv.mapZones[iid]
+        if type(list) ~= "table" or #list == 0 then return nil end
+        local best, bd
+        for i = 1, #list do
+            local s = list[i]
+            if type(s.x) == "number" and type(s.y) == "number" and type(s.z) == "number" then
+                local dx, dy, dz = x - s.x, y - s.y, z - s.z
+                local dd = dx * dx + dy * dy + dz * dz
+                if not bd or dd < bd then bd = dd; best = s end
+            end
+        end
+        if best then return best, math.sqrt(bd) end
+    end
+    function ns.DMZones_Add()
+        local x, y, z = curXYZ()
+        local iid, dbv = curInstID(), ddb()
+        if not (x and z and iid and dbv) then return false, "需要副本内且定位器在运行(/dfpos on)" end
+        if not (MW and MW.curId) then return false, "当前没有打开的地图" end
+        local floor = (M.FloorNumAt and M.FloorNumAt(MW.curId, MW.curLayer or 1)) or (MW.curLayer or 1)
+        dbv.mapZones = dbv.mapZones or {}
+        dbv.mapZones[iid] = dbv.mapZones[iid] or {}
+        local list = dbv.mapZones[iid]
+        local nearOther
+        for i = 1, #list do
+            local s = list[i]
+            if type(s.x) == "number" and type(s.y) == "number" and type(s.z) == "number" then
+                local dx, dy, dz = x - s.x, y - s.y, z - s.z
+                local d = math.sqrt(dx * dx + dy * dy + dz * dz)
+                if s.slug == MW.curId and s.floor == floor then
+                    if d <= 4 then
+                        s.x, s.y, s.z = x, y, z
+                        return true, "刷新 " .. tostring(MW.curId) .. "层" .. tostring(floor) .. " 同点"
+                    end
+                else
+                    if not nearOther or d < nearOther.d then nearOther = { d = d, s = s } end
+                end
+            end
+        end
+        list[#list + 1] = { x = x, y = y, z = z, slug = MW.curId, floor = floor }
+        local cnt = 0
+        for i = 1, #list do if list[i].slug == MW.curId and list[i].floor == floor then cnt = cnt + 1 end end
+        local msg = "已记录 " .. tostring(MW.curId) .. "层" .. tostring(floor) .. " (" .. string.format("%.0f,%.0f,%.0f", x, y, z) .. ") 该层共" .. cnt .. "点"
+        if nearOther and nearOther.d < 30 then
+            msg = msg .. string.format("  ⚠离%s层%s仅%.0f码,确认不是同一地点", (tostring(nearOther.s.slug):gsub("dire_maul_", "")), tostring(nearOther.s.floor), nearOther.d)
+        end
+        return true, msg
+    end
+    function ns.DMZones_Info()
+        local x, y, z = curXYZ()
+        local iid = curInstID()
+        local dbv2 = ddb()
+        local list2 = dbv2 and dbv2.mapZones and dbv2.mapZones[iid]
+        local tot = (type(list2) == "table") and #list2 or 0
+        local out = "instID=" .. tostring(iid) .. " 样本=" .. tot .. " pos=" .. tostring(x) .. "," .. tostring(y) .. "," .. tostring(z) .. " 当前=" .. tostring(MW and MW.curId) .. "层" .. tostring(MW and MW.curLayer) .. " 自动=" .. ((MW and MW.dmOff) and "暂停" or "开")
+        if x and iid then
+            local best, bd = nearest(iid, x, y, z)
+            if best then out = out .. " | 最近样本→" .. tostring(best.slug) .. "层" .. tostring(best.floor) .. " 距离" .. string.format("%.1f", bd) end
+        else
+            out = out .. " | 定位未就绪(/dfpos on)"
+        end
+        return out
+    end
+    function ns.DMCoordActive()
+        if MW.dmOff then return false end
+        local iid = curInstID()
+        local dbv = ddb()
+        local list = dbv and dbv.mapZones and dbv.mapZones[iid]
+        return type(list) == "table" and #list > 0
+    end
+    local function go(slug, layer)
+        if not (slug and layer) then return end
+        if win and win:IsShown() then
+            if MW.curId ~= slug then MW.Open(slug, layer) else MW.Retarget(slug, layer) end
+        else
+            MW.Retarget(slug, layer)
+        end
+    end
+    local drv = CreateFrame("Frame")
+    local acc = 0
+    local lastKey, lastIid
+    local pendKey, pendN = nil, 0
+    drv:SetScript("OnUpdate", function(_, el)
+        acc = acc + (el or 0)
+        if acc < 0.5 then return end
+        acc = 0
+        if MW.dmOff then return end
+        if type(IsInInstance) ~= "function" or not IsInInstance() then
+            lastKey, lastIid, pendKey, pendN = nil, nil, nil, 0
+            return
+        end
+        if not ((win and win:IsShown()) or (mini and mini:IsShown())) then
+            lastKey, pendKey, pendN = nil, nil, 0
+            return
+        end
+        local iid = curInstID()
+        local dbv = ddb()
+        local list = dbv and dbv.mapZones and dbv.mapZones[iid]
+        if type(list) ~= "table" or #list == 0 then return end
+        local x, y, z = curXYZ()
+        if not z then return end
+        local best, bd = nearest(iid, x, y, z)
+        if not best or (bd or 1e9) > 800 then return end
+        local key = tostring(best.slug) .. "#" .. tostring(best.floor)
+        if iid ~= lastIid then lastKey, lastIid, pendKey, pendN = nil, iid, nil, 0 end
+        if lastKey == nil then
+            lastKey = key; pendKey, pendN = nil, 0
+            local lay0 = floorLayer(best.slug, best.floor)
+            if lay0 and ((win and win:IsShown()) or (mini and mini:IsShown())) then
+                if not (MW.curId == best.slug and (MW.curLayer or 1) == lay0) then
+                    go(best.slug, lay0)
+                end
+            end
+            return
+        end
+        if key == lastKey then pendKey, pendN = nil, 0; return end
+        if pendKey == key then pendN = pendN + 1 else pendKey, pendN = key, 1 end
+        if pendN < 2 then return end
+        local layer = floorLayer(best.slug, best.floor)
+        if not layer then return end
+        lastKey = key
+        pendKey, pendN = nil, 0
+        if (win and win:IsShown()) or (mini and mini:IsShown()) then
+            print("|cff46bf72[DF]|r 坐标切图→" .. tostring(best.slug) .. " 层" .. tostring(best.floor))
+            go(best.slug, layer)
+        end
+    end)
+    SLASH_DFDM1 = "/dfdm"
+    SlashCmdList["DFDM"] = function(msg)
+        msg = (msg or ""):lower():gsub("%s+", "")
+        if msg == "add" then
+            local ok, info = ns.DMZones_Add()
+            print("|cff46bf72[DF]|r " .. tostring(info))
+        elseif msg == "clear" then
+            local dbv, iid = ddb(), curInstID()
+            if dbv and dbv.mapZones and iid then dbv.mapZones[iid] = nil end
+            print("|cff46bf72[DF]|r 已清除本副本坐标点")
+        elseif msg == "undo" then
+            local dbv, iid = ddb(), curInstID()
+            local list = dbv and dbv.mapZones and dbv.mapZones[iid]
+            if type(list) ~= "table" or #list == 0 then
+                print("|cff46bf72[DF]|r 没有可撤销的点")
+            else
+                local last = table.remove(list, #list)
+                print(string.format("|cff46bf72[DF]|r 已删除最后一点 %s层%s (%.0f,%.0f,%.0f) 剩%d点", (tostring(last.slug):gsub("dire_maul_", "")), tostring(last.floor), last.x or 0, last.y or 0, last.z or 0, #list))
+            end
+        elseif msg == "on" then
+            MW.dmOff = nil
+            MW.subFollow = true
+            print("|cff46bf72[DF]|r 已开启坐标自动跟随")
+        elseif msg == "off" then
+            MW.dmOff = true
+            print("|cff46bf72[DF]|r 已暂停坐标自动跟随")
+        else
+            print("|cff46bf72[DF]|r " .. ns.DMZones_Info())
+            print("  /dfdm add 记录   /dfdm undo 删最后一点   /dfdm clear 清除本副本")
+        end
+    end
+end
+__DMCoord()

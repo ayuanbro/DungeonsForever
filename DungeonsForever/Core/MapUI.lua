@@ -5902,6 +5902,45 @@ MC.DATA = {
 
 function MC.Get(id, floor)
     local key = calibKey(id, floor)
+    local db = DungeonsForeverDB
+    local regs = db and db.mapRegions and db.mapRegions[key]
+    if type(regs) == "table" then
+        local force = db and db.mapRegionForce and db.mapRegionForce[key]
+        if type(force) == "number" and regs[force] then return regs[force] end
+        local tags = db and db.mapAreaTags and db.mapAreaTags[key]
+        if type(tags) == "table" then
+            local tx, ty = MC.World()
+            local tz
+            local DNp = ns.PathLocator
+            if DNp and DNp.IsRunning and DNp.IsRunning() then local _, _, z0 = DNp.Get(); tz = z0 end
+            if tx then
+                local bt, bd
+                for i = 1, #tags do
+                    local g = tags[i]
+                    if type(g.x) == "number" then
+                        local dx, dy = tx - g.x, ty - g.y
+                        local d = dx * dx + dy * dy
+                        if tz and type(g.z) == "number" then local dz = tz - g.z; d = d + dz * dz * 4 end
+                        if not bd or d < bd then bd = d; bt = g end
+                    end
+                end
+                if bt and type(bt.n) == "number" and regs[bt.n] then return regs[bt.n] end
+            end
+        end
+        local best, bd
+        local wx, wy = MC.World()
+        for n, r in pairs(regs) do
+            if type(n) == "number" and type(r) == "table" and r.a then
+                if wx and r.minx and wx >= r.minx and wx <= r.maxx and wy >= r.miny and wy <= r.maxy then return r end
+                if wx then
+                    local dx, dy = wx - (r.cx or 0), wy - (r.cy or 0)
+                    local d = dx * dx + dy * dy
+                    if not bd or d < bd then bd = d; best = r end
+                elseif not best then best = r end
+            end
+        end
+        if best then return best end
+    end
     local t = calibStore()
     if t and t[key] then return t[key] end
     if MC.DATA then return MC.DATA[key] end
@@ -5914,9 +5953,15 @@ function MC.Save(id, floor, aff)
 end
 
 function MC.Clear(id, floor)
+    local key = calibKey(id, floor)
     local t = calibStore()
-    if not t then return end
-    t[calibKey(id, floor)] = nil
+    if t then t[key] = nil end
+    local db = DungeonsForeverDB
+    if type(db) == "table" then
+        if type(db.mapRegions) == "table" then db.mapRegions[key] = nil end
+        if type(db.mapAreaTags) == "table" then db.mapAreaTags[key] = nil end
+        if type(db.mapRegionForce) == "table" then db.mapRegionForce[key] = nil end
+    end
 end
 
 function MC.Solve(pts)
@@ -6021,6 +6066,33 @@ function MC.TrySolve()
         print(string.format("|cffff8080[DF]|r 这些点太集中/共线（横跨 %.0f%%、纵跨 %.0f%%），解出来会偏，先不保存。请走到横向和纵向都更远的位置继续 /dfpos add。", w * 100, h * 100))
         return
     end
+    if MC.__calibRegion then
+        local key = calibKey(MC.__calibId, MC.__calibFloor)
+        local db = DungeonsForeverDB
+        if type(db) == "table" then
+            db.mapRegions = db.mapRegions or {}
+            local regs = db.mapRegions[key]
+            if type(regs) ~= "table" then regs = {}; db.mapRegions[key] = regs end
+            local minx, maxx, miny, maxy = cpts[1].wx, cpts[1].wx, cpts[1].wy, cpts[1].wy
+            local sx, sy = 0, 0
+            for i = 1, #cpts do
+                local pp = cpts[i]
+                if pp.wx < minx then minx = pp.wx end
+                if pp.wx > maxx then maxx = pp.wx end
+                if pp.wy < miny then miny = pp.wy end
+                if pp.wy > maxy then maxy = pp.wy end
+                sx = sx + pp.wx; sy = sy + pp.wy
+            end
+            local slot = MC.__calibSlot
+            if type(slot) ~= "number" then slot = 1; while regs[slot] do slot = slot + 1 end end
+            regs[slot] = { a = aff.a, b = aff.b, c = aff.c, d = aff.d, e = aff.e, f = aff.f, cx = sx / #cpts, cy = sy / #cpts, minx = minx, maxx = maxx, miny = miny, maxy = maxy }
+            MC.__calibOn = false
+            MC.__calibRegion = false
+            MC.__calibSlot = nil
+            print(string.format("|cff46bf72[DF]|r 第 %d 区标定已保存（%d 点）。按所在区域自动选标定。", slot, #cpts))
+            return true
+        end
+    end
     MC.Save(MC.__calibId, MC.__calibFloor, aff)
     MC.__calibOn = false
     print(string.format("|cff46bf72[DF]|r 标定完成并已保存（%d 点，横跨 %.0f%% 纵跨 %.0f%%）。/dfpos on 显示绿点。", #cpts, w * 100, h * 100))
@@ -6045,6 +6117,7 @@ function MC.Begin()
     end
     cpts = {}
     MC.__calibOn = true
+    MC.__calibRegion = false
     MC.__calibId, MC.__calibFloor = v.__mpId, v.__mpFloor
     MC.Keep(true)
     print("|cff46bf72[DF]|r 标定开始：" .. tostring(v.__mpId) .. " 第 " .. tostring(v.__mpFloor) .. " 层")
@@ -6168,6 +6241,7 @@ function MC.ClickStart()
     if cur and v.__mpId ~= cur then print("|cffff8080[DF]|r 当前显示的不是你所在副本的图（应为本图：" .. tostring(cur) .. "）") return end
     cpts = {}
     MC.__calibOn = true
+    MC.__calibRegion = false
     MC.__calibId, MC.__calibFloor = v.__mpId, v.__mpFloor
     MC.Keep(true)
     destroyOverlay()
@@ -6187,6 +6261,7 @@ end
 
 function MC.Stop()
     MC.__calibOn = false
+    MC.__calibRegion = false
     cpts = {}
     destroyOverlay()
     MC.Keep(false)
@@ -6200,6 +6275,11 @@ function MC.Info()
     local aff = MC.Get(v.__mpId, v.__mpFloor)
     local wx, wy = MC.World()
     print(string.format("|cff46bf72[DF]|r 图=%s 层=%s 已标定=%s 开关=%s 世界=%s,%s", tostring(v.__mpId), tostring(v.__mpFloor), tostring(aff ~= nil), tostring(MC.LocationEnabled()), tostring(wx), tostring(wy)))
+    local DNz = ns.PathLocator
+    if DNz and DNz.IsRunning and DNz.IsRunning() then
+        local zx, zy, zz = DNz.Get()
+        print(string.format("|cff46bf72[DF]|r 定位z=%s", tostring(zz)))
+    end
 end
 
 SLASH_DFPOS1 = "/dfpos"
@@ -6208,6 +6288,60 @@ SlashCmdList["DFPOS"] = function(msg)
     if msg == "" or msg == "cal" then MC.Begin()
     elseif msg == "add" then MC.Add()
     elseif msg == "click" then MC.ClickStart()
+    elseif msg == "click2" or msg == "clickregion" or msg:match("^click2%d$") then
+        local slot = tonumber(msg:match("(%d)$"))
+        MC.ClickStart()
+        if MC.__calibOn then
+            MC.__calibRegion = true
+            MC.__calibSlot = slot
+            print("|cff46bf72[DF]|r 分区点击标定" .. (slot and ("（第" .. slot .. "区）") or "") .. "：站到目标区域，在这张图上点 3 个不同位置。")
+        end
+    elseif msg == "cal2" or msg == "region" or msg:match("^cal2%d$") or msg:match("^region%d$") then
+        local slot = tonumber(msg:match("(%d)$"))
+        MC.Begin()
+        if MC.__calibOn then
+            MC.__calibRegion = true
+            MC.__calibSlot = slot
+            print("|cff46bf72[DF]|r 分区标定" .. (slot and ("（第" .. slot .. "区）") or "") .. "：站到目标区域，点选 3 个分散 Boss 各 /dfpos add。")
+        end
+    elseif msg == "rgnauto" then
+        local MP = ns.MapPlayer
+        local v = MP and MP.ActiveView and MP.ActiveView()
+        local db = DungeonsForeverDB
+        if v and type(db) == "table" then
+            db.mapRegionForce = db.mapRegionForce or {}
+            db.mapRegionForce[tostring(v.__mpId) .. "|" .. tostring(v.__mpFloor)] = nil
+            print("|cff46bf72[DF]|r 分区：自动(按位置)")
+        end
+    elseif msg:match("^rgn%d+$") then
+        local n = tonumber(msg:match("(%d+)$"))
+        local MP = ns.MapPlayer
+        local v = MP and MP.ActiveView and MP.ActiveView()
+        local db = DungeonsForeverDB
+        if v and n and type(db) == "table" then
+            db.mapRegionForce = db.mapRegionForce or {}
+            db.mapRegionForce[tostring(v.__mpId) .. "|" .. tostring(v.__mpFloor)] = n
+            print("|cff46bf72[DF]|r 已强制使用第 " .. n .. " 区标定（/dfpos rgnauto 恢复自动）")
+        end
+    elseif msg:match("^area%d+$") then
+        local n = tonumber(msg:match("(%d+)$"))
+        local MP = ns.MapPlayer
+        local v = MP and MP.ActiveView and MP.ActiveView()
+        local wx, wy = MC.World()
+        local db = DungeonsForeverDB
+        if v and wx and n and type(db) == "table" then
+            local key = tostring(v.__mpId) .. "|" .. tostring(v.__mpFloor)
+            db.mapAreaTags = db.mapAreaTags or {}
+            local t = db.mapAreaTags[key]
+            if type(t) ~= "table" then t = {}; db.mapAreaTags[key] = t end
+            local zz
+            local DN = ns.PathLocator
+            if DN and DN.IsRunning and DN.IsRunning() then local _, _, z0 = DN.Get(); zz = z0 end
+            t[#t + 1] = { x = wx, y = wy, z = zz, n = n }
+            print("|cff46bf72[DF]|r 已标记此处用第 " .. n .. " 区坐标（本图共 " .. #t .. " 处标记）")
+        else
+            print("|cffffff80[DF]|r 需要副本内、地图已打开、定位就绪")
+        end
     elseif msg == "stop" then MC.Stop()
     elseif msg == "on" then
         local db = DungeonsForeverDB

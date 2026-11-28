@@ -3709,10 +3709,15 @@ function MP.Attach(view)
                 local keep = false
                 if MC.__calibOn then
                     keep = true
-                elseif av and MC.Get(av.__mpId, av.__mpFloor)
-                    and (not MC.InInstance or MC.InInstance())
+                elseif av and (not MC.InInstance or MC.InInstance())
                     and (not MC.LocationEnabled or MC.LocationEnabled()) then
-                    keep = true
+                    local cal = MC.Get(av.__mpId, av.__mpFloor)
+                    if cal then
+                        keep = true
+                    else
+                        local ii = instanceInfo()
+                        if ii and ii.instID == 429 then keep = true end
+                    end
                 end
                 pcall(MC.Keep, keep)
             end
